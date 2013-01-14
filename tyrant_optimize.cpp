@@ -209,6 +209,111 @@ std::string skill_names[num_skills] =
  "trigger_regen",
  "weaken", "weaken_all"};
 
+struct TargetsAssaults {};
+struct TargetsStructures {};
+struct TargetsCommmander {};
+
+struct true_ {};
+
+struct false_ {};
+
+template<unsigned>
+struct SkillTraits
+{
+    // true: single, false: all
+    typedef true_ TargetsHow;
+    // true: self, false: opponent
+    typedef true_ TargetsWho;
+    typedef TargetsAssaults TargetsWhat;
+};
+
+struct SkillTraitsSelfAssaults
+{
+    typedef true_ TargetsHow;
+    typedef true_ TargetsWho;
+    typedef TargetsAssaults TargetsWhat;
+};
+
+struct SkillTraitsSelfAssaultsAll
+{
+    typedef false_ TargetsHow;
+    typedef true_ TargetsWho;
+    typedef TargetsAssaults TargetsWhat;
+};
+
+struct SkillTraitsEnemyAssaults
+{
+    typedef true_ TargetsHow;
+    typedef false_ TargetsWho;
+    typedef TargetsAssaults TargetsWhat;
+};
+
+struct SkillTraitsEnemyAssaultsAll
+{
+    typedef false_ TargetsHow;
+    typedef false_ TargetsWho;
+    typedef TargetsAssaults TargetsWhat;
+};
+
+struct SkillTraitsEnemyStructures
+{
+    typedef true_ TargetsHow;
+    typedef false_ TargetsWho;
+    typedef TargetsStructures TargetsWhat;
+};
+
+struct SkillTraitsEnemyStructuresAll
+{
+    typedef false_ TargetsHow;
+    typedef false_ TargetsWho;
+    typedef TargetsStructures TargetsWhat;
+};
+
+template<> struct SkillTraits<augment> : SkillTraitsSelfAssaults {};
+template<> struct SkillTraits<augment_all> : SkillTraitsSelfAssaultsAll {};
+template<> struct SkillTraits<chaos> : SkillTraitsEnemyAssaults {};
+template<> struct SkillTraits<chaos_all> : SkillTraitsEnemyAssaultsAll {};
+template<> struct SkillTraits<cleanse> : SkillTraitsSelfAssaults {};
+template<> struct SkillTraits<cleanse_all> : SkillTraitsSelfAssaultsAll {};
+template<> struct SkillTraits<enfeeble> : SkillTraitsEnemyAssaults {};
+template<> struct SkillTraits<enfeeble_all> : SkillTraitsEnemyAssaultsAll {};
+template<> struct SkillTraits<freeze> : SkillTraitsEnemyAssaults {};
+template<> struct SkillTraits<freeze_all> : SkillTraitsEnemyAssaultsAll {};
+template<> struct SkillTraits<heal> : SkillTraitsSelfAssaults {};
+template<> struct SkillTraits<heal_all> : SkillTraitsSelfAssaultsAll {};
+template<> struct SkillTraits<jam> : SkillTraitsEnemyAssaults {};
+template<> struct SkillTraits<jam_all> : SkillTraitsEnemyAssaultsAll {};
+template<> struct SkillTraits<mimic> : SkillTraitsEnemyAssaults {};
+template<> struct SkillTraits<protect> : SkillTraitsSelfAssaults {};
+template<> struct SkillTraits<protect_all> : SkillTraitsSelfAssaultsAll {};
+template<> struct SkillTraits<rally> : SkillTraitsSelfAssaults {};
+template<> struct SkillTraits<rally_all> : SkillTraitsSelfAssaultsAll {};
+template<> struct SkillTraits<rush> : SkillTraitsSelfAssaults {};
+template<> struct SkillTraits<siege> : SkillTraitsEnemyStructures {};
+template<> struct SkillTraits<siege_all> : SkillTraitsEnemyStructuresAll {};
+template<> struct SkillTraits<strike> : SkillTraitsEnemyAssaults {};
+template<> struct SkillTraits<strike_all> : SkillTraitsEnemyAssaultsAll {};
+template<> struct SkillTraits<supply> : SkillTraitsSelfAssaults {};
+template<> struct SkillTraits<weaken> : SkillTraitsEnemyAssaults {};
+template<> struct SkillTraits<weaken_all> : SkillTraitsEnemyAssaultsAll {};
+
+template<unsigned> struct skillTriggersRegen { typedef false_ T; };
+template<> struct skillTriggersRegen<strike> { typedef true_ T; };
+template<> struct skillTriggersRegen<strike_all> { typedef true_ T; };
+template<> struct skillTriggersRegen<siege> { typedef true_ T; };
+template<> struct skillTriggersRegen<siege_all> { typedef true_ T; };
+
+enum SkillSourceType
+{
+    source_hostile,
+    source_allied,
+    source_global_hostile,
+    source_global_allied,
+    source_chaos
+};
+
+typedef std::tuple<ActiveSkill, unsigned, Faction> SkillSpec;
+
 namespace CardType {
 enum CardType {
     action,
@@ -226,36 +331,6 @@ enum gamemode_t
     surge,
     tournament
 };
-
-struct true_ {};
-
-struct false_ {};
-
-template<unsigned>
-struct skillTriggersRegen { typedef false_ T; };
-
-template<>
-struct skillTriggersRegen<strike> { typedef true_ T; };
-
-template<>
-struct skillTriggersRegen<strike_all> { typedef true_ T; };
-
-template<>
-struct skillTriggersRegen<siege> { typedef true_ T; };
-
-template<>
-struct skillTriggersRegen<siege_all> { typedef true_ T; };
-
-enum SkillSourceType
-{
-    source_hostile,
-    source_allied,
-    source_global_hostile,
-    source_global_allied,
-    source_chaos
-};
-
-typedef std::tuple<ActiveSkill, unsigned, Faction> SkillSpec;
 
 class Card
 {
@@ -2017,7 +2092,7 @@ inline bool skill_predicate<heal>(CardStatus* c)
 
 template<>
 inline bool skill_predicate<infuse>(CardStatus* c)
-{ return(c->m_faction != bloodthirsty); }
+{ return(c->m_hp > 0 && c->m_faction != bloodthirsty); }
 
 template<>
 inline bool skill_predicate<jam>(CardStatus* c)
@@ -2037,7 +2112,7 @@ inline bool skill_predicate<rally>(CardStatus* c)
 
 template<>
 inline bool skill_predicate<rush>(CardStatus* c)
-{ return(c->m_delay > 0); }
+{ return(c->m_hp > 0 && c->m_delay > 0); }
 
 template<>
 inline bool skill_predicate<siege>(CardStatus* c)
@@ -2200,6 +2275,36 @@ inline unsigned select_fast(Field* fd, CardStatus* src_status, const std::vector
 }
 
 template<unsigned skill_id>
+inline unsigned fill_valid_targets_array(Field* fd, const std::vector<CardStatus*>& cards, const SkillSpec& s)
+{
+    unsigned array_head = 0;
+    if(std::get<2>(s) == allfactions)
+    {
+        for(auto card: cards)
+        {
+            if(skill_predicate<skill_id>(card))
+            {
+                fd->selection_array[array_head] = card;
+                ++array_head;
+            }
+        }
+    }
+    else
+    {
+        for(auto card: cards)
+        {
+            if(card->m_faction == std::get<2>(s) &&
+               skill_predicate<skill_id>(card))
+            {
+                fd->selection_array[array_head] = card;
+                ++array_head;
+            }
+        }
+    }
+    return(array_head);
+}
+
+template<unsigned skill_id>
 inline unsigned select_rally_like(Field* fd, CardStatus* src_status, const std::vector<CardStatus*>& cards, const SkillSpec& s)
 {
     unsigned array_head{0};
@@ -2312,6 +2417,39 @@ std::vector<CardStatus*>& skill_targets(Field* fd, CardStatus* src_status)
     assert(false);
 }
 
+template<typename TargetsWho, typename TargetsWhat>
+std::vector<CardStatus*>& blabla(Field* fd, CardStatus* src_status)
+{
+    assert(false);
+}
+
+template<> std::vector<CardStatus*>& blabla<true_, TargetsAssaults>(Field* fd, CardStatus* src_status)
+{
+    return(fd->players[src_status->m_player]->assaults.m_indirect);
+}
+
+template<> std::vector<CardStatus*>& blabla<false_, TargetsAssaults>(Field* fd, CardStatus* src_status)
+{
+    return(fd->players[src_status->m_chaos ? src_status->m_player : opponent(src_status->m_player)]->assaults.m_indirect);
+}
+
+template<> std::vector<CardStatus*>& blabla<true_, TargetsStructures>(Field* fd, CardStatus* src_status)
+{
+    return(fd->players[src_status->m_player]->structures.m_indirect);
+}
+
+template<> std::vector<CardStatus*>& blabla<false_, TargetsStructures>(Field* fd, CardStatus* src_status)
+{
+    return(fd->players[src_status->m_chaos ? src_status->m_player : opponent(src_status->m_player)]->structures.m_indirect);
+}
+
+template<unsigned skill>
+std::vector<CardStatus*>& skill_targets_bis(Field* fd, CardStatus* src_status)
+{
+    
+    return(blabla<typename SkillTraits<skill>::TargetsWho, typename SkillTraits<skill>::TargetsWhat>(fd, src_status));
+}
+
 template<> inline std::vector<CardStatus*>& skill_targets<augment>(Field* fd, CardStatus* src_status)
 { return(skill_targets_allied_assault(fd, src_status)); }
 
@@ -2368,40 +2506,44 @@ void maybeTriggerRegen<true_>(Field* fd)
     fd->skill_queue.emplace_front(nullptr, std::make_tuple(trigger_regen, 0, allfactions));
 }
 
+void perform_skill_enemy(Field* fd, CardStatus* src_status, const SkillSpec& s)
+{
+}
+
 template<unsigned skill_id>
 CardStatus* get_target_hostile_fast(Field* fd, CardStatus* src_status, const SkillSpec& s)
 {
-    std::vector<CardStatus*>& cards(skill_targets<skill_id>(fd, src_status));
-    unsigned array_head{select_fast<skill_id>(fd, src_status, cards, s)};
+    CardStatus* target = nullptr;
+    std::vector<CardStatus*>& potential_targets = skill_targets_bis<skill_id>(fd, src_status);
+    unsigned array_head = fill_valid_targets_array<skill_id>(fd, potential_targets, s);
     if(array_head > 0)
     {
         unsigned rand_index(fd->rand(0, array_head - 1));
-        CardStatus* c(fd->selection_array[rand_index]);
+        target = fd->selection_array[rand_index];
         // intercept
         if(src_status && !src_status->m_chaos)
         {
-            CardStatus* intercept_card(nullptr);
+	    bool intercepted = false;
             if(rand_index > 0)
             {
                 CardStatus* left_status(fd->selection_array[rand_index-1]);
-                if(left_status->m_card->m_intercept && left_status->m_index == c->m_index-1)
+                if(left_status->m_card->m_intercept && left_status->m_index == target->m_index-1)
                 {
-                    intercept_card = left_status;
+                    target = left_status;
+		    intercepted = true;
                 }
             }
-            if(rand_index+1 < array_head && !intercept_card)
+            if(rand_index+1 < array_head && !intercepted)
             {
                 CardStatus* right_status(fd->selection_array[rand_index+1]);
-                if(right_status->m_card->m_intercept && right_status->m_index == c->m_index+1)
+                if(right_status->m_card->m_intercept && right_status->m_index == target->m_index+1)
                 {
-                    intercept_card = right_status;
+                    target = right_status;
                 }
             }
-            if(intercept_card) { c = intercept_card; }
         }
-        return(c);
     }
-    return(nullptr);
+    return(target);
 }
 
 template<unsigned skill_id>
@@ -2443,7 +2585,7 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src_status, const Ski
 template<unsigned skill_id>
 void perform_targetted_allied_fast(Field* fd, CardStatus* src_status, const SkillSpec& s)
 {
-    std::vector<CardStatus*>& cards(skill_targets<skill_id>(fd, src_status));
+    std::vector<CardStatus*>& cards(skill_targets_bis<skill_id>(fd, src_status));
     unsigned array_head{select_fast<skill_id>(fd, src_status, cards, s)};
     if(array_head > 0)
     {
@@ -2470,7 +2612,7 @@ void perform_targetted_allied_fast(Field* fd, CardStatus* src_status, const Skil
 template<unsigned skill_id>
 void perform_global_hostile_fast(Field* fd, CardStatus* src_status, const SkillSpec& s)
 {
-    std::vector<CardStatus*>& cards(skill_targets<skill_id>(fd, src_status));
+    std::vector<CardStatus*>& cards(skill_targets_bis<skill_id>(fd, src_status));
     unsigned array_head{select_fast<skill_id>(fd, src_status, cards, s)};
     unsigned payback_count(0);
     for(unsigned s_index(0); s_index < array_head; ++s_index)
@@ -2507,7 +2649,7 @@ void perform_global_hostile_fast(Field* fd, CardStatus* src_status, const SkillS
 template<unsigned skill_id>
 void perform_global_allied_fast(Field* fd, CardStatus* src_status, const SkillSpec& s)
 {
-    std::vector<CardStatus*>& cards(skill_targets<skill_id>(fd, src_status));
+    std::vector<CardStatus*>& cards(skill_targets_bis<skill_id>(fd, src_status));
     unsigned array_head{select_fast<skill_id>(fd, src_status, cards, s)};
     for(unsigned s_index(0); s_index < array_head; ++s_index)
     {
@@ -3883,9 +4025,9 @@ int main(int argc, char** argv)
     skill_table[shock] = perform_shock;
     skill_table[siege] = perform_targetted_hostile_fast<siege>;
     skill_table[siege_all] = perform_global_hostile_fast<siege>;
-    skill_table[supply] = perform_supply;
     skill_table[strike] = perform_targetted_hostile_fast<strike>;
     skill_table[strike_all] = perform_global_hostile_fast<strike>;
+    skill_table[supply] = perform_supply;
     skill_table[summon] = perform_summon;
     skill_table[trigger_regen] = perform_trigger_regen;
     skill_table[weaken] = perform_targetted_hostile_fast<weaken>;
