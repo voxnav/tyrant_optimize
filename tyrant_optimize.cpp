@@ -537,6 +537,14 @@ struct CardStatus
     }
 };
 //------------------------------------------------------------------------------
+struct PlayedCard
+{
+    const Card* card;
+    CardStatus* status;
+
+    PlayedCard(const Card* card_, CardStatus* status_) : card(card_), status(status_) {}
+};
+//------------------------------------------------------------------------------
 std::string skill_description(const SkillSpec& s)
 {
     return(skill_names[std::get<0>(s)] +
@@ -2418,27 +2426,60 @@ std::vector<CardStatus*>& skill_targets(Field* fd, CardStatus* src_status)
 }
 
 template<typename TargetsWho, typename TargetsWhat>
-std::vector<CardStatus*>& blabla(Field* fd, CardStatus* src_status)
+std::vector<CardStatus*>& skill_target_by_action(Field* fd)
 {
     assert(false);
 }
 
-template<> std::vector<CardStatus*>& blabla<true_, TargetsAssaults>(Field* fd, CardStatus* src_status)
+template<> std::vector<CardStatus*>& skill_target_by_action<true_, TargetsAssaults>(Field* fd)
+{
+    return(fd->tap->assaults.m_indirect);
+}
+
+template<> std::vector<CardStatus*>& skill_target_by_action<false_, TargetsAssaults>(Field* fd)
+{
+    return(fd->tip->assaults.m_indirect);
+}
+
+template<> std::vector<CardStatus*>& skill_target_by_action<true_, TargetsStructures>(Field* fd)
+{
+    return(fd->tap->structures.m_indirect);
+}
+
+template<> std::vector<CardStatus*>& skill_target_by_action<false_, TargetsStructures>(Field* fd)
+{
+    return(fd->tip->structures.m_indirect);
+}
+
+template<unsigned skill_id>
+std::vector<CardStatus*>& skill_targets_by_action(Field* fd)
+{
+    
+    return(skill_target_by_action<typename SkillTraits<skill_id>::TargetsWho, typename SkillTraits<skill_id>::TargetsWhat>(fd));
+}
+
+template<typename TargetsWho, typename TargetsWhat>
+std::vector<CardStatus*>& skill_target_by_assault(Field* fd, CardStatus* src_status)
+{
+    assert(false);
+}
+
+template<> std::vector<CardStatus*>& skill_target_by_assault<true_, TargetsAssaults>(Field* fd, CardStatus* src_status)
 {
     return(fd->players[src_status->m_player]->assaults.m_indirect);
 }
 
-template<> std::vector<CardStatus*>& blabla<false_, TargetsAssaults>(Field* fd, CardStatus* src_status)
+template<> std::vector<CardStatus*>& skill_target_by_assault<false_, TargetsAssaults>(Field* fd, CardStatus* src_status)
 {
     return(fd->players[src_status->m_chaos ? src_status->m_player : opponent(src_status->m_player)]->assaults.m_indirect);
 }
 
-template<> std::vector<CardStatus*>& blabla<true_, TargetsStructures>(Field* fd, CardStatus* src_status)
+template<> std::vector<CardStatus*>& skill_target_by_assault<true_, TargetsStructures>(Field* fd, CardStatus* src_status)
 {
     return(fd->players[src_status->m_player]->structures.m_indirect);
 }
 
-template<> std::vector<CardStatus*>& blabla<false_, TargetsStructures>(Field* fd, CardStatus* src_status)
+template<> std::vector<CardStatus*>& skill_target_by_assault<false_, TargetsStructures>(Field* fd, CardStatus* src_status)
 {
     return(fd->players[src_status->m_chaos ? src_status->m_player : opponent(src_status->m_player)]->structures.m_indirect);
 }
@@ -2446,54 +2487,8 @@ template<> std::vector<CardStatus*>& blabla<false_, TargetsStructures>(Field* fd
 template<unsigned skill>
 std::vector<CardStatus*>& skill_targets_bis(Field* fd, CardStatus* src_status)
 {
-    
-    return(blabla<typename SkillTraits<skill>::TargetsWho, typename SkillTraits<skill>::TargetsWhat>(fd, src_status));
+    return(skill_target_by_assault<typename SkillTraits<skill>::TargetsWho, typename SkillTraits<skill>::TargetsWhat>(fd, src_status));
 }
-
-template<> inline std::vector<CardStatus*>& skill_targets<augment>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_allied_assault(fd, src_status)); }
-
-template<> std::vector<CardStatus*>& skill_targets<chaos>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_hostile_assault(fd, src_status)); }
-
-template<> std::vector<CardStatus*>& skill_targets<cleanse>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_allied_assault(fd, src_status)); }
-
-template<> std::vector<CardStatus*>& skill_targets<enfeeble>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_hostile_assault(fd, src_status)); }
-
-template<> std::vector<CardStatus*>& skill_targets<freeze>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_hostile_assault(fd, src_status)); }
-
-template<> std::vector<CardStatus*>& skill_targets<heal>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_allied_assault(fd, src_status)); }
-
-template<> std::vector<CardStatus*>& skill_targets<jam>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_hostile_assault(fd, src_status)); }
-
-template<> std::vector<CardStatus*>& skill_targets<mimic>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_hostile_assault(fd, src_status)); }
-
-template<> std::vector<CardStatus*>& skill_targets<protect>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_allied_assault(fd, src_status)); }
-
-template<> std::vector<CardStatus*>& skill_targets<rally>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_allied_assault(fd, src_status)); }
-
-template<> std::vector<CardStatus*>& skill_targets<rush>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_allied_assault(fd, src_status)); }
-
-template<> std::vector<CardStatus*>& skill_targets<strike>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_hostile_assault(fd, src_status)); }
-
-template<> std::vector<CardStatus*>& skill_targets<supply>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_allied_assault(fd, src_status)); }
-
-template<> std::vector<CardStatus*>& skill_targets<weaken>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_hostile_assault(fd, src_status)); }
-
-template<> std::vector<CardStatus*>& skill_targets<siege>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_hostile_structure(fd, src_status)); }
 
 template<typename T>
 void maybeTriggerRegen(Field* fd)
@@ -2513,6 +2508,7 @@ void perform_skill_enemy(Field* fd, CardStatus* src_status, const SkillSpec& s)
 template<unsigned skill_id>
 CardStatus* get_target_hostile_fast(Field* fd, CardStatus* src_status, const SkillSpec& s)
 {
+    // null src_status = action card
     CardStatus* target = nullptr;
     std::vector<CardStatus*>& potential_targets = skill_targets_bis<skill_id>(fd, src_status);
     unsigned array_head = fill_valid_targets_array<skill_id>(fd, potential_targets, s);
@@ -2547,9 +2543,48 @@ CardStatus* get_target_hostile_fast(Field* fd, CardStatus* src_status, const Ski
 }
 
 template<unsigned skill_id>
+CardStatus* get_target_hostile_fast_cleaner(Field* fd, const PlayedCard& origin, const SkillSpec& s)
+{
+    CardStatus* target = nullptr;
+    std::vector<CardStatus*>& potential_targets =
+        origin.card->m_type == CardType::action ?
+        skill_targets_by_action<skill_id>(fd) :
+        skill_targets_bis<skill_id>(fd, origin.status);
+    unsigned array_head = fill_valid_targets_array<skill_id>(fd, potential_targets, s);
+    if(array_head > 0)
+    {
+        unsigned rand_index(fd->rand(0, array_head - 1));
+        target = fd->selection_array[rand_index];
+        // intercept
+        if(origin.status && !origin.status->m_chaos)
+        {
+	    bool intercepted = false;
+            if(rand_index > 0)
+            {
+                CardStatus* left_status(fd->selection_array[rand_index-1]);
+                if(left_status->m_card->m_intercept && left_status->m_index == target->m_index-1)
+                {
+                    target = left_status;
+		    intercepted = true;
+                }
+            }
+            if(rand_index+1 < array_head && !intercepted)
+            {
+                CardStatus* right_status(fd->selection_array[rand_index+1]);
+                if(right_status->m_card->m_intercept && right_status->m_index == target->m_index+1)
+                {
+                    target = right_status;
+                }
+            }
+        }
+    }
+    return(target);
+}
+
+template<unsigned skill_id>
 void perform_targetted_hostile_fast(Field* fd, CardStatus* src_status, const SkillSpec& s)
 {
-    // null status = action card
+    // null src_status = action card
     CardStatus* c(get_target_hostile_fast<skill_id>(fd, src_status, s));
     if(c)
     {
