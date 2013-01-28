@@ -297,20 +297,19 @@ template<> struct SkillTraits<supply> : SkillTraitsSelfAssaults {};
 template<> struct SkillTraits<weaken> : SkillTraitsEnemyAssaults {};
 template<> struct SkillTraits<weaken_all> : SkillTraitsEnemyAssaultsAll {};
 
-template<unsigned> struct skillTriggersRegen { typedef false_ T; };
-template<> struct skillTriggersRegen<strike> { typedef true_ T; };
-template<> struct skillTriggersRegen<strike_all> { typedef true_ T; };
-template<> struct skillTriggersRegen<siege> { typedef true_ T; };
-template<> struct skillTriggersRegen<siege_all> { typedef true_ T; };
+// 50% chance of activation
+template<unsigned> struct SkillProcs { typedef false_ T; };
+template<> struct SkillProcs<jam> { typedef true_ T; };
+template<> struct SkillProcs<jam_all> { typedef true_ T; };
 
-enum SkillSourceType
-{
-    source_hostile,
-    source_allied,
-    source_global_hostile,
-    source_global_allied,
-    source_chaos
-};
+// Regeneration of cards happens after strike and siege are used.
+// This happens on both structures and assaults:
+// sieging a structure can trigger regeneration of an assault.
+template<unsigned> struct SkillTriggersRegen { typedef false_ T; };
+template<> struct SkillTriggersRegen<strike> { typedef true_ T; };
+template<> struct SkillTriggersRegen<strike_all> { typedef true_ T; };
+template<> struct SkillTriggersRegen<siege> { typedef true_ T; };
+template<> struct SkillTriggersRegen<siege_all> { typedef true_ T; };
 
 typedef std::tuple<ActiveSkill, unsigned, Faction> SkillSpec;
 
@@ -541,7 +540,7 @@ struct PlayedCard
 {
     const Card* card;
     CardStatus* status;
-
+    PlayedCard() : card(nullptr), status(nullptr) {}
     PlayedCard(const Card* card_, CardStatus* status_) : card(card_), status(status_) {}
 };
 //---------------------- $20 cards.xml parsing ---------------------------------
@@ -1208,6 +1207,8 @@ public:
     Hand* tap;
     Hand* tip;
     std::array<CardStatus*, 256> selection_array;
+    unsigned payback_head;
+    std::array<PlayedCard, 256> payback_array;
     unsigned turn;
     gamemode_t gamemode;
     // With the introduction of on death skills, a single skill can trigger arbitrary many skills.
@@ -1342,7 +1343,6 @@ void evaluate_skills(Field* fd, const PlayedCard& origin, const std::vector<Skil
     assert(fd->skill_queue.size() == 0);
     for(auto& skill: skills)
     {
-        _DEBUG_MSG("%s used skill %s\n", played_card_description(fd, origin).c_str(), skill_description(skill).c_str());
         fd->skill_queue.emplace_back(origin, origin.status->m_augmented == 0 ? skill : augmented_skill(origin, skill));
         resolve_skill(fd);
     }
@@ -2076,7 +2076,7 @@ inline bool skill_predicate(CardStatus* c)
 template<>
 inline bool skill_predicate<augment>(CardStatus* c)
 {
-    if(c->m_hp > 0 && (c->m_delay == 0 || c->blitz) && !c->m_jammed && !c->m_frozen)
+    if((c->m_delay == 0 || c->blitz) && c->m_hp > 0 && !c->m_jammed && !c->m_frozen)
     {
         for(auto& s: c->m_card->m_skills)
         {
@@ -2138,7 +2138,7 @@ inline bool skill_predicate<rally>(CardStatus* c)
 
 template<>
 inline bool skill_predicate<rush>(CardStatus* c)
-{ return(c->m_hp > 0 && c->m_delay > 0); }
+{ return(c->m_delay > 0 && c->m_hp > 0); }
 
 template<>
 inline bool skill_predicate<siege>(CardStatus* c)
@@ -2217,7 +2217,7 @@ inline void perform_skill<infuse>(Field* fd, CardStatus* c, unsigned v)
 template<>
 inline void perform_skill<jam>(Field* fd, CardStatus* c, unsigned v)
 {
-    c->m_jammed = fd->flip();
+    c->m_jammed = 1;
 }
 
 template<>
@@ -2528,7 +2528,7 @@ void maybeTriggerRegen<true_>(Field* fd)
 }
 
 template<unsigned skill_id>
-CardStatus* get_target_hostile_fast(Field* fd, const PlayedCard& origin, const SkillSpec& skill_spec)
+PlayedCard get_hostile_target(Field* fd, const PlayedCard& origin, const SkillSpec& skill_spec)
 {
     CardStatus* target = nullptr;
     std::vector<CardStatus*>& potential_targets = get_potential_targets<skill_id>(fd, origin);
@@ -2560,126 +2560,182 @@ CardStatus* get_target_hostile_fast(Field* fd, const PlayedCard& origin, const S
             }
         }
     }
-    return(target);
+    return(PlayedCard(target != nullptr ? target->m_card : nullptr, target));
+}
+
+// Payback:
+// - works against assaults only
+// - does not activate on chaosed skills
+// - paybacked skill cannot be evaded
+// - will only affect assaults that are valid targets for the skill
+// - faction restrictions don't apply
+// - 50% chance
+template<unsigned skill_id>
+bool target_paybacks(Field* fd, const PlayedCard& origin, const PlayedCard& target)
+{
+    return(target.card->m_payback &&
+       origin.card->m_type == CardType::assault &&
+       !origin.status->m_chaos &&
+       skill_predicate<skill_id>(origin.status) &&
+       fd->flip());
+}
+
+// Evade: the skill is not evaded if either:
+// target doesn't have evade, the evade fails, or the origin is chaosed
+// (chaosed skills cannot be evaded)
+template<unsigned skill_id>
+bool target_doesnt_evade(Field* fd, const PlayedCard& origin, const PlayedCard& target)
+{
+    return(!target.card->m_evade || fd->flip() || (origin.card->m_type == CardType::assault && origin.status->m_chaos));
 }
 
 template<unsigned skill_id>
-void perform_targetted_hostile_fast(Field* fd, const PlayedCard& origin, const SkillSpec& skill_spec)
+void skill_and_payback(Field* fd, const PlayedCard& origin, const PlayedCard& target, const SkillSpec& skill_spec)
 {
-    CardStatus* c(get_target_hostile_fast<skill_id>(fd, origin, skill_spec));
-    if(c)
+    _DEBUG_MSG("%s %s %u on %s\n", played_card_description(fd, origin).c_str(), skill_names[skill_id].c_str(), std::get<1>(skill_spec), played_card_description(fd, target).c_str());
+    perform_skill<skill_id>(fd, target.status, std::get<1>(skill_spec));
+    if(target_paybacks<skill_id>(fd, origin, target))
     {
-        // evade
-        if(!c->m_card->m_evade || fd->flip())
-        {
-            _DEBUG_MSG("%s (%u) from %s on %s.\n", skill_names[skill_id].c_str(), std::get<1>(skill_spec), played_card_description(fd, origin).c_str(), played_card_description(fd, PlayedCard(c->m_card, c)).c_str());
-            // skill
-            perform_skill<skill_id>(fd, c, std::get<1>(skill_spec));
-            // payback
-            if(c->m_card->m_payback &&
-               origin.card->m_type == CardType::assault &&
-               !origin.status->m_chaos &&
-               origin.status->m_hp > 0 &&
-               fd->flip())
-            {
-                // payback evade
-                if(skill_predicate<skill_id>(origin.status) &&
-                   (!origin.card->m_evade || fd->flip()))
-                {
-                    _DEBUG_MSG("Payback (%s %u) on (%s)\n", skill_names[skill_id].c_str(), std::get<1>(skill_spec), origin.card->m_name.c_str());
-                    // payback skill
-                    perform_skill<skill_id>(fd, origin.status, std::get<1>(skill_spec));
-                }
-            }
-        }
+        _DEBUG_MSG("%s paybacks %s %u on %s\n", played_card_description(fd, target).c_str(), skill_names[skill_id].c_str(), std::get<1>(skill_spec), played_card_description(fd, origin).c_str());
+        perform_skill<skill_id>(fd, origin.status, std::get<1>(skill_spec));
     }
-    maybeTriggerRegen<typename skillTriggersRegen<skill_id>::T>(fd);
+}
+
+template<unsigned skill_id>
+void maybe_proc_skill_and_payback(Field* fd, const PlayedCard& origin, const PlayedCard& target, const SkillSpec& skill_spec, false_)
+{
+    skill_and_payback<skill_id>(fd, origin, target, skill_spec);
+}
+
+template<unsigned skill_id>
+void maybe_proc_skill_and_payback(Field* fd, const PlayedCard& origin, const PlayedCard& target, const SkillSpec& skill_spec, true_)
+{
+    if(fd->flip())
+    {
+        _DEBUG_MSG("%s %s %u doesn't proc on %s\n", played_card_description(fd, origin).c_str(), skill_names[skill_id].c_str(), std::get<1>(skill_spec), played_card_description(fd, target).c_str());
+        return;
+    }
+    skill_and_payback<skill_id>(fd, origin, target, skill_spec);
+}
+
+template<unsigned skill_id>
+void perform_targetted_hostile_skill(Field* fd, const PlayedCard& origin, const SkillSpec& skill_spec)
+{
+    const PlayedCard target(get_hostile_target<skill_id>(fd, origin, skill_spec));
+    if(target.card != nullptr && target_doesnt_evade<skill_id>(fd, origin, target))
+    {
+        
+        maybe_proc_skill_and_payback<skill_id>(fd, origin, target, skill_spec, typename SkillProcs<skill_id>::T());
+    }
+    maybeTriggerRegen<typename SkillTriggersRegen<skill_id>::T>(fd);
     prepend_on_death(fd);
 }
 
+
 template<unsigned skill_id>
-void perform_targetted_allied_fast(Field* fd, const PlayedCard& origin, const SkillSpec& skill_spec)
+void skill_and_queue_payback(Field* fd, const PlayedCard& origin, const PlayedCard& target, const SkillSpec& skill_spec)
 {
-    std::vector<CardStatus*>& cards(get_potential_targets<skill_id>(fd, origin));
-    unsigned array_head{select_fast<skill_id>(fd, origin.status, cards, skill_spec)};
-    if(array_head > 0)
+    _DEBUG_MSG("%s %s %u on %s\n", played_card_description(fd, origin).c_str(), skill_names[skill_id].c_str(), std::get<1>(skill_spec), played_card_description(fd, target).c_str());
+    perform_skill<skill_id>(fd, target.status, std::get<1>(skill_spec));
+    if(target_paybacks<skill_id>(fd, origin, target))
     {
-        CardStatus* c(fd->selection_array[fd->rand(0, array_head - 1)]);
-        _DEBUG_MSG(" \033[1;34m%s: %s on %s\033[0m", played_card_description(fd, origin).c_str(), skill_description(skill_spec).c_str(), status_description(c).c_str());
-        perform_skill<skill_id>(fd, c, std::get<1>(skill_spec));
-        _DEBUG_MSG("\n");
-        if(c->m_card->m_tribute &&
-           origin.status->m_card->m_type == CardType::assault &&
-           origin.status != c &&
-           origin.status->m_hp > 0 &&
-           fd->flip())
-        {
-            if(skill_predicate<skill_id>(origin.status))
-            {
-                _DEBUG_MSG("Tribute (%s %u) on (%s)\n", skill_names[skill_id].c_str(), std::get<1>(skill_spec), origin.card->m_name.c_str());
-                perform_skill<skill_id>(fd, origin.status, std::get<1>(skill_spec));
-            }
-        }
+        fd->payback_array[fd->payback_head] = target;
+        ++fd->payback_head;
     }
 }
 
 template<unsigned skill_id>
-void perform_global_hostile_fast(Field* fd, const PlayedCard& origin, const SkillSpec& skill_spec)
+void maybe_proc_skill_and_queue_payback(Field* fd, const PlayedCard& origin, const PlayedCard& target, const SkillSpec& skill_spec, false_)
+{
+    skill_and_queue_payback<skill_id>(fd, origin, target, skill_spec);
+}
+
+template<unsigned skill_id>
+void maybe_proc_skill_and_queue_payback(Field* fd, const PlayedCard& origin, const PlayedCard& target, const SkillSpec& skill_spec, true_)
+{
+    if(fd->flip())
+    {
+        _DEBUG_MSG("%s %s %u doesn't proc on %s\n", played_card_description(fd, origin).c_str(), skill_names[skill_id].c_str(), std::get<1>(skill_spec), played_card_description(fd, target).c_str());
+        return;
+    }
+    skill_and_queue_payback<skill_id>(fd, origin, target, skill_spec);
+}
+
+template<unsigned skill_id>
+void perform_global_hostile_skill(Field* fd, const PlayedCard& origin, const SkillSpec& skill_spec)
 {
     std::vector<CardStatus*>& cards(get_potential_targets<skill_id>(fd, origin));
     unsigned array_head{select_fast<skill_id>(fd, origin.status, cards, skill_spec)};
-    unsigned payback_count(0);
+    fd->payback_head = 0;
     for(unsigned s_index(0); s_index < array_head; ++s_index)
     {
-        CardStatus* c(fd->selection_array[s_index]);
-        if(!c->m_card->m_evade || fd->flip())
+        const PlayedCard target(fd->selection_array[s_index]->m_card, fd->selection_array[s_index]);
+        if(target_doesnt_evade<skill_id>(fd, origin, target))
         {
-            _DEBUG_MSG("%s (%u) on (%s)\n", skill_names[skill_id].c_str(), std::get<1>(skill_spec), c->m_card->m_name.c_str());
-            perform_skill<skill_id>(fd, c, std::get<1>(skill_spec));
-            // payback
-            if(c->m_card->m_payback &&
-               origin.card->m_type == CardType::assault &&
-               !origin.status->m_chaos &&
-               origin.status->m_hp > 0 &&
-               fd->flip())
-            {
-                ++payback_count;
-            }
+            maybe_proc_skill_and_queue_payback<skill_id>(fd, origin, target, skill_spec, typename SkillProcs<skill_id>::T());
         }
     }
-    for(unsigned i(0); i < payback_count && skill_predicate<skill_id>(origin.status); ++i)
+    for(unsigned i(0); i < fd->payback_head && skill_predicate<skill_id>(origin.status); ++i)
     {
-        if((!origin.status->m_card->m_evade || fd->flip()))
+        _DEBUG_MSG("%s paybacks %s %u on %s\n", played_card_description(fd, fd->payback_array[i]).c_str(), skill_names[skill_id].c_str(), std::get<1>(skill_spec), played_card_description(fd, origin).c_str());
+        perform_skill<skill_id>(fd, origin.status, std::get<1>(skill_spec));
+    }
+    maybeTriggerRegen<typename SkillTriggersRegen<skill_id>::T>(fd);
+    prepend_on_death(fd);
+}
+
+// Tribute:
+// only happens if:
+// - origin is an assault
+// - origin and target are different cards
+// - origin satisfies the skill predicate
+// - 50% chance
+// - faction restrictions are probably ignored ?
+template<unsigned skill_id>
+bool target_tributes(Field* fd, const PlayedCard& origin, const PlayedCard& target)
+{
+    return(target.card->m_tribute &&
+           origin.card->m_type == CardType::assault &&
+           origin.status != target.status &&
+           skill_predicate<skill_id>(origin.status) &&
+           fd->flip());
+}
+
+template<unsigned skill_id>
+void perform_targetted_allied_skill(Field* fd, const PlayedCard& origin, const SkillSpec& skill_spec)
+{
+    std::vector<CardStatus*>& cards(get_potential_targets<skill_id>(fd, origin));
+    unsigned array_head = select_fast<skill_id>(fd, origin.status, cards, skill_spec);
+    if(array_head > 0)
+    {
+        CardStatus* target_status(fd->selection_array[fd->rand(0, array_head - 1)]);
+        const PlayedCard target(target_status->m_card, target_status);
+        //_DEBUG_MSG(" \033[1;34m%s: %s on %s\033[0m", played_card_description(fd, origin).c_str(), skill_description(skill_spec).c_str(), status_description(target.status).c_str());
+        _DEBUG_MSG("%s %s %u on %s\n", played_card_description(fd, origin).c_str(), skill_names[skill_id].c_str(), std::get<1>(skill_spec), played_card_description(fd, target).c_str());
+        perform_skill<skill_id>(fd, target.status, std::get<1>(skill_spec));
+        //_DEBUG_MSG("\n");
+        if(target_tributes<skill_id>(fd, origin, target))
         {
-            _DEBUG_MSG("Payback (%s %u) on (%s)\n", skill_names[skill_id].c_str(), std::get<1>(skill_spec), played_card_description(fd, origin).c_str());
+            _DEBUG_MSG("%s tributes %s %u on %s\n", played_card_description(fd, target).c_str(), skill_names[skill_id].c_str(), std::get<1>(skill_spec), played_card_description(fd, origin).c_str());
             perform_skill<skill_id>(fd, origin.status, std::get<1>(skill_spec));
         }
     }
-    maybeTriggerRegen<typename skillTriggersRegen<skill_id>::T>(fd);
-    prepend_on_death(fd);
 }
 
 template<unsigned skill_id>
-void perform_global_allied_fast(Field* fd, const PlayedCard& origin, const SkillSpec& skill_spec)
+void perform_global_allied_skill(Field* fd, const PlayedCard& origin, const SkillSpec& skill_spec)
 {
     std::vector<CardStatus*>& cards(get_potential_targets<skill_id>(fd, origin));
     unsigned array_head{select_fast<skill_id>(fd, origin.status, cards, skill_spec)};
     for(unsigned s_index(0); s_index < array_head; ++s_index)
     {
-        CardStatus* c(fd->selection_array[s_index]);
-        _DEBUG_MSG("%s (%u) on (%s)\n", skill_names[skill_id].c_str(), std::get<1>(skill_spec), c->m_card->m_name.c_str());
-        perform_skill<skill_id>(fd, c, std::get<1>(skill_spec));
-        if(c->m_card->m_tribute &&
-           origin.status->m_card->m_type == CardType::assault &&
-           origin.status != c &&
-           origin.status->m_hp > 0 &&
-           fd->flip())
+        const PlayedCard target(fd->selection_array[s_index]->m_card, fd->selection_array[s_index]);
+        _DEBUG_MSG("%s %s %u on %s\n", played_card_description(fd, origin).c_str(), skill_names[skill_id].c_str(), std::get<1>(skill_spec), played_card_description(fd, target).c_str());
+        perform_skill<skill_id>(fd, target.status, std::get<1>(skill_spec));
+        if(target_tributes<skill_id>(fd, origin, target))
         {
-            if(skill_predicate<skill_id>(origin.status))
-            {
-                _DEBUG_MSG("Tribute (%s %u) on (%s)\n", skill_names[skill_id].c_str(), std::get<1>(skill_spec), played_card_description(fd, origin).c_str());
-                perform_skill<skill_id>(fd, origin.status, std::get<1>(skill_spec));
-            }
+            _DEBUG_MSG("%s tributes %s %u on %s\n", played_card_description(fd, target).c_str(), skill_names[skill_id].c_str(), std::get<1>(skill_spec), played_card_description(fd, origin).c_str());
+            perform_skill<skill_id>(fd, origin.status, std::get<1>(skill_spec));
         }
     }
 }
@@ -2767,7 +2823,7 @@ void perform_shock(Field* fd, const PlayedCard& origin, const SkillSpec& skill_s
 
 void perform_supply(Field* fd, const PlayedCard& origin, const SkillSpec& skill_spec)
 {
-    perform_global_allied_fast<supply>(fd, origin, skill_spec);
+    perform_global_allied_skill<supply>(fd, origin, skill_spec);
 }
 
 // Special rules for mimic :
@@ -2779,11 +2835,11 @@ void perform_mimic(Field* fd, const PlayedCard& origin, const SkillSpec& skill_s
     // mimic cannot be triggered by anything. So it should be the only skill in the unresolved skill table.
     // so we can probably clear it safely. This is necessary, because mimic calls resolve_skill as well (infinite loop).
     fd->skill_queue.clear();
-    CardStatus* c(get_target_hostile_fast<mimic>(fd, origin, skill_spec));
-    if(c)
+    const PlayedCard& target(get_hostile_target<mimic>(fd, origin, skill_spec));
+    if(target.card)
     {
-        _DEBUG_MSG("%s on (%s)\n", skill_names[std::get<0>(skill_spec)].c_str(), c->m_card->m_name.c_str());
-        for(auto skill: c->m_card->m_skills)
+        _DEBUG_MSG("%s on (%s)\n", skill_names[std::get<0>(skill_spec)].c_str(), target.card->m_name.c_str());
+        for(auto skill: target.card->m_skills)
         {
             if(origin.card->m_type == CardType::assault && origin.status->m_hp == 0)
             { break; }
@@ -4013,37 +4069,37 @@ int main(int argc, char** argv)
     Decks decks;
     load_decks(decks, cards);
 
-    skill_table[augment] = perform_targetted_allied_fast<augment>;
-    skill_table[augment_all] = perform_global_allied_fast<augment>;
-    skill_table[chaos] = perform_targetted_hostile_fast<chaos>;
-    skill_table[chaos_all] = perform_global_hostile_fast<chaos>;
-    skill_table[cleanse] = perform_targetted_allied_fast<cleanse>;
-    skill_table[cleanse_all] = perform_global_allied_fast<cleanse>;
-    skill_table[enfeeble] = perform_targetted_hostile_fast<enfeeble>;
-    skill_table[enfeeble_all] = perform_global_hostile_fast<enfeeble>;
-    skill_table[freeze] = perform_targetted_hostile_fast<freeze>;
-    skill_table[freeze_all] = perform_global_hostile_fast<freeze>;
-    skill_table[heal] = perform_targetted_allied_fast<heal>;
-    skill_table[heal_all] = perform_global_allied_fast<heal>;
+    skill_table[augment] = perform_targetted_allied_skill<augment>;
+    skill_table[augment_all] = perform_global_allied_skill<augment>;
+    skill_table[chaos] = perform_targetted_hostile_skill<chaos>;
+    skill_table[chaos_all] = perform_global_hostile_skill<chaos>;
+    skill_table[cleanse] = perform_targetted_allied_skill<cleanse>;
+    skill_table[cleanse_all] = perform_global_allied_skill<cleanse>;
+    skill_table[enfeeble] = perform_targetted_hostile_skill<enfeeble>;
+    skill_table[enfeeble_all] = perform_global_hostile_skill<enfeeble>;
+    skill_table[freeze] = perform_targetted_hostile_skill<freeze>;
+    skill_table[freeze_all] = perform_global_hostile_skill<freeze>;
+    skill_table[heal] = perform_targetted_allied_skill<heal>;
+    skill_table[heal_all] = perform_global_allied_skill<heal>;
     skill_table[infuse] = perform_infuse;
-    skill_table[jam] = perform_targetted_hostile_fast<jam>;
-    skill_table[jam_all] = perform_global_hostile_fast<jam>;
+    skill_table[jam] = perform_targetted_hostile_skill<jam>;
+    skill_table[jam_all] = perform_global_hostile_skill<jam>;
     skill_table[mimic] = perform_mimic;
-    skill_table[protect] = perform_targetted_allied_fast<protect>;
-    skill_table[protect_all] = perform_global_allied_fast<protect>;
-    skill_table[rally] = perform_targetted_allied_fast<rally>;
-    skill_table[rally_all] = perform_global_allied_fast<rally>;
-    skill_table[rush] = perform_targetted_allied_fast<rush>;
+    skill_table[protect] = perform_targetted_allied_skill<protect>;
+    skill_table[protect_all] = perform_global_allied_skill<protect>;
+    skill_table[rally] = perform_targetted_allied_skill<rally>;
+    skill_table[rally_all] = perform_global_allied_skill<rally>;
+    skill_table[rush] = perform_targetted_allied_skill<rush>;
     skill_table[shock] = perform_shock;
-    skill_table[siege] = perform_targetted_hostile_fast<siege>;
-    skill_table[siege_all] = perform_global_hostile_fast<siege>;
-    skill_table[strike] = perform_targetted_hostile_fast<strike>;
-    skill_table[strike_all] = perform_global_hostile_fast<strike>;
+    skill_table[siege] = perform_targetted_hostile_skill<siege>;
+    skill_table[siege_all] = perform_global_hostile_skill<siege>;
+    skill_table[strike] = perform_targetted_hostile_skill<strike>;
+    skill_table[strike_all] = perform_global_hostile_skill<strike>;
     skill_table[supply] = perform_supply;
     skill_table[summon] = perform_summon;
     skill_table[trigger_regen] = perform_trigger_regen;
-    skill_table[weaken] = perform_targetted_hostile_fast<weaken>;
-    skill_table[weaken_all] = perform_global_hostile_fast<weaken>;
+    skill_table[weaken] = perform_targetted_hostile_skill<weaken>;
+    skill_table[weaken_all] = perform_global_hostile_skill<weaken>;
 
     if(argc <= 2)
     {
