@@ -48,7 +48,7 @@ namespace {
     unsigned max_deck_len{10};
     unsigned fund{0};
     bool auto_upgrade_cards{true};
-    long double target_score{100};
+    double target_score{100};
     bool show_stdev{false};
     bool use_harmonic_mean{false};
 }
@@ -194,9 +194,9 @@ unsigned get_deck_cost(const Deck * deck, const Cards & cards)
 }
 
 //------------------------------------------------------------------------------
-Results<long double> compute_score(const std::pair<std::vector<Results<uint64_t>> , unsigned>& results, std::vector<long double>& factors)
+Results<double> compute_score(const std::pair<std::vector<Results<uint64_t>> , unsigned>& results, std::vector<double>& factors)
 {
-    Results<long double> final{0, 0, 0, 0, 0};
+    Results<double> final{0, 0, 0, 0, 0};
     for(unsigned index(0); index < results.first.size(); ++index)
     {
         final.wins += results.first[index].wins * factors[index];
@@ -208,22 +208,22 @@ Results<long double> compute_score(const std::pair<std::vector<Results<uint64_t>
         { final.points += results.first[index].points * factors[index]; }
         final.sq_points += results.first[index].sq_points * factors[index] * factors[index];
     }
-    long double factor_sum = std::accumulate(factors.begin(), factors.end(), 0.);
-    final.wins /= factor_sum * (long double)results.second;
-    final.draws /= factor_sum * (long double)results.second;
-    final.losses /= factor_sum * (long double)results.second;
+    double factor_sum = std::accumulate(factors.begin(), factors.end(), 0.);
+    final.wins /= factor_sum * (double)results.second;
+    final.draws /= factor_sum * (double)results.second;
+    final.losses /= factor_sum * (double)results.second;
     if(use_harmonic_mean)
-    { final.points = factor_sum / ((long double)results.second * final.points); }
+    { final.points = factor_sum / ((double)results.second * final.points); }
     else
-    { final.points /= factor_sum * (long double)results.second; }
-    final.sq_points /= factor_sum * factor_sum * (long double)results.second;
+    { final.points /= factor_sum * (double)results.second; }
+    final.sq_points /= factor_sum * factor_sum * (double)results.second;
     return final;
 }
 //------------------------------------------------------------------------------
 volatile unsigned thread_num_iterations{0}; // written by threads
 std::vector<Results<uint64_t>> thread_results; // written by threads
 volatile unsigned thread_total{0}; // written by threads
-volatile long double thread_prev_score{0.0};
+volatile double thread_prev_score{0.0};
 volatile bool thread_compare{false};
 volatile bool thread_compare_stop{false}; // written by threads
 volatile bool destroy_threads;
@@ -240,12 +240,12 @@ struct SimulationData
     Hand att_hand;
     std::vector<std::shared_ptr<Deck>> def_decks;
     std::vector<Hand*> def_hands;
-    std::vector<long double> factors;
+    std::vector<double> factors;
     gamemode_t gamemode;
     enum Effect effect;
     const Achievement& achievement;
 
-    SimulationData(unsigned seed, const Cards& cards_, const Decks& decks_, unsigned num_def_decks_, std::vector<long double> factors_, gamemode_t gamemode_, enum Effect effect_, const Achievement& achievement_) :
+    SimulationData(unsigned seed, const Cards& cards_, const Decks& decks_, unsigned num_def_decks_, std::vector<double> factors_, gamemode_t gamemode_, enum Effect effect_, const Achievement& achievement_) :
         re(seed),
         cards(cards_),
         decks(decks_),
@@ -313,12 +313,12 @@ public:
     const Decks& decks;
     Deck* att_deck;
     const std::vector<Deck*> def_decks;
-    std::vector<long double> factors;
+    std::vector<double> factors;
     gamemode_t gamemode;
     enum Effect effect;
     Achievement achievement;
 
-    Process(unsigned _num_threads, const Cards& cards_, const Decks& decks_, Deck* att_deck_, std::vector<Deck*> _def_decks, std::vector<long double> _factors, gamemode_t _gamemode, enum Effect _effect, const Achievement& achievement_) :
+    Process(unsigned _num_threads, const Cards& cards_, const Decks& decks_, Deck* att_deck_, std::vector<Deck*> _def_decks, std::vector<double> _factors, gamemode_t _gamemode, enum Effect _effect, const Achievement& achievement_) :
         num_threads(_num_threads),
         main_barrier(num_threads+1),
         cards(cards_),
@@ -360,7 +360,7 @@ public:
         return(std::make_pair(thread_results, thread_total));
     }
 
-    std::pair<std::vector<Results<uint64_t>> , unsigned> compare(unsigned num_iterations, long double prev_score)
+    std::pair<std::vector<Results<uint64_t>> , unsigned> compare(unsigned num_iterations, double prev_score)
     {
         thread_num_iterations = num_iterations;
         thread_results = std::vector<Results<uint64_t>>(def_decks.size());
@@ -417,7 +417,7 @@ void thread_evaluate(boost::barrier& main_barrier,
                     // Multiple defense decks case: scaling by factors and approximation of a "discrete" number of events.
                     if(result.size() > 1)
                     {
-                        long double score_accum_d = 0.0;
+                        double score_accum_d = 0.0;
                         for(unsigned i = 0; i < thread_score_local.size(); ++i)
                         {
                             score_accum_d += thread_score_local[i] * sim.factors[i];
@@ -430,7 +430,7 @@ void thread_evaluate(boost::barrier& main_barrier,
                         score_accum = thread_score_local[0];
                     }
                     bool compare_stop(false);
-                    long double best_possible = (optimization_mode == OptimizationMode::raid ? 250 : 100);
+                    double best_possible = (optimization_mode == OptimizationMode::raid ? 250 : 100);
                     // Get a loose (better than no) upper bound. TODO: Improve it.
                     compare_stop = (boost::math::binomial_distribution<>::find_upper_bound_on_p(thread_total_local, score_accum / best_possible, 0.01) * best_possible < thread_prev_score);
                     if(compare_stop) {
@@ -445,7 +445,7 @@ void thread_evaluate(boost::barrier& main_barrier,
     }
 }
 //------------------------------------------------------------------------------
-void print_score_info(const std::pair<std::vector<Results<uint64_t>> , unsigned>& results, std::vector<long double>& factors)
+void print_score_info(const std::pair<std::vector<Results<uint64_t>> , unsigned>& results, std::vector<double>& factors)
 {
     auto final = compute_score(results, factors);
     std::cout << final.points << " (";
@@ -464,7 +464,7 @@ void print_score_info(const std::pair<std::vector<Results<uint64_t>> , unsigned>
     std::cout << "/ " << results.second << ")" << std::endl;
 }
 //------------------------------------------------------------------------------
-void print_results(const std::pair<std::vector<Results<uint64_t>> , unsigned>& results, std::vector<long double>& factors)
+void print_results(const std::pair<std::vector<Results<uint64_t>> , unsigned>& results, std::vector<double>& factors)
 {
     auto final = compute_score(results, factors);
 
@@ -529,7 +529,7 @@ void print_results(const std::pair<std::vector<Results<uint64_t>> , unsigned>& r
     }
 }
 //------------------------------------------------------------------------------
-void print_deck_inline(const unsigned deck_cost, const Results<long double> score, const Card *commander, std::vector<const Card*> cards, bool is_ordered)
+void print_deck_inline(const unsigned deck_cost, const Results<double> score, const Card *commander, std::vector<const Card*> cards, bool is_ordered)
 {
     if(fund > 0)
     {
@@ -927,7 +927,7 @@ private:
 };
 //------------------------------------------------------------------------------
 static unsigned total_num_combinations_test(0);
-inline void try_all_ratio_combinations(unsigned deck_size, unsigned var_k, unsigned num_iterations, const std::vector<unsigned>& card_indices, std::vector<const Card*>& cards, const Card* commander, Process& proc, Results<long double>& best_score, boost::optional<Deck>& best_deck)
+inline void try_all_ratio_combinations(unsigned deck_size, unsigned var_k, unsigned num_iterations, const std::vector<unsigned>& card_indices, std::vector<const Card*>& cards, const Card* commander, Process& proc, Results<double>& best_score, boost::optional<Deck>& best_deck)
 {
     assert(card_indices.size() > 0);
     assert(card_indices.size() <= deck_size);
@@ -1121,7 +1121,7 @@ int main(int argc, char** argv)
 
     Deck* att_deck{nullptr};
     std::vector<Deck*> def_decks;
-    std::vector<long double> def_decks_factors;
+    std::vector<double> def_decks_factors;
     enum Effect effect(Effect::none);
     bool keep_commander{false};
     bool fixed_len{false};
