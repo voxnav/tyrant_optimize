@@ -25,9 +25,9 @@ std::vector<std::pair<std::string, long double>> parse_deck_list(std::string lis
 {
     std::vector<std::pair<std::string, long double>> res;
     boost::tokenizer<boost::char_delimiters_separator<char>> list_tokens{list_string, boost::char_delimiters_separator<char>{false, ";", ""}};
-    for(auto list_token = list_tokens.begin(); list_token != list_tokens.end(); ++list_token)
+    for(const auto list_token : list_tokens)
     {
-        boost::tokenizer<boost::char_delimiters_separator<char>> deck_tokens{*list_token, boost::char_delimiters_separator<char>{false, ":", ""}};
+        boost::tokenizer<boost::char_delimiters_separator<char>> deck_tokens{list_token, boost::char_delimiters_separator<char>{false, ":", ""}};
         auto deck_token = deck_tokens.begin();
         res.push_back(std::make_pair(*deck_token, 1.0d));
         ++deck_token;
@@ -112,10 +112,6 @@ void parse_card_spec(const Cards& cards, std::string& card_spec, unsigned& card_
         simple_name = simplify_name(abbr_it->second);
     }
     auto card_it = cards.player_cards_by_name.find({simple_name, 0});
-    if(card_it == cards.player_cards_by_name.end())
-    {
-        card_it = cards.player_cards_by_name.find({simple_name, 1});
-    }
     auto card_id_iter = advance_until(simple_name.begin(), simple_name.end(), [](char c){return(c=='[');});
     if(card_it != cards.player_cards_by_name.end())
     {

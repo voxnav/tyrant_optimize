@@ -3,6 +3,7 @@
 #include <boost/range/algorithm_ext/insert.hpp>
 #include <boost/tokenizer.hpp>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <stdexcept>
 
@@ -34,8 +35,14 @@ std::string deck_hash(const Card* commander, std::vector<const Card*> cards, boo
 {
     std::string base64= "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     std::stringstream ios;
-    ios << base64[commander->m_id / 64];
-    ios << base64[commander->m_id % 64];
+    unsigned card_id = commander->m_id;
+    if(card_id > 4000)
+    {
+        ios << '-';
+        card_id -= 4000;
+    }
+    ios << base64[card_id / 64];
+    ios << base64[card_id % 64];
     if(!is_ordered)
     {
         std::sort(cards.begin(), cards.end(), [](const Card* a, const Card* b) { return a->m_id < b->m_id; });
@@ -44,7 +51,7 @@ std::string deck_hash(const Card* commander, std::vector<const Card*> cards, boo
     unsigned num_repeat = 0;
     for(const Card* card: cards)
     {
-        unsigned card_id(card->m_id);
+        card_id = card->m_id;
         if(card_id == last_id)
         {
             ++ num_repeat;
@@ -274,7 +281,7 @@ std::string Deck::long_description(const Cards& all_cards) const
     }
     for(auto& pool: raid_cards)
     {
-        ios << pool.first << " from:\n";
+        ios << pool.first << " of:\n";
         for(auto& card: pool.second)
         {
             ios << "  " << card_description(all_cards, card) << "\n";
@@ -397,4 +404,49 @@ void Deck::place_at_bottom(const Card* card)
 {
     shuffled_cards.push_back(card);
 }
+
+#if defined(TYRANT_UNLEASHED)
+void load_fusions(Cards& cards)
+{
+    std::ifstream fusions_file("Fusions.txt");
+    if(!fusions_file.is_open())
+    {
+        std::cerr << "Warning: Failed to open Fusions.txt. Proceeding without reading from this file.\n";
+        return;
+    }
+
+    unsigned num_line(0);
+    fusions_file.exceptions(std::ifstream::badbit);
+    try
+    {
+        while(fusions_file && !fusions_file.eof())
+        {
+            std::string recipe_string;
+            getline(fusions_file, recipe_string);
+            ++ num_line;
+            if(recipe_string.size() == 0 || strncmp(recipe_string.c_str(), "//", 2) == 0)
+            {
+                continue;
+            }
+            auto && card_list = string_to_ids(cards, recipe_string, "fusion recipe").first;
+            auto card_it = card_list.begin();
+            auto & card = cards.cards_by_id.find(*card_it)->second;
+            for (++ card_it; card_it != card_list.end(); ++ card_it)
+            {
+                ++ card->m_material_list[cards.by_id(*card_it)];
+            }
+        }
+    }
+    catch (std::exception& e)
+    {
+        std::cerr << "Exception while parsing the recipe file Fusions.txt";
+        if(num_line > 0)
+        {
+            std::cerr << " at line " << num_line;
+        }
+        std::cerr << ": " << e.what() << ". Skip remaining lines.\n";
+        return;
+    }
+}
+#endif
 

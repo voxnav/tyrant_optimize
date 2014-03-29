@@ -86,15 +86,20 @@ CardStatus::CardStatus(const Card* card) :
     m_augmented(0),
     m_berserk(0),
     m_blitzing(false),
+    m_cd_jam(0),
     m_chaosed(false),
     m_delay(card->m_delay),
     m_diseased(false),
+    m_enhanced_skill(no_skill),
+    m_enhanced_value(0),
+    m_evaded(0),
     m_enfeebled(0),
     m_faction(card->m_faction),
     m_frozen(false),
     m_hp(card->m_health),
     m_immobilized(false),
     m_infused(false),
+    m_inhibited(0),
     m_jammed(false),
     m_phased(false),
     m_poisoned(0),
@@ -124,14 +129,19 @@ inline void CardStatus::set(const Card& card)
     m_berserk = 0;
     m_blitzing = false;
     m_chaosed = false;
+    m_cd_jam = 0;
     m_delay = card.m_delay;
     m_diseased = false;
+    m_enhanced_skill = no_skill;
+    m_enhanced_value = 0;
+    m_evaded = 0;
     m_enfeebled = 0;
     m_faction = card.m_faction;
     m_frozen = false;
     m_hp = card.m_health;
     m_immobilized = false;
     m_infused = false;
+    m_inhibited = 0;
     m_jammed = false;
     m_phased = false;
     m_poisoned = 0;
@@ -152,27 +162,28 @@ inline int attack_power(CardStatus* att)
 //------------------------------------------------------------------------------
 std::string skill_description(const Cards& cards, const SkillSpec& s)
 {
-    switch(std::get<0>(s))
+    switch(s.id)
     {
     case summon:
-        if(std::get<1>(s) == 0)
+        if(s.x == 0)
         {
             // Summon X
-            return(skill_names[std::get<0>(s)] + " X" +
-                    skill_activation_modifier_names[std::get<4>(s)]);
+            return(skill_names[s.id] + " X" +
+                    skill_activation_modifier_names[s.mod]);
         }
         else
         {
-            return(skill_names[std::get<0>(s)] +
-                    " " + cards.by_id(std::get<1>(s))->m_name.c_str() +
-                    skill_activation_modifier_names[std::get<4>(s)]);
+            return(skill_names[s.id] +
+                    " " + cards.by_id(s.x)->m_name.c_str() +
+                    skill_activation_modifier_names[s.mod]);
         }
     default:
-        return(skill_names[std::get<0>(s)] +
-           (std::get<3>(s) ? " all" : "") +
-           (std::get<2>(s) == allfactions ? "" : std::string(" ") + faction_names[std::get<2>(s)]) +
-           (std::get<1>(s) == 0 ? "" : std::string(" ") + to_string(std::get<1>(s))) +
-           skill_activation_modifier_names[std::get<4>(s)]);
+        return(skill_names[s.id] +
+           (s.all ? " all" : "") +
+           (s.y == allfactions ? "" : std::string(" ") + faction_names[s.y]) +
+           (s.s == no_skill ? "" : std::string(" ") + skill_names[s.s]) +
+           (s.x == 0 ? "" : std::string(" ") + to_string(s.x)) +
+           skill_activation_modifier_names[s.mod]);
     }
 }
 //------------------------------------------------------------------------------
@@ -209,12 +220,17 @@ std::string card_description(const Cards& cards, const Card* c)
     if(c->m_crush > 0) { desc += ", crush " + to_string(c->m_crush); }
     if(c->m_disease) { desc += ", disease"; }
     if(c->m_emulate) { desc += ", emulate"; }
+#if defined(TYRANT_UNLEASHED)
+    if(c->m_evade) { desc += ", evade " + to_string(c->m_evade); }
+#else
     if(c->m_evade) { desc += ", evade"; }
+#endif
     if(c->m_fear) { desc += ", fear"; }
     if(c->m_flurry > 0) { desc += ", flurry " + to_string(c->m_flurry); }
     if(c->m_flying) { desc += ", flying"; }
     if(c->m_fusion) { desc += ", fusion"; }
     if(c->m_immobilize) { desc += ", immobilize"; }
+    if(c->m_inhibit) { desc += ", inhibit " + to_string(c->m_inhibit); }
     if(c->m_intercept) { desc += ", intercept"; }
     if(c->m_leech > 0) { desc += ", leech " + to_string(c->m_leech); }
     if(c->m_legion > 0) { desc += ", legion " + to_string(c->m_legion); }
@@ -231,15 +247,14 @@ std::string card_description(const Cards& cards, const Card* c)
     if(c->m_tribute) { desc += ", tribute"; }
     if(c->m_valor > 0) { desc += ", valor " + to_string(c->m_valor); }
     if(c->m_wall) { desc += ", wall"; }
-    for(auto& skill: c->m_skills) { desc += ", " + skill_description(cards, skill); }
-    for(auto& skill: c->m_skills_on_play) { desc += ", " + skill_description(cards, skill); }
-    for(auto& skill: c->m_skills_on_kill) { desc += ", " + skill_description(cards, skill); }
     if(c->m_berserk_oa > 0) { desc += ", berserk " + to_string(c->m_berserk_oa); }
     if(c->m_disease_oa) { desc += ", disease on Attacked"; }
     if(c->m_poison_oa > 0) { desc += ", poison " + to_string(c->m_poison_oa) + " on Attacked"; }
     if(c->m_sunder_oa) { desc += ", sunder on Attacked"; }
-    for(auto& skill: c->m_skills_on_attacked) { desc += ", " + skill_description(cards, skill); }
-    for(auto& skill: c->m_skills_on_death) { desc += ", " + skill_description(cards, skill); }
+    for(auto mod = 0; mod < SkillMod::num_skill_activation_modifiers; ++ mod)
+    {
+        for(auto& skill: c->m_skills[mod]) { desc += ", " + skill_description(cards, skill); }
+    }
     return(desc);
 }
 //------------------------------------------------------------------------------
@@ -281,7 +296,7 @@ std::string CardStatus::description()
         if(m_blitzing) { desc += "(blitzing)"; }
     }
     if(m_chaosed) { desc += ", chaosed"; }
-    if(m_diseased) { desc += ", diseaseded"; }
+    if(m_diseased) { desc += ", diseased"; }
     if(m_frozen) { desc += ", frozen"; }
     if(m_immobilized) { desc += ", immobilized"; }
     if(m_infused) { desc += ", infused"; }
@@ -291,6 +306,7 @@ std::string CardStatus::description()
     if(m_temporary_split) { desc += ", cloning"; }
     if(m_augmented > 0) { desc += ", augmented " + to_string(m_augmented); }
     if(m_enfeebled > 0) { desc += ", enfeebled " + to_string(m_enfeebled); }
+    if(m_inhibited > 0) { desc += ", inhibited " + to_string(m_inhibited); }
     if(m_poisoned > 0) { desc += ", poisoned " + to_string(m_poisoned); }
     if(m_protected > 0) { desc += ", protected " + to_string(m_protected); }
     if(m_stunned > 0) { desc += ", stunned " + to_string(m_stunned); }
@@ -358,28 +374,28 @@ inline unsigned opponent(unsigned player)
 //------------------------------------------------------------------------------
 SkillSpec apply_augment(const CardStatus* status, const SkillSpec& s)
 {
-    if (std::get<0>(s) == augment || std::get<0>(s) == summon || std::get<1>(s) == 0)
+    if (s.id == augment || s.id == summon || s.x == 0)
     {
         return s;
     }
     SkillSpec augmented_s = s;
-    std::get<1>(augmented_s) += status->m_augmented;
+    augmented_s.x += status->m_augmented;
     return(augmented_s);
 }
 SkillSpec apply_fusion(const SkillSpec& s)
 {
     SkillSpec fusioned_s = s;
-    std::get<1>(fusioned_s) *= 2;
+    fusioned_s.x *= 2;
     return(fusioned_s);
 }
 SkillSpec apply_infuse(const SkillSpec& s)
 {
-    if (std::get<2>(s) == allfactions || std::get<2>(s) == bloodthirsty || helpful_skills.find(std::get<0>(s)) == helpful_skills.end())
+    if (s.y == allfactions || s.y == bloodthirsty || helpful_skills.find(s.id) == helpful_skills.end())
     {
         return s;
     }
     SkillSpec infused_s = s;
-    std::get<2>(infused_s) = bloodthirsty;
+    infused_s.y = bloodthirsty;
     return(infused_s);
 }
 //------------------------------------------------------------------------------
@@ -415,27 +431,26 @@ bool may_change_skill(const Field* fd, const CardStatus* status, const SkillMod:
 }
 SkillSpec apply_battleground_effect(const Field* fd, const CardStatus* status, const SkillSpec& ss, const SkillMod::SkillMod mod, bool& need_add_skill)
 {
-    const auto& skill = std::get<0>(ss);
     switch (fd->effect)
     {
         case Effect::time_surge:
             // replace other instance of the skill
-            if(skill == rush || skill == new_skill)
+            if(ss.id == rush || ss.id == no_skill)
             {
                 need_add_skill = false;
-                return SkillSpec(rush, 1, allfactions, false, mod);
+                return SkillSpec{rush, 1, allfactions, no_skill, false, mod};
             }
             break;
         case Effect::clone_project:
         case Effect::clone_experiment:
             // no gain the skill if already have
-            if(skill == split)
+            if(ss.id == split)
             {
                 need_add_skill = false;
             }
-            else if(skill == new_skill)
+            else if(ss.id == no_skill)
             {
-                return SkillSpec(split, 0, allfactions, false, mod);
+                return SkillSpec{split, 0, allfactions, no_skill, false, mod};
             }
             break;
         case Effect::friendly_fire:
@@ -443,21 +458,21 @@ SkillSpec apply_battleground_effect(const Field* fd, const CardStatus* status, c
             {
                 case CardType::assault:
                     // no gain the skill if already have
-                    if(skill == strike)
+                    if(ss.id == strike)
                     {
                         need_add_skill = false;
                     }
-                    else if(skill == new_skill)
+                    else if(ss.id == no_skill)
                     {
-                        return SkillSpec(strike, 1, allfactions, false, mod);
+                        return SkillSpec{strike, 1, allfactions, no_skill, false, mod};
                     }
                     break;
                 case CardType::commander:
                     // replace other instance of the skill
-                    if(skill == chaos || skill == new_skill)
+                    if(ss.id == chaos || ss.id == no_skill)
                     {
                         need_add_skill = false;
-                        return SkillSpec(chaos, 0, allfactions, true, mod);
+                        return SkillSpec{chaos, 0, allfactions, no_skill, true, mod};
                     }
                     break;
                 default:
@@ -466,50 +481,50 @@ SkillSpec apply_battleground_effect(const Field* fd, const CardStatus* status, c
             break;
         case Effect::genesis:
             // replace other instance of the skill
-            if(skill == summon || skill == new_skill)
+            if(ss.id == summon || ss.id == no_skill)
             {
                 need_add_skill = false;
-                return SkillSpec(summon, 0, allfactions, false, mod);
+                return SkillSpec{summon, 0, allfactions, no_skill, false, mod};
             }
             break;
         case Effect::artillery_strike:
             // replace other instance of the skill
-            if(skill == strike || skill == new_skill)
+            if(ss.id == strike || ss.id == no_skill)
             {
                 need_add_skill = false;
-                return SkillSpec(strike, 3, allfactions, true, mod);
+                return SkillSpec{strike, 3, allfactions, no_skill, true, mod};
             }
             break;
         case Effect::decrepit:
             // replace other instance of the skill
-            if(skill == enfeeble || skill == new_skill)
+            if(ss.id == enfeeble || ss.id == no_skill)
             {
                 need_add_skill = false;
-                return SkillSpec(enfeeble, 1, allfactions, true, mod);
+                return SkillSpec{enfeeble, 1, allfactions, no_skill, true, mod};
             }
             break;
         case Effect::forcefield:
             // replace other instance of the skill
-            if(skill == protect || skill == new_skill)
+            if(ss.id == protect || ss.id == no_skill)
             {
                 need_add_skill = false;
-                return SkillSpec(protect, 1, allfactions, true, mod);
+                return SkillSpec{protect, 1, allfactions, no_skill, true, mod};
             }
             break;
         case Effect::chilling_touch:
             // replace other instance of the skill
-            if(skill == freeze || skill == new_skill)
+            if(ss.id == freeze || ss.id == no_skill)
             {
                 need_add_skill = false;
-                return SkillSpec(freeze, 0, allfactions, false, mod);
+                return SkillSpec{freeze, 0, allfactions, no_skill, false, mod};
             }
             break;
         case Effect::haunt:
             // replace other instance of the skill
-            if(skill == summon || skill == new_skill)
+            if(ss.id == summon || ss.id == no_skill)
             {
                 need_add_skill = false;
-                return SkillSpec(summon, 0, bloodthirsty, false, mod);
+                return SkillSpec{summon, 0, bloodthirsty, no_skill, false, mod};
             }
             break;
         default:
@@ -530,7 +545,7 @@ void prepend_on_death(Field* fd)
             continue;
         }
         bool need_add_skill = may_change_skill(fd, status, mod);
-        for(auto& ss: status->m_card->m_skills_on_death)
+        for(auto& ss: status->m_card->m_skills[SkillMod::on_death])
         {
             auto& battleground_s = need_add_skill ? apply_battleground_effect(fd, status, ss, mod, need_add_skill) : ss;
             _DEBUG_MSG(2, "Preparing %s skill %s\n", status_description(status).c_str(), skill_description(fd->cards, battleground_s).c_str());
@@ -539,8 +554,8 @@ void prepend_on_death(Field* fd)
         }
         if(need_add_skill)
         {
-            auto battleground_s = apply_battleground_effect(fd, status, SkillSpec(new_skill, 0, allfactions, false, mod), mod, need_add_skill);
-            assert(std::get<0>(battleground_s) != new_skill);
+            auto battleground_s = apply_battleground_effect(fd, status, SkillSpec{no_skill, 0, allfactions, no_skill, false, mod}, mod, need_add_skill);
+            assert(battleground_s.id != no_skill);
             _DEBUG_MSG(2, "Preparing %s skill %s\n", status_description(status).c_str(), skill_description(fd->cards, battleground_s).c_str());
             od_skills.emplace_back(status, battleground_s);
         }
@@ -561,7 +576,7 @@ void resolve_skill(Field* fd)
         if(!status)
         {
             // trigger_regen
-            skill_table[std::get<0>(skill)](fd, status, skill);
+            skill_table[skill.id](fd, status, skill);
         }
         else if(!status->m_jammed)
         {
@@ -569,7 +584,7 @@ void resolve_skill(Field* fd)
             auto& augmented_s = status->m_augmented > 0 ? apply_augment(status, skill) : skill;
             auto& fusioned_s = fusion_active ? apply_fusion(augmented_s) : augmented_s;
             auto& infused_s = status->m_infused ? apply_infuse(fusioned_s) : fusioned_s;
-            skill_table[std::get<0>(skill)](fd, status, infused_s);
+            skill_table[skill.id](fd, status, infused_s);
         }
     }
 }
@@ -590,8 +605,8 @@ void evaluate_skills(Field* fd, CardStatus* status, const std::vector<SkillSpec>
     }
     if(need_add_skill)
     {
-        auto battleground_s = apply_battleground_effect(fd, status, SkillSpec(new_skill, 0, allfactions, false, mod), mod, need_add_skill);
-        assert(std::get<0>(battleground_s) != new_skill);
+        auto battleground_s = apply_battleground_effect(fd, status, SkillSpec{no_skill, 0, allfactions, no_skill, false, mod}, mod, need_add_skill);
+        assert(battleground_s.id != no_skill);
         _DEBUG_MSG(2, "Evaluating %s skill %s\n", status_description(status).c_str(), skill_description(fd->cards, battleground_s).c_str());
         fd->skill_queue.emplace_back(status, battleground_s);
         resolve_skill(fd);
@@ -665,7 +680,7 @@ struct PlayCard
     template <enum CardType::CardType>
     void onPlaySkills()
     {
-        evaluate_skills(fd, status, card->m_skills_on_play, SkillMod::on_play);
+        evaluate_skills(fd, status, card->m_skills[SkillMod::on_play], SkillMod::on_play);
     }
 };
 // assault
@@ -713,7 +728,7 @@ void PlayCard::fieldEffects<CardType::assault>()
 template <>
 void PlayCard::onPlaySkills<CardType::action>()
 {
-    evaluate_skills(fd, status, card->m_skills, SkillMod::on_play);
+    evaluate_skills(fd, status, card->m_skills[SkillMod::on_activate], SkillMod::on_play);
 }
 //------------------------------------------------------------------------------
 inline bool is_attacking_or_has_attacked(CardStatus* c) { return(c->m_step >= CardStep::attacking); }
@@ -809,6 +824,7 @@ Results<uint64_t> play(Field* fd)
                 break;
             case CardType::commander:
             case CardType::num_cardtypes:
+                _DEBUG_MSG(0, "Unknown card type: #%d %s: %d\n", played_card->m_id, card_description(fd->cards, played_card).c_str(), played_card->m_type);
                 assert(false);
                 break;
             }
@@ -821,7 +837,7 @@ Results<uint64_t> play(Field* fd)
 
         // Evaluate commander
         fd->current_phase = Field::commander_phase;
-        evaluate_skills(fd, &fd->tap->commander, fd->tap->commander.m_card->m_skills, SkillMod::on_activate);
+        evaluate_skills(fd, &fd->tap->commander, fd->tap->commander.m_card->m_skills[SkillMod::on_activate], SkillMod::on_activate);
         if(__builtin_expect(fd->end, false)) { break; }
 
         // Evaluate structures
@@ -831,7 +847,7 @@ Results<uint64_t> play(Field* fd)
             CardStatus& current_status(fd->tap->structures[fd->current_ci]);
             if(current_status.m_delay == 0 && current_status.m_hp > 0)
             {
-                evaluate_skills(fd, &current_status, current_status.m_card->m_skills, SkillMod::on_activate);
+                evaluate_skills(fd, &current_status, current_status.m_card->m_skills[SkillMod::on_activate], SkillMod::on_activate);
             }
         }
         // Evaluate assaults
@@ -848,7 +864,7 @@ Results<uint64_t> play(Field* fd)
             }
             current_status.m_blitzing = false;
             // Evaluate skills
-            evaluate_skills(fd, &current_status, current_status.m_card->m_skills, SkillMod::on_activate);
+            evaluate_skills(fd, &current_status, current_status.m_card->m_skills[SkillMod::on_activate], SkillMod::on_activate);
             if(__builtin_expect(fd->end, false)) { break; }
 
             // Attack
@@ -937,9 +953,11 @@ template<Skill>
 inline bool skill_roll(Field* fd)
 { return(true); }
 
+#if not defined(TYRANT_UNLEASHED)
 template<>
 inline bool skill_roll<jam>(Field* fd)
 { return(fd->flip()); }
+#endif
 
 // Check if a skill actually proc'ed.
 template<Skill>
@@ -998,6 +1016,14 @@ inline bool skill_check<immobilize>(Field* fd, CardStatus* c, CardStatus* ref)
 {
     return(!ref->m_immobilized && !is_jammed(ref) && is_active_next_turn(ref));
 }
+
+#if defined(TYRANT_UNLEASHED)
+template<>
+inline bool skill_check<jam>(Field* fd, CardStatus* c, CardStatus* ref)
+{
+    return(c->m_cd_jam == 0);
+}
+#endif
 
 template<>
 inline bool skill_check<leech>(Field* fd, CardStatus* c, CardStatus* ref)
@@ -1107,7 +1133,7 @@ void remove_hp(Field* fd, CardStatus& status, unsigned dmg)
     if(status.m_hp == 0)
     {
         _DEBUG_MSG(1, "%s dies\n", status_description(&status).c_str());
-        if(status.m_card->m_skills_on_death.size() > 0 || fd->effect == Effect::haunt)
+        if(status.m_card->m_skills[SkillMod::on_death].size() > 0 || fd->effect == Effect::haunt)
         {
             fd->killed_with_on_death.push_back(&status);
         }
@@ -1172,6 +1198,8 @@ void turn_start_phase(Field* fd)
     remove_dead(fd->tip->assaults);
     remove_dead(fd->tip->structures);
     fd->fusion_count = 0;
+    // Active player's commander card:
+    if(fd->tip->commander.m_cd_jam) { -- fd->tip->commander.m_cd_jam; }
     // Active player's assault cards:
     // update index
     // remove enfeeble, protect; apply poison damage, reduce delay
@@ -1183,7 +1211,11 @@ void turn_start_phase(Field* fd)
         {
             CardStatus& status(assaults[index]);
             status.m_index = index;
+            if(status.m_cd_jam > 0) { -- status.m_cd_jam; }
             status.m_enfeebled = 0;
+            status.m_enhanced_skill = no_skill;
+            status.m_enhanced_value = 0;
+            status.m_evaded = 0;
             status.m_protected = 0;
             if(status.m_poisoned > 0)
             {
@@ -1193,9 +1225,9 @@ void turn_start_phase(Field* fd)
             if(status.m_delay > 0 && !status.m_frozen)
             {
                 _DEBUG_MSG(1, "%s reduces its timer\n", status_description(&status).c_str());
-                --status.m_delay;
+                -- status.m_delay;
             }
-            if(status.m_card->m_fusion && status.m_delay == 0) { ++fd->fusion_count; }
+            if(status.m_card->m_fusion && status.m_delay == 0) { ++ fd->fusion_count; }
         }
     }
     // Active player's structure cards:
@@ -1209,6 +1241,7 @@ void turn_start_phase(Field* fd)
         {
             CardStatus& status(structures[index]);
             status.m_index = index;
+            if(status.m_cd_jam > 0) { -- status.m_cd_jam; }
             if(status.m_delay > 0)
             {
                 _DEBUG_MSG(1, "%s reduces its timer\n", status_description(&status).c_str());
@@ -1234,6 +1267,7 @@ void turn_start_phase(Field* fd)
             status.m_enfeebled = 0;
             status.m_frozen = false;
             status.m_immobilized = false;
+            status.m_inhibited = 0;
             status.m_jammed = false;
             status.m_phased = false;
             status.m_rallied = 0;
@@ -1319,7 +1353,7 @@ inline unsigned counter_damage(CardStatus* att, CardStatus* def)
 {
     assert(att->m_card->m_type == CardType::assault);
     assert(def->m_card->m_type != CardType::action);
-    return(safe_minus(def->m_card->m_counter + att->m_enfeebled, att->m_protected));
+    return(safe_minus(def->m_card->m_counter + def->enhanced(counter) + att->m_enfeebled, att->m_protected));
 }
 inline CardStatus* select_first_enemy_wall(Field* fd)
 {
@@ -1444,7 +1478,7 @@ struct PerformAttack
                 {
                     count_achievement<berserk>(fd, att_status);
                     // perform_skill_berserk
-                    att_status->m_berserk += att_status->m_card->m_berserk;
+                    att_status->m_berserk += att_status->m_card->m_berserk + att_status->enhanced(berserk);
                 }
             }
             crush_leech<def_cardtype>();
@@ -1491,7 +1525,7 @@ struct PerformAttack
         // prevent damage
         std::string reduced_desc;
         unsigned reduced_dmg(0);
-        unsigned armored_value(def_card.m_armored);
+        unsigned armored_value(def_card.m_armored + def_status->enhanced(armored));
         if(armored_value == 0 && fd->effect == Effect::photon_shield && def_status->m_player == (fd->optimization_mode == OptimizationMode::defense ? 0u : 1u))
         {
             armored_value = 2;
@@ -1548,7 +1582,7 @@ struct PerformAttack
         if(def_status->m_card->m_poison_oa > att_status->m_poisoned && skill_check<poison>(fd, def_status, att_status))
         {
             count_achievement<poison>(fd, def_status);
-            unsigned v = def_status->m_card->m_poison_oa;
+            unsigned v = def_status->m_card->m_poison_oa + def_status->enhanced(poison);
             _DEBUG_MSG(1, "%s (on attacked) poisons %s by %u\n", status_description(def_status).c_str(), status_description(att_status).c_str(), v);
             att_status->m_poisoned = v;
         }
@@ -1562,7 +1596,7 @@ struct PerformAttack
         if(def_status->m_hp > 0 && def_status->m_card->m_berserk_oa > 0 && skill_check<berserk>(fd, def_status, nullptr))
         {
             count_achievement<berserk>(fd, def_status);
-            def_status->m_berserk += def_status->m_card->m_berserk_oa;
+            def_status->m_berserk += def_status->m_card->m_berserk_oa + def_status->enhanced(berserk);
         }
         if(def_status->m_card->m_sunder_oa && skill_check<sunder>(fd, def_status, att_status))
         {
@@ -1571,7 +1605,7 @@ struct PerformAttack
             _DEBUG_MSG(1, "%s (on attacked) sunders %s\n", status_description(def_status).c_str(), status_description(att_status).c_str());
             att_status->m_sundered = true;
         }
-        evaluate_skills(fd, def_status, def_status->m_card->m_skills_on_attacked, SkillMod::on_attacked);
+        evaluate_skills(fd, def_status, def_status->m_card->m_skills[SkillMod::on_attacked], SkillMod::on_attacked);
     }
 
     template<enum CardType::CardType>
@@ -1598,6 +1632,7 @@ void PerformAttack::attack_damage<CardType::commander>()
 template<>
 void PerformAttack::damage_dependant_pre_oa<CardType::assault>()
 {
+#if not defined(TYRANT_UNLEASHED)
     if(att_status->m_card->m_siphon > 0 && skill_check<siphon>(fd, att_status, def_status))
     {
         count_achievement<siphon>(fd, att_status);
@@ -1606,14 +1641,16 @@ void PerformAttack::damage_dependant_pre_oa<CardType::assault>()
         _DEBUG_MSG(1, "%s siphons %u health for %s\n", status_description(att_status).c_str(), v, status_description(&fd->tap->commander).c_str());
         add_hp(fd, &fd->tap->commander, v);
     }
+#endif
     if(att_status->m_card->m_poison > def_status->m_poisoned && skill_check<poison>(fd, att_status, def_status))
     {
         count_achievement<poison>(fd, att_status);
         // perform_skill_poison
-        unsigned v = att_status->m_card->m_poison;
+        unsigned v = att_status->m_card->m_poison + att_status->enhanced(poison);
         _DEBUG_MSG(1, "%s poisons %s by %u\n", status_description(att_status).c_str(), status_description(def_status).c_str(), v);
         def_status->m_poisoned = v;
     }
+#if not defined(TYRANT_UNLEASHED)
     if(att_status->m_card->m_disease && skill_check<disease>(fd, att_status, def_status))
     {
         count_achievement<disease>(fd, att_status);
@@ -1635,6 +1672,18 @@ void PerformAttack::damage_dependant_pre_oa<CardType::assault>()
         _DEBUG_MSG(1, "%s phases %s\n", status_description(att_status).c_str(), status_description(def_status).c_str());
         def_status->m_phased = true;
     }
+#endif
+#if defined(TYRANT_UNLEASHED)
+    // XXX Assume inhibit stacks, if happened in future
+    if(att_status->m_card->m_inhibit > 0 && skill_check<inhibit>(fd, att_status, def_status))
+    {
+        count_achievement<inhibit>(fd, att_status);
+        // perform_skill_inhibit
+        unsigned v = att_status->m_card->m_inhibit + att_status->enhanced(inhibit);
+        _DEBUG_MSG(1, "%s inhibits %s by %u\n", status_description(att_status).c_str(), status_description(def_status).c_str(), v);
+        def_status->m_inhibited += v;
+    }
+#endif
 }
 
 template<>
@@ -1642,7 +1691,7 @@ void PerformAttack::on_kill<CardType::assault>()
 {
     if(killed_by_attack)
     {
-        evaluate_skills(fd, att_status, att_status->m_card->m_skills_on_kill, SkillMod::on_kill);
+        evaluate_skills(fd, att_status, att_status->m_card->m_skills[SkillMod::on_kill], SkillMod::on_kill);
     }
 }
 
@@ -1668,8 +1717,9 @@ void PerformAttack::crush_leech<CardType::assault>()
     if(att_status->m_card->m_leech > 0 && skill_check<leech>(fd, att_status, nullptr))
     {
         count_achievement<leech>(fd, att_status);
-        _DEBUG_MSG(1, "%s leeches %u health\n", status_description(att_status).c_str(), std::min(att_dmg, att_status->m_card->m_leech));
-        add_hp(fd, att_status, std::min(att_dmg, att_status->m_card->m_leech));
+        auto leech_value = std::min(att_dmg, att_status->m_card->m_leech + att_status->enhanced(leech));
+        _DEBUG_MSG(1, "%s leeches %u health\n", status_description(att_status).c_str(), leech_value);
+        add_hp(fd, att_status, leech_value);
     }
 }
 
@@ -1782,24 +1832,24 @@ inline bool skill_predicate(Field* fd, CardStatus* src, CardStatus* c, const Ski
 template<>
 inline bool skill_predicate<augment>(Field* fd, CardStatus* src, CardStatus* c, const SkillSpec& s)
 {
-    const auto& mod = std::get<4>(s);
+    const auto& mod = s.mod;
     if(can_act(c) &&  // (fd->tapi == c->m_player ? is_active(c) && !is_attacking_or_has_attacked(c) : is_active_next_turn(c)))
         (src->m_player != c->m_player || mod == SkillMod::on_death ? (fd->tapi == c->m_player ? is_active(c) && !is_attacking_or_has_attacked(c) : is_active_next_turn(c)) :
          mod == SkillMod::on_attacked ? is_active_next_turn(c) :
          is_active(c) && !is_attacking_or_has_attacked(c)))
     {
-        for(auto& s: c->m_card->m_skills)
+        for(auto& s: c->m_card->m_skills[SkillMod::on_activate])
         {
             // Any quantifiable skill except augment
-            if(std::get<1>(s) > 0 && std::get<0>(s) != augment && std::get<0>(s) != summon) { return(true); }
+            if(s.x > 0 && s.id != augment && s.id != summon) { return(true); }
         }
         bool need_add_skill = true;
         auto mod = SkillMod::on_activate;
         if(may_change_skill(fd, c, mod))
         {
-            auto s = apply_battleground_effect(fd, c, SkillSpec(new_skill, 0, allfactions, false, mod), mod, need_add_skill);
-            assert(std::get<0>(s) != new_skill);
-            if(std::get<1>(s) > 0 && std::get<0>(s) != augment && std::get<0>(s) != summon) { return(true); }
+            auto s = apply_battleground_effect(fd, c, SkillSpec{no_skill, 0, allfactions, no_skill, false, mod}, mod, need_add_skill);
+            assert(s.id != no_skill);
+            if(s.x > 0 && s.id != augment && s.id != summon) { return(true); }
         }
     }
     return(false);
@@ -1808,7 +1858,7 @@ inline bool skill_predicate<augment>(Field* fd, CardStatus* src, CardStatus* c, 
 template<>
 inline bool skill_predicate<chaos>(Field* fd, CardStatus* src, CardStatus* c, const SkillSpec& s)
 {
-    const auto& mod = std::get<4>(s);
+    const auto& mod = s.mod;
     return(!c->m_chaosed && can_act(c) &&  // (fd->tapi == c->m_player ? is_active(c) && !is_attacking_or_has_attacked(c) : is_active_next_turn(c)));
             (mod == SkillMod::on_attacked ? is_active(c) && c->m_index > fd->current_ci :
              mod == SkillMod::on_death ? c->m_index >= src->m_index && (fd->tapi != src->m_player ? is_active(c) : is_active_next_turn(c)) :
@@ -1833,6 +1883,20 @@ inline bool skill_predicate<cleanse>(Field* fd, CardStatus* src, CardStatus* c, 
 }
 
 template<>
+inline bool skill_predicate<enhance>(Field* fd, CardStatus* src, CardStatus* c, const SkillSpec& s)
+{
+    bool need_add_skill = true;
+    auto mod = SkillMod::on_activate;
+    if(may_change_skill(fd, c, mod))
+    {
+        auto battleground_s = apply_battleground_effect(fd, c, SkillSpec{no_skill, 0, allfactions, no_skill, false, mod}, mod, need_add_skill);
+        assert(battleground_s.id != no_skill);
+        if(battleground_s.id == s.s) { return(true); }
+    }
+    return(c->m_card->m_skills_set[s.s]);
+}
+
+template<>
 inline bool skill_predicate<enfeeble>(Field* fd, CardStatus* src, CardStatus* c, const SkillSpec& s)
 { return(c->m_hp > 0); }
 
@@ -1851,7 +1915,7 @@ inline bool skill_predicate<infuse>(Field* fd, CardStatus* src, CardStatus* c, c
 template<>
 inline bool skill_predicate<jam>(Field* fd, CardStatus* src, CardStatus* c, const SkillSpec& s)
 {
-    const auto& mod = std::get<4>(s);
+    const auto& mod = s.mod;
     return(can_act(c) &&  // (fd->tapi == c->m_player ? is_active(c) && !is_attacking_or_has_attacked(c) : is_active_next_turn(c)));
             (mod == SkillMod::on_attacked ? is_active(c) && c->m_index > fd->current_ci :
              mod == SkillMod::on_death ? c->m_index >= src->m_index && (fd->tapi != src->m_player ? is_active(c) : is_active_next_turn(c)) :
@@ -1869,7 +1933,7 @@ inline bool skill_predicate<protect>(Field* fd, CardStatus* src, CardStatus* c, 
 template<>
 inline bool skill_predicate<rally>(Field* fd, CardStatus* src, CardStatus* c, const SkillSpec& s)
 {
-    const auto& mod = std::get<4>(s);
+    const auto& mod = s.mod;
     return(can_attack(c) && !c->m_sundered &&  // (fd->tapi == c->m_player ? is_active(c) && !is_attacking_or_has_attacked(c) : is_active_next_turn(c)));
         (src->m_player != c->m_player || mod == SkillMod::on_death ? (fd->tapi == c->m_player ? is_active(c) && !is_attacking_or_has_attacked(c) : is_active_next_turn(c)) :
          mod == SkillMod::on_attacked ? is_active_next_turn(c) :
@@ -1899,38 +1963,38 @@ inline bool skill_predicate<supply>(Field* fd, CardStatus* src, CardStatus* c, c
 template<>
 inline bool skill_predicate<weaken>(Field* fd, CardStatus* src, CardStatus* c, const SkillSpec& s)
 {
-    const auto& mod = std::get<4>(s);
-    return(can_act(c) && !c->m_immobilized && attack_power(c) > 0 &&  // (fd->tapi == c->m_player ? is_active(c) && !is_attacking_or_has_attacked(c) : is_active_next_turn(c)));
+    const auto& mod = s.mod;
+    return(can_attack(c) && attack_power(c) > 0 &&  // (fd->tapi == c->m_player ? is_active(c) && !is_attacking_or_has_attacked(c) : is_active_next_turn(c)));
             (mod == SkillMod::on_attacked ? is_active(c) && c->m_index > fd->current_ci :
              mod == SkillMod::on_death ? c->m_index >= src->m_index && (fd->tapi != src->m_player ? is_active(c) : is_active_next_turn(c)) :
              is_active(c) || is_active_next_turn(c)));
 }
 
 template<unsigned skill_id>
-inline void perform_skill(Field* fd, CardStatus* c, unsigned v)
+inline void perform_skill(Field* fd, CardStatus* c, SkillSpec s)
 { assert(false); }
 
 template<>
-inline void perform_skill<augment>(Field* fd, CardStatus* c, unsigned v)
+inline void perform_skill<augment>(Field* fd, CardStatus* c, SkillSpec s)
 {
-    c->m_augmented += v;
+    c->m_augmented += s.x;
 }
 
 template<>
-inline void perform_skill<backfire>(Field* fd, CardStatus* c, unsigned v)
+inline void perform_skill<backfire>(Field* fd, CardStatus* c, SkillSpec s)
 {
     // backfire damage counts in ARD.
-    remove_commander_hp(fd, *c, v, true);
+    remove_commander_hp(fd, *c, s.x, true);
 }
 
 template<>
-inline void perform_skill<chaos>(Field* fd, CardStatus* c, unsigned v)
+inline void perform_skill<chaos>(Field* fd, CardStatus* c, SkillSpec s)
 {
     c->m_chaosed = true;
 }
 
 template<>
-inline void perform_skill<cleanse>(Field* fd, CardStatus* c, unsigned v)
+inline void perform_skill<cleanse>(Field* fd, CardStatus* c, SkillSpec s)
 {
     c->m_chaosed = false;
     c->m_diseased = false;
@@ -1944,102 +2008,120 @@ inline void perform_skill<cleanse>(Field* fd, CardStatus* c, unsigned v)
 }
 
 template<>
-inline void perform_skill<enfeeble>(Field* fd, CardStatus* c, unsigned v)
+inline void perform_skill<enfeeble>(Field* fd, CardStatus* c, SkillSpec s)
 {
-    c->m_enfeebled += v;
+    c->m_enfeebled += s.x;
 }
 
 template<>
-inline void perform_skill<freeze>(Field* fd, CardStatus* c, unsigned v)
+inline void perform_skill<enhance>(Field* fd, CardStatus* c, SkillSpec s)
+{
+    c->m_enhanced_skill = s.s;
+    c->m_enhanced_value += s.x;
+}
+
+template<>
+inline void perform_skill<freeze>(Field* fd, CardStatus* c, SkillSpec s)
 {
     c->m_frozen = true;
 }
 
 template<>
-inline void perform_skill<heal>(Field* fd, CardStatus* c, unsigned v)
+inline void perform_skill<heal>(Field* fd, CardStatus* c, SkillSpec s)
 {
-    add_hp(fd, c, v);
+    add_hp(fd, c, s.x);
 }
 
 template<>
-inline void perform_skill<infuse>(Field* fd, CardStatus* c, unsigned v)
+inline void perform_skill<infuse>(Field* fd, CardStatus* c, SkillSpec s)
 {
     c->m_faction = bloodthirsty;
     c->m_infused = true;
 }
 
 template<>
-inline void perform_skill<jam>(Field* fd, CardStatus* c, unsigned v)
+inline void perform_skill<jam>(Field* fd, CardStatus* c, SkillSpec s)
 {
     c->m_jammed = true;
 }
 
 template<>
-inline void perform_skill<protect>(Field* fd, CardStatus* c, unsigned v)
+inline void perform_skill<protect>(Field* fd, CardStatus* c, SkillSpec s)
 {
-    c->m_protected += v;
+    c->m_protected += s.x;
 }
 
 template<>
-inline void perform_skill<rally>(Field* fd, CardStatus* c, unsigned v)
+inline void perform_skill<rally>(Field* fd, CardStatus* c, SkillSpec s)
 {
-    c->m_rallied += v;
+    c->m_rallied += s.x;
 }
 
 template<>
-inline void perform_skill<repair>(Field* fd, CardStatus* c, unsigned v)
+inline void perform_skill<repair>(Field* fd, CardStatus* c, SkillSpec s)
 {
-    add_hp(fd, c, v);
+    add_hp(fd, c, s.x);
 }
 
 template<>
-inline void perform_skill<rush>(Field* fd, CardStatus* c, unsigned v)
+inline void perform_skill<rush>(Field* fd, CardStatus* c, SkillSpec s)
 {
-    c->m_delay = safe_minus(c->m_delay, v);
+    c->m_delay = safe_minus(c->m_delay, s.x);
 }
 
 template<>
-inline void perform_skill<shock>(Field* fd, CardStatus* c, unsigned v)
+inline void perform_skill<shock>(Field* fd, CardStatus* c, SkillSpec s)
 {
     // shock damage counts in ARD. (if attacker ever has the skill)
-    remove_commander_hp(fd, *c, v, true);
+    remove_commander_hp(fd, *c, s.x, true);
 }
 
 template<>
-inline void perform_skill<siege>(Field* fd, CardStatus* c, unsigned v)
+inline void perform_skill<siege>(Field* fd, CardStatus* c, SkillSpec s)
 {
-    remove_hp(fd, *c, v);
+    remove_hp(fd, *c, s.x);
 }
 
 template<>
-inline void perform_skill<strike>(Field* fd, CardStatus* c, unsigned v)
+inline void perform_skill<strike>(Field* fd, CardStatus* c, SkillSpec s)
 {
-    remove_hp(fd, *c, strike_damage(c, v));
+    remove_hp(fd, *c, strike_damage(c, s.x));
 }
 
 template<>
-inline void perform_skill<supply>(Field* fd, CardStatus* c, unsigned v)
+inline void perform_skill<supply>(Field* fd, CardStatus* c, SkillSpec s)
 {
-    add_hp(fd, c, v);
+    add_hp(fd, c, s.x);
 }
 
 template<>
-inline void perform_skill<weaken>(Field* fd, CardStatus* c, unsigned v)
+inline void perform_skill<weaken>(Field* fd, CardStatus* c, SkillSpec s)
 {
-    c->m_weakened += v;
+    c->m_weakened += s.x;
 }
 
 template<unsigned skill_id>
 inline unsigned select_fast(Field* fd, CardStatus* src_status, const std::vector<CardStatus*>& cards, const SkillSpec& s, bool is_helpful_skill)
 {
-    if(std::get<2>(s) == allfactions)
+#if defined(TYRANT_UNLEASHED)
+    if(s.y == allfactions)
+    {
+        return(fd->make_selection_array(cards.begin(), cards.end(), [fd, src_status, s, is_helpful_skill](CardStatus* c){return(skill_predicate<skill_id>(fd, src_status, c, s));}));
+    }
+    else
+    {
+        return(fd->make_selection_array(cards.begin(), cards.end(), [fd, src_status, s, is_helpful_skill](CardStatus* c){return((c->m_faction == s.y || s.y == progenitor) && skill_predicate<skill_id>(fd, src_status, c, s));}));
+    }
+#else
+    if(s.y == allfactions)
     {
         return(fd->make_selection_array(cards.begin(), cards.end(), [fd, src_status, s, is_helpful_skill](CardStatus* c){return(!(is_helpful_skill && c->m_phased) && skill_predicate<skill_id>(fd, src_status, c, s));}));
     }
     else
     {
-        return(fd->make_selection_array(cards.begin(), cards.end(), [fd, src_status, s, is_helpful_skill](CardStatus* c){return(c->m_faction == std::get<2>(s) && !(is_helpful_skill && c->m_phased) && skill_predicate<skill_id>(fd, src_status, c, s));}));
+        return(fd->make_selection_array(cards.begin(), cards.end(), [fd, src_status, s, is_helpful_skill](CardStatus* c){return(c->m_faction == s.y && !(is_helpful_skill && c->m_phased) && skill_predicate<skill_id>(fd, src_status, c, s));}));
     }
+#endif
 }
 
 template<>
@@ -2079,7 +2161,7 @@ std::vector<CardStatus*>& skill_targets(Field* fd, CardStatus* src_status)
     throw;
 }
 
-template<> inline std::vector<CardStatus*>& skill_targets<augment>(Field* fd, CardStatus* src_status)
+template<> std::vector<CardStatus*>& skill_targets<augment>(Field* fd, CardStatus* src_status)
 { return(skill_targets_allied_assault(fd, src_status)); }
 
 template<> std::vector<CardStatus*>& skill_targets<chaos>(Field* fd, CardStatus* src_status)
@@ -2090,6 +2172,9 @@ template<> std::vector<CardStatus*>& skill_targets<cleanse>(Field* fd, CardStatu
 
 template<> std::vector<CardStatus*>& skill_targets<enfeeble>(Field* fd, CardStatus* src_status)
 { return(skill_targets_hostile_assault(fd, src_status)); }
+
+template<> std::vector<CardStatus*>& skill_targets<enhance>(Field* fd, CardStatus* src_status)
+{ return(skill_targets_allied_assault(fd, src_status)); }
 
 template<> std::vector<CardStatus*>& skill_targets<freeze>(Field* fd, CardStatus* src_status)
 { return(skill_targets_hostile_assault(fd, src_status)); }
@@ -2140,7 +2225,7 @@ void maybeTriggerRegen(Field* fd)
 template<>
 void maybeTriggerRegen<true_>(Field* fd)
 {
-    fd->skill_queue.emplace_front(nullptr, std::make_tuple(trigger_regen, 0, allfactions, false, SkillMod::on_activate));
+    fd->skill_queue.emplace_front(nullptr, SkillSpec{trigger_regen, 0, allfactions, no_skill, false, SkillMod::on_activate});
 }
 
 CardStatus* select_interceptable(Field* fd, CardStatus* src_status, unsigned index)
@@ -2179,18 +2264,29 @@ bool check_and_perform_skill(Field* fd, CardStatus* src_status, CardStatus* dst_
 {
     if(skill_check<skill_id>(fd, src_status, dst_status))
     {
-        if(is_evadable && (dst_status->m_card->m_evade || (fd->effect == Effect::quicksilver && dst_status->m_card->m_type == CardType::assault)) && fd->flip() && skill_check<evade>(fd, dst_status, src_status))
+        if(is_evadable &&
+#if defined(TYRANT_UNLEASHED)
+                dst_status->m_evaded < dst_status->m_card->m_evade + dst_status->enhanced(evade) &&
+#else
+                (dst_status->m_card->m_evade || (fd->effect == Effect::quicksilver && dst_status->m_card->m_type == CardType::assault)) && fd->flip() &&
+#endif
+                skill_check<evade>(fd, dst_status, src_status))
         {
+            ++ dst_status->m_evaded;
             count_achievement<evade>(fd, dst_status);
-            _DEBUG_MSG(1, "%s %s (%u) on %s but it evades\n", status_description(src_status).c_str(), skill_names[skill_id].c_str(), std::get<1>(s), status_description(dst_status).c_str());
+            _DEBUG_MSG(1, "%s %s (%u) on %s but it evades\n", status_description(src_status).c_str(), skill_names[skill_id].c_str(), s.x, status_description(dst_status).c_str());
             return(false);
         }
         if(is_count_achievement)
         {
             count_achievement<skill_id>(fd, src_status);
         }
-        _DEBUG_MSG(1, "%s %s (%u) on %s\n", status_description(src_status).c_str(), skill_names[skill_id].c_str(), std::get<1>(s), status_description(dst_status).c_str());
-        perform_skill<skill_id>(fd, dst_status, std::get<1>(s));
+        _DEBUG_MSG(1, "%s %s (%u) on %s\n", status_description(src_status).c_str(), skill_names[skill_id].c_str(), s.x, status_description(dst_status).c_str());
+        perform_skill<skill_id>(fd, dst_status, s);
+        if(skill_id == jam)
+        {
+            src_status->m_cd_jam = s.x;
+        }
         return(true);
     }
     return(false);
@@ -2242,7 +2338,7 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src_status, const Ski
     }
     _DEBUG_SELECTION("%s", skill_names[skill_id].c_str());
     unsigned index_start, index_end;
-    if(std::get<3>(s)) // target all
+    if(s.all) // target all
     {
         index_start = 0;
         index_end = fd->selection_array.size() - 1;
@@ -2256,10 +2352,10 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src_status, const Ski
     {
         if(!skill_roll<skill_id>(fd))
         {
-            _DEBUG_MSG(2, "%s misses the 50%% chance to activate %s (%u) on %s\n", status_description(src_status).c_str(), skill_names[skill_id].c_str(), std::get<1>(s), status_description(fd->selection_array[s_index]).c_str());
+            _DEBUG_MSG(2, "%s misses the 50%% chance to activate %s (%u) on %s\n", status_description(src_status).c_str(), skill_names[skill_id].c_str(), s.x, status_description(fd->selection_array[s_index]).c_str());
             continue;
         }
-        CardStatus* c(std::get<3>(s) ? fd->selection_array[s_index] : select_interceptable(fd, src_status, s_index));
+        CardStatus* c(s.all ? fd->selection_array[s_index] : select_interceptable(fd, src_status, s_index));
         if(check_and_perform_skill<skill_id>(fd, src_status, c, s, true, is_count_achievement))
         {
             // Count at most once even targeting "All"
@@ -2268,8 +2364,8 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src_status, const Ski
             if(c->m_card->m_payback && skill_predicate<skill_id>(fd, src_status, src_status, s) && fd->flip() && skill_check<payback>(fd, c, src_status) && skill_check<skill_id>(fd, src_status, c))
             {
                 count_achievement<payback>(fd, c);
-                _DEBUG_MSG(1, "%s paybacks (%s %u) on %s\n", status_description(c).c_str(), skill_names[skill_id].c_str(), std::get<1>(s), status_description(src_status).c_str());
-                perform_skill<skill_id>(fd, src_status, std::get<1>(s));
+                _DEBUG_MSG(1, "%s paybacks (%s %u) on %s\n", status_description(c).c_str(), skill_names[skill_id].c_str(), s.x, status_description(src_status).c_str());
+                perform_skill<skill_id>(fd, src_status, s);
             }
         }
     }
@@ -2287,8 +2383,8 @@ inline void check_and_perform_emulate(Field* fd, CardStatus* src_status, CardSta
         if(emulator.m_card->m_emulate && skill_predicate<skill_id>(fd, src_status, &emulator, s) && skill_check<emulate>(fd, &emulator, nullptr))
         {
             count_achievement<emulate>(fd, &emulator);
-            _DEBUG_MSG(1, "Emulate (%s %u) on %s\n", skill_names[skill_id].c_str(), std::get<1>(s), status_description(&emulator).c_str());
-            perform_skill<skill_id>(fd, &emulator, std::get<1>(s));
+            _DEBUG_MSG(1, "Emulate (%s %u) on %s\n", skill_names[skill_id].c_str(), s.x, status_description(&emulator).c_str());
+            perform_skill<skill_id>(fd, &emulator, s);
         }
     }
 }
@@ -2303,7 +2399,7 @@ void perform_targetted_allied_fast(Field* fd, CardStatus* src_status, const Skil
     }
     _DEBUG_SELECTION("%s", skill_names[skill_id].c_str());
     unsigned index_start, index_end;
-    if(std::get<3>(s) || skill_id == supply) // target all or supply
+    if(s.all || skill_id == supply) // target all or supply
     {
         index_start = 0;
         index_end = fd->selection_array.size() - 1;
@@ -2315,13 +2411,21 @@ void perform_targetted_allied_fast(Field* fd, CardStatus* src_status, const Skil
     bool is_count_achievement(true);
     for(unsigned s_index(index_start); s_index <= index_end; ++s_index)
     {
+        CardStatus* c(fd->selection_array[s_index]);
         // So far no friendly activation skill needs to roll 50% but check it for completeness.
         if(!skill_roll<skill_id>(fd))
         {
-            _DEBUG_MSG(2, "%s misses the 50%% chance to %s (%u) on %s\n", status_description(src_status).c_str(), skill_names[skill_id].c_str(), std::get<1>(s), status_description(fd->selection_array[s_index]).c_str());
+            _DEBUG_MSG(2, "%s misses the 50%% chance to %s (%u) on %s\n", status_description(src_status).c_str(), skill_names[skill_id].c_str(), s.x, status_description(c).c_str());
             continue;
         }
-        CardStatus* c(fd->selection_array[s_index]);
+#if defined(TYRANT_UNLEASHED)
+        if(c->m_inhibited > 0)
+        {
+            _DEBUG_MSG(1, "%s %s (%u) on %s but it is inhibited\n", status_description(src_status).c_str(), skill_names[skill_id].c_str(), s.x, status_description(c).c_str());
+            -- c->m_inhibited;
+            continue;
+        }
+#endif
         if(check_and_perform_skill<skill_id>(fd, src_status, c, s, false, is_count_achievement))
         {
             // Count at most once even targeting "All"
@@ -2330,8 +2434,8 @@ void perform_targetted_allied_fast(Field* fd, CardStatus* src_status, const Skil
             if(c->m_card->m_tribute && skill_predicate<skill_id>(fd, src_status, src_status, s) && fd->flip() && skill_check<tribute>(fd, c, src_status))
             {
                 count_achievement<tribute>(fd, c);
-                _DEBUG_MSG(1, "Tribute (%s %u) on %s\n", skill_names[skill_id].c_str(), std::get<1>(s), status_description(src_status).c_str());
-                perform_skill<skill_id>(fd, src_status, std::get<1>(s));
+                _DEBUG_MSG(1, "Tribute (%s %u) on %s\n", skill_names[skill_id].c_str(), s.x, status_description(src_status).c_str());
+                perform_skill<skill_id>(fd, src_status, s);
                 check_and_perform_emulate<skill_id>(fd, src_status, src_status, s);
             }
             check_and_perform_emulate<skill_id>(fd, src_status, c, s);
@@ -2363,7 +2467,7 @@ inline void perform_recharge(Field* fd, CardStatus* src_status, const SkillSpec&
 // a summoned card's on play skills seem to be evaluated before any other skills on the skill queue.
 inline void prepend_skills(Field* fd, CardStatus* status)
 {
-    for(auto& skill: boost::adaptors::reverse(status->m_card->m_skills_on_play))
+    for(auto& skill: boost::adaptors::reverse(status->m_card->m_skills[SkillMod::on_play]))
     {
         fd->skill_queue.emplace_front(status, skill);
     }
@@ -2374,14 +2478,14 @@ void perform_summon(Field* fd, CardStatus* src_status, const SkillSpec& s);
 
 void perform_split(Field* fd, CardStatus* src_status, const SkillSpec& s)
 {
-    perform_summon<split>(fd, src_status, SkillSpec(summon, src_status->m_card->m_id, std::get<2>(s), std::get<3>(s), std::get<4>(s)));
+    perform_summon<split>(fd, src_status, SkillSpec{summon, src_status->m_card->m_id, s.y, s.s, s.all, s.mod});
 }
 
 template<Skill skill_id>
 void perform_summon(Field* fd, CardStatus* src_status, const SkillSpec& s)
 {
     unsigned player = src_status->m_player;
-    const auto& mod = std::get<4>(s);
+    const auto& mod = s.mod;
     // Split and Summon on Play are not counted towards the Summon Limit.
     if(skill_id == summon && mod != SkillMod::on_play)
     {
@@ -2395,7 +2499,7 @@ void perform_summon(Field* fd, CardStatus* src_status, const SkillSpec& s)
             _DEBUG_MSG(1, "** Reaching summon limit, this is the last summon.\n");
         }
     }
-    unsigned summoned_id = std::get<1>(s);
+    unsigned summoned_id = s.x;
     const Card* summoned = 0;
     if(summoned_id != 0)
     {
@@ -2403,7 +2507,7 @@ void perform_summon(Field* fd, CardStatus* src_status, const SkillSpec& s)
     }
     else
     {
-        Faction summond_faction = std::get<2>(s);
+        Faction summond_faction = s.y;
         do {
             summoned = fd->random_in_vector(fd->cards.player_assaults);
         } while(summond_faction != allfactions && summond_faction != summoned->m_faction);
@@ -2424,7 +2528,7 @@ void perform_summon(Field* fd, CardStatus* src_status, const SkillSpec& s)
     _DEBUG_MSG(1, "%s %s %s %u [%s]\n", status_description(src_status).c_str(), skill_names[skill_id].c_str(), cardtype_names[summoned->m_type].c_str(), card_status.m_index, card_description(fd->cards, summoned).c_str());
     prepend_skills(fd, &card_status);
     // Summon X (Genesis effect) does not activate Blitz for X
-    if(std::get<1>(s) != 0 && card_status.m_card->m_blitz)
+    if(s.x != 0 && card_status.m_card->m_blitz)
     {
         check_and_perform_blitz(fd, &card_status);
     }
@@ -2471,25 +2575,32 @@ void perform_mimic(Field* fd, CardStatus* src_status, const SkillSpec& s)
     // evade check for mimic
     // individual skills are subject to evade checks too,
     // but resolve_skill will handle those.
-    if((c->m_card->m_evade || (fd->effect == Effect::quicksilver && c->m_card->m_type == CardType::assault)) && fd->flip() && skill_check<evade>(fd, c, src_status))
+    if(
+#if defined(TYRANT_UNLEASHED)
+            c->m_evaded < c->m_card->m_evade + c->enhanced(evade) &&
+#else
+            (c->m_card->m_evade || (fd->effect == Effect::quicksilver && c->m_card->m_type == CardType::assault)) && fd->flip() &&
+#endif
+            skill_check<evade>(fd, c, src_status))
     {
+        ++ c->m_evaded;
         count_achievement<evade>(fd, c);
-        _DEBUG_MSG(1, "%s %s on %s but it evades\n", status_description(src_status).c_str(), skill_names[std::get<0>(s)].c_str(), status_description(c).c_str());
+        _DEBUG_MSG(1, "%s %s on %s but it evades\n", status_description(src_status).c_str(), skill_names[s.id].c_str(), status_description(c).c_str());
         return;
     }
     count_achievement<mimic>(fd, src_status);
-    _DEBUG_MSG(1, "%s %s on %s\n", status_description(src_status).c_str(), skill_names[std::get<0>(s)].c_str(), status_description(c).c_str());
+    _DEBUG_MSG(1, "%s %s on %s\n", status_description(src_status).c_str(), skill_names[s.id].c_str(), status_description(c).c_str());
     auto mod = SkillMod::on_activate;
     bool need_add_skill = may_change_skill(fd, c, mod);
-    for(auto& skill: c->m_card->m_skills)
+    for(auto& skill: c->m_card->m_skills[SkillMod::on_activate])
     {
         if(src_status->m_card->m_type != CardType::action && src_status->m_hp == 0)
         { break; }
-        if(std::get<0>(skill) == mimic || std::get<0>(skill) == split ||
-                (std::get<0>(skill) == supply && src_status->m_card->m_type != CardType::assault))
+        if(skill.id == mimic || skill.id == split ||
+                (skill.id == supply && src_status->m_card->m_type != CardType::assault))
         { continue; }
         auto& battleground_s = need_add_skill ? apply_battleground_effect(fd, c, skill, mod, need_add_skill) : skill;
-        SkillSpec mimic_s(std::get<0>(battleground_s), std::get<1>(battleground_s), allfactions, std::get<3>(battleground_s), mod);
+        SkillSpec mimic_s{battleground_s.id, battleground_s.x, allfactions, battleground_s.s, battleground_s.all, mod};
         _DEBUG_MSG(2, "Evaluating %s mimiced skill %s\n", status_description(c).c_str(), skill_description(fd->cards, mimic_s).c_str());
         fd->skill_queue.emplace_back(src_status, mimic_s);
         resolve_skill(fd);
@@ -2498,9 +2609,9 @@ void perform_mimic(Field* fd, CardStatus* src_status, const SkillSpec& s)
     }
     if(need_add_skill)
     {
-        auto battleground_s = apply_battleground_effect(fd, c, SkillSpec(new_skill, 0, allfactions, false, mod), mod, need_add_skill);
-        assert(std::get<0>(battleground_s) != new_skill);
-        SkillSpec mimic_s(std::get<0>(battleground_s), std::get<1>(battleground_s), allfactions, std::get<3>(battleground_s), mod);
+        auto battleground_s = apply_battleground_effect(fd, c, SkillSpec{no_skill, 0, allfactions, no_skill, false, mod}, mod, need_add_skill);
+        assert(battleground_s.id != no_skill);
+        SkillSpec mimic_s{battleground_s.id, battleground_s.x, allfactions, battleground_s.s, battleground_s.all, mod};
         _DEBUG_MSG(2, "Evaluating %s mimiced skill %s\n", status_description(c).c_str(), skill_description(fd->cards, mimic_s).c_str());
         fd->skill_queue.emplace_back(src_status, mimic_s);
         resolve_skill(fd);
@@ -2514,6 +2625,7 @@ void fill_skill_table()
     skill_table[chaos] = perform_targetted_hostile_fast<chaos>;
     skill_table[cleanse] = perform_targetted_allied_fast<cleanse>;
     skill_table[enfeeble] = perform_targetted_hostile_fast<enfeeble>;
+    skill_table[enhance] = perform_targetted_allied_fast<enhance>;
     skill_table[freeze] = perform_targetted_hostile_fast<freeze>;
     skill_table[heal] = perform_targetted_allied_fast<heal>;
     skill_table[infuse] = perform_infuse;

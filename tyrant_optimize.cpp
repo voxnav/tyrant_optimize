@@ -85,6 +85,89 @@ Deck* find_deck(Decks& decks, const Cards& cards, std::string deck_name)
 }
 //---------------------- $80 deck optimization ---------------------------------
 
+#if defined(TYRANT_UNLEASHED)
+unsigned get_required_cards_before_upgrade(const std::vector<const Card*> & card_list, const Cards & cards, std::map<unsigned, unsigned> & num_cards)
+{
+    unsigned deck_cost = 0;
+    std::set<const Card*> unresolved_cards;
+    for(const Card * card: card_list)
+    {
+        ++ num_cards[card->m_id];
+        unresolved_cards.insert(card);
+    }
+    while (!unresolved_cards.empty())
+    {
+        auto card = *unresolved_cards.begin();
+        unresolved_cards.erase(unresolved_cards.begin());
+        if(auto_upgrade_cards && owned_cards[card->m_id] < num_cards[card->m_id] && !card->m_material_list.empty())
+        {
+            unsigned num_under = num_cards[card->m_id] - owned_cards[card->m_id];
+            num_cards[card->m_id] = owned_cards[card->m_id];
+//            std::cout << "-" << num_under << " " << card->m_name << "\n"; // XXX
+            deck_cost += num_under * card->m_upgrade_gold_cost;
+            for (auto material_it : card->m_material_list)
+            {
+                num_cards[material_it.first->m_id] += num_under * material_it.second;
+//                std::cout << "+" << num_under * material_it.second << " " << material_it.first->m_name << "\n"; // XXX
+                unresolved_cards.insert(material_it.first);
+            }
+        }
+    }
+//    std::cout << "\n"; // XXX
+    return deck_cost;
+}
+
+// @claim_all: true = claim all cards; false = claim only non-buyable cards.
+// @is_reward: not claim a card if there is upgraded version (assuming the reward card has been upgraded).
+void claim_cards(const std::vector<const Card*> & card_list, const Cards & cards, bool claim_all, bool is_reward=false)
+{
+    std::map<unsigned, unsigned> num_cards;
+    get_required_cards_before_upgrade(card_list, cards, num_cards);
+    for(auto it: num_cards)
+    {
+        unsigned card_id = it.first;
+        if(claim_all || buyable_cards.find(card_id) == buyable_cards.end())
+        {
+            unsigned num_to_claim = safe_minus(it.second, owned_cards[card_id]);
+            if(num_to_claim > 0)
+            {
+                owned_cards[card_id] += num_to_claim;
+                if(debug_print)
+                {
+                    std::cout << "Claim " << cards.by_id(card_id)->m_name << " (" << num_to_claim << ")" << std::endl;
+                }
+            }
+        }
+    }
+}
+
+unsigned get_deck_cost(const Deck * deck, const Cards & cards)
+{
+    if(!use_owned_cards)
+    {
+        return 0;
+    }
+    std::map<unsigned, unsigned> num_in_deck;
+    unsigned deck_cost = get_required_cards_before_upgrade({deck->commander}, cards, num_in_deck);
+    deck_cost += get_required_cards_before_upgrade(deck->cards, cards, num_in_deck);
+    for(auto it: num_in_deck)
+    {
+        unsigned card_id = it.first;
+        unsigned num_to_buy = safe_minus(it.second, owned_cards[card_id]);
+//        std::cout << "BUY " << cards.by_id(card_id)->m_name << " +" << num_to_buy << " =" << it.second << ".\n"; // XXX
+        if(num_to_buy > 0)
+        {
+            auto buyable_iter = buyable_cards.find(card_id);
+            if(buyable_iter == buyable_cards.end()) { return UINT_MAX; }
+            deck_cost += num_to_buy * buyable_iter->second;
+        }
+    }
+//    std::cout << "\n"; // XXX
+    return deck_cost;
+}
+
+#else
+
 // @claim_all: true = claim all cards; false = claim only non-buyable cards.
 // @is_reward: not claim a card if there is upgraded version (assuming the reward card has been upgraded).
 void claim_cards(const std::vector<const Card*> & card_list, const Cards & cards, bool claim_all, bool is_reward)
@@ -120,33 +203,6 @@ void claim_cards(const std::vector<const Card*> & card_list, const Cards & cards
     }
 }
 
-//------------------------------------------------------------------------------
-bool suitable_non_commander(const Deck& deck, unsigned slot, const Card* card)
-{
-    assert(card->m_type != CardType::commander);
-    if(card->m_rarity == 4) // legendary - 1 per deck
-    {
-        for(unsigned i(0); i < deck.cards.size(); ++i)
-        {
-            if(i != slot && deck.cards[i]->m_rarity == 4)
-            {
-                return false;
-            }
-        }
-    }
-    if(card->m_unique) // unique - 1 card with same id per deck
-    {
-        for(unsigned i(0); i < deck.cards.size(); ++i)
-        {
-            if(i != slot && deck.cards[i]->m_base_id == card->m_base_id)
-            {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
 unsigned get_deck_cost(const Deck * deck, const Cards & cards)
 {
     if(!use_owned_cards)
@@ -168,7 +224,7 @@ unsigned get_deck_cost(const Deck * deck, const Cards & cards)
     }
     for(const Card * card: deck->cards)
     {
-        if(card->m_proto_id > 0 && auto_upgrade_cards && owned_cards[card->m_id] <= num_in_deck[card->m_id])
+        if(card->m_proto_id > 0 && auto_upgrade_cards && owned_cards[card->m_id] < num_in_deck[card->m_id])
         {
             const Card * proto_card = cards.by_id(card->m_proto_id);
             num_in_deck[proto_card->m_id] += proto_card->m_upgrade_consumables;
@@ -191,6 +247,36 @@ unsigned get_deck_cost(const Deck * deck, const Cards & cards)
         }
     }
     return deck_cost;
+}
+#endif
+
+//------------------------------------------------------------------------------
+inline bool suitable_non_commander(const Deck& deck, unsigned slot, const Card* card)
+{
+#if not defined(TYRANT_UNLEASHED)
+    assert(card->m_type != CardType::commander);
+    if(card->m_rarity == 4) // legendary - 1 per deck
+    {
+        for(unsigned i(0); i < deck.cards.size(); ++i)
+        {
+            if(i != slot && deck.cards[i]->m_rarity == 4)
+            {
+                return false;
+            }
+        }
+    }
+    if(card->m_unique) // unique - 1 card with same id per deck
+    {
+        for(unsigned i(0); i < deck.cards.size(); ++i)
+        {
+            if(i != slot && deck.cards[i]->m_base_id == card->m_base_id)
+            {
+                return false;
+            }
+        }
+    }
+#endif
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -1096,7 +1182,11 @@ int main(int argc, char** argv)
     if(argc == 1) { usage(argc, argv); return(0); }
     if(argc <= 2 && strcmp(argv[1], "-version") == 0)
     {
+#if defined(TYRANT_UNLEASHED)
+        std::cout << "Tyrant Unleashed Optimizer " << TYRANT_OPTIMIZER_VERSION << std::endl;
+#else
         std::cout << "Tyrant Optimizer " << TYRANT_OPTIMIZER_VERSION << std::endl;
+#endif
         return(0);
     }
     unsigned num_threads = 4;
@@ -1109,6 +1199,9 @@ int main(int argc, char** argv)
     Achievement achievement;
     load_decks_xml(decks, cards);
     load_decks(decks, cards);
+#if defined(TYRANT_UNLEASHED)
+    load_fusions(cards);
+#endif
     fill_skill_table();
 
     if(argc <= 2)

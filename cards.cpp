@@ -76,16 +76,33 @@ void Cards::organize()
     player_actions.clear();
     for(Card* card: cards)
     {
+//        std::cout << "C:" << card->m_id << "\n";
         // Remove delimiters from card names
         size_t pos;
         while((pos = card->m_name.find_first_of(";:,")) != std::string::npos)
         {
             card->m_name.erase(pos, 1);
         }
+#if defined(TYRANT_UNLEASHED)
+        if(card->m_level == 1)
+        {
+            player_cards_by_name[{simplify_name(card->m_name + " Lv.1"), card->m_hidden}] = card;
+        }
+        else
+        {
+            if (card->m_id == by_id(card->m_base_id)->m_final_id)
+            {
+                player_cards_by_name[{simplify_name(card->m_name + "*"), card->m_hidden}] = card;
+            }
+            card->m_name += " Lv.";
+            card->m_name += to_string(card->m_level);
+        }
+#else
         if(card->m_set == 5002)
         {
             card->m_name += '*';
         }
+#endif
         cards_by_id[card->m_id] = card;
         // Card available to players
         if(card->m_set != 0)
@@ -125,7 +142,7 @@ void Cards::organize()
     for(Card* card: cards)
     {
         // generate abbreviations
-        if(card->m_hidden == 0)
+        if(card->m_set > 0)
         {
             for(auto&& abbr_name : get_abbreviations(card->m_name))
             {
@@ -136,6 +153,7 @@ void Cards::organize()
             }
         }
 
+#if not defined(TYRANT_UNLEASHED)
         // update proto_id and upgraded_id
         if(card->m_set == 5002)
         {
@@ -145,5 +163,21 @@ void Cards::organize()
             card->m_proto_id = proto_card->m_id;
             proto_card->m_upgraded_id = card->m_id;
         }
+#endif
     }
 }
+
+// class Card
+void Card::add_skill(Skill id, unsigned x, Faction y, Skill s, bool all, SkillMod::SkillMod mod)
+{
+    for(auto it = m_skills[mod].begin(); it != m_skills[mod].end(); ++ it)
+    {
+        if(it->id == id)
+        {
+            m_skills[mod].erase(it);
+            break;
+        }
+    }
+    m_skills[mod].push_back({id, x, y, s, all, mod});
+}
+

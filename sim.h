@@ -131,15 +131,24 @@ struct CardStatus
     unsigned m_augmented;
     unsigned m_berserk;
     bool m_blitzing;
+// begin for TYRANT_UNLEASHED
+    unsigned m_cd_jam;
+// end
     bool m_chaosed;
     unsigned m_delay;
     bool m_diseased;
+// begin for TYRANT_UNLEASHED
+    Skill m_enhanced_skill;
+    unsigned m_enhanced_value;
+    unsigned m_evaded;
+// end
     unsigned m_enfeebled;
     Faction m_faction;
     bool m_frozen;
     unsigned m_hp;
     bool m_immobilized;
     bool m_infused;
+    int m_inhibited;
     bool m_jammed;
     bool m_phased;
     unsigned m_poisoned;
@@ -158,6 +167,7 @@ struct CardStatus
     void set(const Card* card);
     void set(const Card& card);
     std::string description();
+    inline unsigned enhanced(Skill skill) { return m_enhanced_skill == skill ? m_enhanced_value : 0; }
 };
 //------------------------------------------------------------------------------
 // Represents a particular draw from a deck.

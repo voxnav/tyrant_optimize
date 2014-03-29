@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "1.1.6"
+#define TYRANT_OPTIMIZER_VERSION "1.2.0"
 
 #include <string>
 #include <set>
@@ -10,17 +10,19 @@
 enum Faction
 {
     allfactions,
-    bloodthirsty,
     imperial,
     raider,
-    righteous,
+    bloodthirsty,
     xeno,
+    righteous,
+    progenitor,
     num_factions
 };
 extern const std::string faction_names[num_factions];
 
 enum Skill
 {
+    no_skill,
     // Attack:
     attack,
     // Activation (including Destroyed):
@@ -31,15 +33,17 @@ enum Skill
     // Combat-Modifier:
     antiair, burst, fear, flurry, pierce, swipe, valor,
     // Damage-Dependant:
-    berserk, crush, disease, immobilize, leech, phase, poison, siphon, sunder,
+    berserk, crush, disease, immobilize, inhibit, leech, phase, poison, siphon, sunder,
     // Defensive:
     armored, counter, emulate, evade, flying, intercept, payback, refresh, regenerate, stun, tribute, wall,
     // Triggered:
     blitz, legion,
+    // Tyrant Unleashed:
+    enhance,
     // Static, ignored:
-    /* blizzard, fusion, mist, */
+    fusion,
+    /* blizzard, mist, */
     // Placeholder for new gained skill from battleground effect:
-    new_skill,
     num_skills
 };
 extern std::string skill_names[num_skills];
@@ -70,7 +74,12 @@ enum CardType {
 
 extern std::string cardtype_names[CardType::num_cardtypes];
 
-extern std::string rarity_names[5];
+extern std::string rarity_names[];
+
+#if defined(TYRANT_UNLEASHED)
+extern unsigned upgrade_cost[];
+extern unsigned salvaging_income[][7];
+#endif
 
 namespace DeckType {
 enum DeckType {
@@ -161,6 +170,15 @@ enum SkillSourceType
     source_chaos
 };
 
-typedef std::tuple<Skill, unsigned, Faction, bool /* all */, SkillMod::SkillMod> SkillSpec;
+//typedef std::tuple<Skill, unsigned, Faction, bool /* all */, SkillMod::SkillMod> SkillSpec;
+struct SkillSpec
+{
+    Skill id;
+    unsigned x;
+    Faction y;
+    Skill s;
+    bool all;
+    SkillMod::SkillMod mod;
+};
 
 #endif

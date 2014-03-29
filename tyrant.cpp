@@ -3,10 +3,12 @@
 #include <string>
 
 const std::string faction_names[Faction::num_factions] =
-{ "", "bloodthirsty", "imperial", "raider", "righteous", "xeno" };
+{ "", "imperial", "raider", "bloodthirsty", "xeno", "righteous", "progenitor" };
 
 std::string skill_names[Skill::num_skills] =
 {
+    // Placeholder for new gained skill from battleground effect:
+    "<Error>",
     // Attack:
     "0",
     // Activation (Including Destroyed):
@@ -19,26 +21,32 @@ std::string skill_names[Skill::num_skills] =
     // Combat-Modifier:
     "AntiAir", "Burst", "Fear", "Flurry", "Pierce", "Swipe", "Valor",
     // Damage-Dependant:
-    "Berserk", "Crush", "Disease", "Immobilize", "Leech", "Phase", "Poison", "Siphon", "Sunder",
+    "Berserk", "Crush", "Disease", "Immobilize", "Inhibit", "Leech", "Phase", "Poison", "Siphon", "Sunder",
     // Defensive:
     "Armored", "Counter", "Emulate", "Evade", "Flying", "Intercept", "Payback", "Refresh", "Regenerate", "Stun", "Tribute", "Wall",
     // Triggered:
     "Blitz", "Legion",
+    // Tyrant Unleashed:
+    "Enhance",
     // Static (Ignored):
-    /* "Blizzard", "Fusion", "Mist", */
-    // Placeholder for new gained skill from battleground effect:
-    "<Error>"
+    "Fusion",
+    /* "Blizzard", "Mist", */
 };
 
 std::set<Skill> helpful_skills{
-    augment, cleanse, heal, protect, rally, repair, rush, supply,
+    augment, cleanse, enhance, heal, protect, rally, repair, rush, supply,
 };
 
 std::string skill_activation_modifier_names[SkillMod::num_skill_activation_modifiers] = {"", " on Play", " on Attacked", " on Kill", " on Death", };
 
 std::string cardtype_names[CardType::num_cardtypes]{"Commander", "Assault", "Structure", "Action", };
 
-std::string rarity_names[5]{"", "common", "uncommon", "rare", "legendary", };
+std::string rarity_names[6]{"", "common", "uncommon", "rare", "legendary", "vindicator", };
+
+#if defined(TYRANT_UNLEASHED)
+unsigned upgrade_cost[]{0, 5, 15, 30, 75, 150};
+unsigned salvaging_income[][7]{{}, {0, 1, 2, 5}, {0, 5, 10, 15, 20}, {0, 20, 25, 30, 40, 50, 65}, {0, 40, 45, 60, 75, 100, 125}, {0, 80, 85, 100, 125, 175, 250}};
+#endif
 
 std::string decktype_names[DeckType::num_decktypes]{"Deck", "Mission", "Raid", "Quest", "Custom Deck", };
 

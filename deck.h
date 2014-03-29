@@ -117,4 +117,8 @@ struct Decks
     std::map<std::string, std::string> custom_decks;
 };
 
+#if defined(TYRANT_UNLEASHED)
+void load_fusions(Cards& cards);
+#endif
+
 #endif
