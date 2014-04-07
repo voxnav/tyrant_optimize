@@ -759,6 +759,19 @@ Results<uint64_t> play(Field* fd)
     fd->achievement_counter.clear();
     fd->achievement_counter.resize(fd->achievement.req_counter.size());
 
+#if defined(TYRANT_UNLEASHED)
+    // Play fortresses
+    for (unsigned _ = 0; _ < 2; ++ _)
+    {
+        for (const Card* played_card: fd->tap->deck->fort_cards)
+        {
+            PlayCard(played_card, fd).op<CardType::structure>();
+        }
+        std::swap(fd->tapi, fd->tipi);
+        std::swap(fd->tap, fd->tip);
+    }
+#endif
+
 #if 0
     // ANP: Last decision point is second-to-last card played.
     fd->points_since_last_decision = 0;

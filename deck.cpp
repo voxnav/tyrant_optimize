@@ -230,10 +230,20 @@ void Deck::resolve(const Cards& all_cards)
     deck_string.clear();
 }
 
-void Deck::set_given_hand(const Cards& all_cards, const std::string& hand_string)
+void Deck::set_given_hand(const Cards& all_cards, const std::string& deck_string)
 {
-    auto && id_marks = string_to_ids(all_cards, hand_string, "hand");
+    auto && id_marks = string_to_ids(all_cards, deck_string, "hand");
     given_hand = id_marks.first;
+}
+
+void Deck::set_forts(const Cards& all_cards, const std::string& deck_string)
+{
+    auto && id_marks = string_to_ids(all_cards, deck_string, "fort_cards");
+    fort_cards.clear();
+    for (auto id: id_marks.first)
+    {
+       fort_cards.push_back(all_cards.by_id(id));
+    }
 }
 
 std::string Deck::short_description() const

@@ -388,12 +388,12 @@ void read_cards(Cards& cards)
 #endif
 }
 //------------------------------------------------------------------------------
-Deck* read_deck(Decks& decks, const Cards& cards, xml_node<>* node, DeckType::DeckType decktype, unsigned id, std::string& deck_name)
+Deck* read_deck(Decks& decks, const Cards& cards, xml_node<>* node, DeckType::DeckType decktype, unsigned id, std::string& deck_name, unsigned level=1)
 {
     xml_node<>* commander_node(node->first_node("commander"));
     unsigned card_id = atoi(commander_node->value());
 #if defined(TYRANT_UNLEASHED)
-    card_id = cards.by_id(cards.by_id(card_id)->m_base_id)->m_final_id;
+    if(level == 10) { card_id = cards.by_id(cards.by_id(card_id)->m_base_id)->m_final_id; }
 #endif
     const Card* commander_card{cards.by_id(card_id)};
     std::vector<const Card*> always_cards;
@@ -407,7 +407,7 @@ Deck* read_deck(Decks& decks, const Cards& cards, xml_node<>* node, DeckType::De
     {
         card_id = atoi(card_node->value());
 #if defined(TYRANT_UNLEASHED)
-        card_id = cards.by_id(cards.by_id(card_id)->m_base_id)->m_final_id;
+        if(level == 10) { card_id = cards.by_id(cards.by_id(card_id)->m_base_id)->m_final_id; }
 #endif
         always_cards.push_back(cards.by_id(card_id));
     }
@@ -473,7 +473,7 @@ void read_missions(Decks& decks, const Cards& cards, std::string filename)
         unsigned id(id_node ? atoi(id_node->value()) : 0);
         xml_node<>* name_node(mission_node->first_node("name"));
         std::string deck_name{name_node->value()};
-        Deck* deck = read_deck(decks, cards, mission_node, DeckType::mission, id, deck_name);
+        Deck* deck = read_deck(decks, cards, mission_node, DeckType::mission, id, deck_name, 10);
         xml_node<>* effect_id_node(mission_node->first_node("effect"));
         if(effect_id_node)
         {

@@ -1449,6 +1449,19 @@ int main(int argc, char** argv)
             }
             argIndex += 1;
         }
+        else if(strcmp(argv[argIndex], "forts") == 0)  // set forts
+        {
+            att_deck->set_forts(cards, argv[argIndex + 1]);
+            argIndex += 1;
+        }
+        else if(strcmp(argv[argIndex], "defender:forts") == 0)  // set enemies' forts
+        {
+            for(auto def_deck: def_decks)
+            {
+                def_deck->set_forts(cards, argv[argIndex + 1]);
+            }
+            argIndex += 1;
+        }
         else if(strcmp(argv[argIndex], "sim") == 0)
         {
             todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), 0u, simulate));

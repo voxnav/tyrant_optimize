@@ -50,6 +50,7 @@ struct Deck
 
     std::string deck_string;
     std::vector<unsigned> given_hand;
+    std::vector<const Card*> fort_cards;
 
     Deck(
         DeckType::DeckType decktype_ = DeckType::deck,
@@ -86,6 +87,7 @@ struct Deck
     void set(const Cards& all_cards, const std::string& deck_string_);
     void resolve(const Cards& all_cards);
     void set_given_hand(const Cards& all_cards, const std::string& deck_string_);
+    void set_forts(const Cards& all_cards, const std::string& deck_string_);
 
     template<class Container>
     Container card_ids() const
