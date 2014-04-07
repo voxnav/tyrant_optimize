@@ -167,7 +167,7 @@ struct CardStatus
     void set(const Card* card);
     void set(const Card& card);
     std::string description();
-    inline unsigned enhanced(Skill skill) { return m_enhanced_skill == skill ? m_enhanced_value : 0; }
+    unsigned enhanced(Field* fd, Skill skill);
 };
 //------------------------------------------------------------------------------
 // Represents a particular draw from a deck.
@@ -211,6 +211,8 @@ public:
     gamemode_t gamemode;
     OptimizationMode optimization_mode;
     const Effect effect;
+    Skill bg_enhanced_skill;
+    unsigned bg_enhanced_value;
     const Achievement& achievement;
     // With the introduction of on death skills, a single skill can trigger arbitrary many skills.
     // They are stored in this, and cleared after all have been performed.
@@ -237,7 +239,8 @@ public:
     unsigned fusion_count;
     std::vector<unsigned> achievement_counter;
 
-    Field(std::mt19937& re_, const Cards& cards_, Hand& hand1, Hand& hand2, gamemode_t gamemode_, OptimizationMode optimization_mode_, Effect effect_, const Achievement& achievement_) :
+    Field(std::mt19937& re_, const Cards& cards_, Hand& hand1, Hand& hand2, gamemode_t gamemode_, OptimizationMode optimization_mode_,
+            Effect effect_, Skill bg_enhanced_skill_, unsigned bg_enhanced_value_, const Achievement& achievement_) :
         end{false},
         re(re_),
         cards(cards_),
@@ -246,6 +249,8 @@ public:
         gamemode(gamemode_),
         optimization_mode(optimization_mode_),
         effect(effect_),
+        bg_enhanced_skill(bg_enhanced_skill_),
+        bg_enhanced_value(bg_enhanced_value_),
         achievement(achievement_)
     {
     }

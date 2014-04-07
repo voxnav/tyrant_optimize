@@ -2,11 +2,13 @@
 #define XML_H_INCLUDED
 
 #include <string>
+#include "tyrant.h"
 
 class Cards;
 class Decks;
 class Achievement;
 
+Skill skill_name_to_id(const char* name);
 void load_decks_xml(Decks& decks, const Cards& cards);
 void read_cards(Cards& cards);
 void read_missions(Decks& decks, const Cards& cards, std::string filename);

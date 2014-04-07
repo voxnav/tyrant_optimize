@@ -329,9 +329,12 @@ struct SimulationData
     std::vector<long double> factors;
     gamemode_t gamemode;
     enum Effect effect;
+    Skill bg_enhanced_skill;
+    unsigned bg_enhanced_value;
     const Achievement& achievement;
 
-    SimulationData(unsigned seed, const Cards& cards_, const Decks& decks_, unsigned num_def_decks_, std::vector<long double> factors_, gamemode_t gamemode_, enum Effect effect_, const Achievement& achievement_) :
+    SimulationData(unsigned seed, const Cards& cards_, const Decks& decks_, unsigned num_def_decks_, std::vector<long double> factors_, gamemode_t gamemode_,
+            enum Effect effect_, Skill bg_enhanced_skill_, unsigned bg_enhanced_value_, const Achievement& achievement_) :
         re(seed),
         cards(cards_),
         decks(decks_),
@@ -341,6 +344,8 @@ struct SimulationData
         factors(factors_),
         gamemode(gamemode_),
         effect(effect_),
+        bg_enhanced_skill(bg_enhanced_skill_),
+        bg_enhanced_value(bg_enhanced_value_),
         achievement(achievement_)
     {
         for(auto def_deck: def_decks)
@@ -372,7 +377,7 @@ struct SimulationData
         {
             att_hand.reset(re);
             def_hand->reset(re);
-            Field fd(re, cards, att_hand, *def_hand, gamemode, optimization_mode, effect != Effect::none ? effect : def_hand->deck->effect, achievement);
+            Field fd(re, cards, att_hand, *def_hand, gamemode, optimization_mode, effect != Effect::none ? effect : def_hand->deck->effect, bg_enhanced_skill, bg_enhanced_value, achievement);
             Results<uint64_t> result(play(&fd));
             res.emplace_back(result);
         }
@@ -402,25 +407,30 @@ public:
     std::vector<long double> factors;
     gamemode_t gamemode;
     enum Effect effect;
+    Skill bg_enhanced_skill;
+    unsigned bg_enhanced_value;
     Achievement achievement;
 
-    Process(unsigned _num_threads, const Cards& cards_, const Decks& decks_, Deck* att_deck_, std::vector<Deck*> _def_decks, std::vector<long double> _factors, gamemode_t _gamemode, enum Effect _effect, const Achievement& achievement_) :
-        num_threads(_num_threads),
+    Process(unsigned num_threads_, const Cards& cards_, const Decks& decks_, Deck* att_deck_, std::vector<Deck*> def_decks_, std::vector<long double> factors_, gamemode_t gamemode_,
+            enum Effect effect_, Skill bg_enhanced_skill_, unsigned bg_enhanced_value_, const Achievement& achievement_) :
+        num_threads(num_threads_),
         main_barrier(num_threads+1),
         cards(cards_),
         decks(decks_),
         att_deck(att_deck_),
-        def_decks(_def_decks),
-        factors(_factors),
-        gamemode(_gamemode),
-        effect(_effect),
+        def_decks(def_decks_),
+        factors(factors_),
+        gamemode(gamemode_),
+        effect(effect_),
+        bg_enhanced_skill(bg_enhanced_skill_),
+        bg_enhanced_value(bg_enhanced_value_),
         achievement(achievement_)
     {
         destroy_threads = false;
         unsigned seed(time(0));
         for(unsigned i(0); i < num_threads; ++i)
         {
-            threads_data.push_back(new SimulationData(seed + i, cards, decks, def_decks.size(), factors, gamemode, effect, achievement));
+            threads_data.push_back(new SimulationData(seed + i, cards, decks, def_decks.size(), factors, gamemode, effect, bg_enhanced_skill, bg_enhanced_value, achievement));
             threads.push_back(new boost::thread(thread_evaluate, std::ref(main_barrier), std::ref(shared_mutex), std::ref(*threads_data.back()), std::ref(*this), i));
         }
     }
@@ -1216,6 +1226,8 @@ int main(int argc, char** argv)
     std::vector<Deck*> def_decks;
     std::vector<long double> def_decks_factors;
     enum Effect effect(Effect::none);
+    Skill bg_enhanced_skill(no_skill);
+    unsigned bg_enhanced_value(0);
     bool keep_commander{false};
     bool fixed_len{false};
     std::vector<std::tuple<unsigned, unsigned, Operation>> todo;
@@ -1275,10 +1287,10 @@ int main(int argc, char** argv)
     std::map<std::string, int> effect_map;
     for(unsigned i(0); i < Effect::num_effects; ++i)
     {
-        effect_map[effect_names[i]] = i;
+        effect_map[effect_names[i]] = static_cast<enum Effect>(i);
         std::stringstream ss;
         ss << i;
-        effect_map[ss.str()] = i;
+        effect_map[ss.str()] = static_cast<enum Effect>(i);
     }
 
     for(int argIndex(3); argIndex < argc; ++argIndex)
@@ -1330,8 +1342,19 @@ int main(int argc, char** argv)
         }
         else if(strcmp(argv[argIndex], "-e") == 0)
         {
+#if defined(TYRANT_UNLEASHED)
+            std::string arg_skill(argv[argIndex + 1]);
+            bg_enhanced_skill = skill_name_to_id(arg_skill.c_str());
+            if(bg_enhanced_skill == no_skill)
+            {
+                std::cout << "The skill '" << arg_skill << "' was not found. ";
+                return(6);
+            }
+            bg_enhanced_value = atoi(argv[argIndex + 2]);
+            argIndex += 2;
+#else
             std::string arg_effect(argv[argIndex + 1]);
-            auto x = effect_map.find(arg_effect);
+            const auto & x = effect_map.find(arg_effect);
             if(x == effect_map.end())
             {
                 std::cout << "The effect '" << arg_effect << "' was not found. ";
@@ -1340,6 +1363,7 @@ int main(int argc, char** argv)
             }
             effect = static_cast<enum Effect>(x->second);
             argIndex += 1;
+#endif
         }
         else if(strcmp(argv[argIndex], "-fixedlen") == 0)
         {
@@ -1527,7 +1551,7 @@ int main(int argc, char** argv)
         std::cout << "Effect: " << effect_names[effect] << std::endl;
     }
 
-    Process p(num_threads, cards, decks, att_deck, def_decks, def_decks_factors, gamemode, effect, achievement);
+    Process p(num_threads, cards, decks, att_deck, def_decks, def_decks_factors, gamemode, effect, bg_enhanced_skill, bg_enhanced_value, achievement);
 
     {
         //ScopeClock timer;

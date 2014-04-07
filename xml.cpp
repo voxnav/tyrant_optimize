@@ -48,7 +48,7 @@ CardType::CardType map_to_type(unsigned i)
            CardType::num_cardtypes);
 }
 
-unsigned skill_name_to_id(const char* name)
+Skill skill_name_to_id(const char* name)
 {
     static std::map<std::string, int> skill_map;
     if(skill_map.empty())
@@ -61,7 +61,7 @@ unsigned skill_name_to_id(const char* name)
         }
     }
     auto x = skill_map.find(name);
-    return x == skill_map.end() ? no_skill : x->second;
+    return x == skill_map.end() ? no_skill : (Skill)x->second;
 }
 
 Faction skill_faction(xml_node<>* skill)
@@ -92,7 +92,7 @@ Skill skill_target_skill(xml_node<>* skill)
     xml_attribute<>* x(skill->first_attribute("s"));
     if(x)
     {
-       s = (Skill)skill_name_to_id(x->value());
+       s = skill_name_to_id(x->value());
     }
     return(s);
 }
@@ -226,7 +226,7 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
             skill_node;
             skill_node = skill_node->next_sibling("skill"))
     {
-        Skill skill_id = (Skill)skill_name_to_id(skill_node->first_attribute("id")->value());
+        Skill skill_id = skill_name_to_id(skill_node->first_attribute("id")->value());
         if(skill_id == no_skill) { continue; }
 
         bool all(skill_node->first_attribute("all"));
