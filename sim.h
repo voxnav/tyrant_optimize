@@ -7,6 +7,7 @@
 #include <deque>
 #include <tuple>
 #include <vector>
+#include <map>
 
 #include "tyrant.h"
 
@@ -131,9 +132,6 @@ struct CardStatus
     unsigned m_augmented;
     unsigned m_berserk;
     bool m_blitzing;
-// begin for TYRANT_UNLEASHED
-    unsigned m_cd_jam;
-// end
     bool m_chaosed;
     unsigned m_delay;
     bool m_diseased;
@@ -160,6 +158,9 @@ struct CardStatus
     bool m_temporary_split;
     bool m_is_summoned; // is this card summoned (or split)?
     CardStep m_step;
+// begin for TYRANT_UNLEASHED
+    unsigned m_skill_cd[4]; // XXX
+// end
 
     CardStatus() {}
     CardStatus(const Card* card);

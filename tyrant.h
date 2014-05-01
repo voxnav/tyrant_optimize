@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "1.2.1"
+#define TYRANT_OPTIMIZER_VERSION "1.2.2"
 
 #include <string>
 #include <set>
@@ -170,12 +170,12 @@ enum SkillSourceType
     source_chaos
 };
 
-//typedef std::tuple<Skill, unsigned, Faction, bool /* all */, SkillMod::SkillMod> SkillSpec;
 struct SkillSpec
 {
     Skill id;
     unsigned x;
     Faction y;
+    unsigned c;
     Skill s;
     bool all;
     SkillMod::SkillMod mod;

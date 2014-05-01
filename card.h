@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <cstring>
 #include "tyrant.h"
 
 class Card
@@ -68,8 +69,8 @@ public:
     unsigned m_valor;
     bool m_wall;
     std::vector<SkillSpec> m_skills[SkillMod::num_skill_activation_modifiers];
-    bool m_skills_set[num_skills];
     CardType::CardType m_type;
+    unsigned m_skill_pos[num_skills];
 
 public:
     Card() :
@@ -131,9 +132,10 @@ public:
         m_skills(),
         m_type(CardType::assault)
     {
+        std::memset(m_skill_pos, 0, sizeof m_skill_pos);
     }
 
-    void add_skill(Skill id, unsigned x, Faction y, Skill s, bool all, SkillMod::SkillMod mod=SkillMod::on_activate);
+    void add_skill(Skill id, unsigned x, Faction y, unsigned c, Skill s, bool all, SkillMod::SkillMod mod=SkillMod::on_activate);
 };
 
 #endif

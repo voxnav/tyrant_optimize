@@ -86,6 +86,17 @@ unsigned skill_value(xml_node<>* skill)
     return(value);
 }
 
+unsigned skill_cd(xml_node<>* skill)
+{
+    unsigned value(0);
+    xml_attribute<>* c(skill->first_attribute("c"));
+    if(c)
+    {
+        value = atoi(c->value());
+    }
+    return(value);
+}
+
 Skill skill_target_skill(xml_node<>* skill)
 {
     Skill s(no_skill);
@@ -222,6 +233,7 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
     card->m_upgrade_consumables = set == 5001 || (set == 5000 && card->m_reserve) ? 1 : 2;
     // Reward cards will still have a gold cost
     card->m_upgrade_gold_cost = set == 5000 ? (card->m_rarity == 4 ? 100000 : 20000) : 0;
+    unsigned skill_pos = 1;
     for(xml_node<>* skill_node = card_node->first_node("skill");
             skill_node;
             skill_node = skill_node->next_sibling("skill"))
@@ -236,7 +248,7 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
         bool died(skill_node->first_attribute("died"));
         bool normal(!(played || died || attacked || kill));
 
-        if(normal) { card->m_skills_set[skill_id] = true; }
+        if(normal) { card->m_skill_pos[skill_id] = skill_pos; }
 
         if(skill_id == antiair)
         { card->m_antiair = skill_value(skill_node); }
@@ -322,12 +334,13 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
         { card->m_wall = true; }
         else
         {
-            if(played) { card->add_skill(skill_id, skill_value(skill_node), skill_faction(skill_node), skill_target_skill(skill_node), all, SkillMod::on_play); }
-            if(attacked) { card->add_skill(skill_id, skill_value(skill_node), skill_faction(skill_node), skill_target_skill(skill_node), all, SkillMod::on_attacked); }
-            if(kill) { card->add_skill(skill_id, skill_value(skill_node), skill_faction(skill_node), skill_target_skill(skill_node), all, SkillMod::on_kill); }
-            if(died) { card->add_skill(skill_id, skill_value(skill_node), skill_faction(skill_node), skill_target_skill(skill_node), all, SkillMod::on_death); }
-            if(normal) { card->add_skill(skill_id, skill_value(skill_node), skill_faction(skill_node), skill_target_skill(skill_node), all); }
+            if(played) { card->add_skill(skill_id, skill_value(skill_node), skill_faction(skill_node), skill_cd(skill_node), skill_target_skill(skill_node), all, SkillMod::on_play); }
+            if(attacked) { card->add_skill(skill_id, skill_value(skill_node), skill_faction(skill_node), skill_cd(skill_node), skill_target_skill(skill_node), all, SkillMod::on_attacked); }
+            if(kill) { card->add_skill(skill_id, skill_value(skill_node), skill_faction(skill_node), skill_cd(skill_node), skill_target_skill(skill_node), all, SkillMod::on_kill); }
+            if(died) { card->add_skill(skill_id, skill_value(skill_node), skill_faction(skill_node), skill_cd(skill_node), skill_target_skill(skill_node), all, SkillMod::on_death); }
+            if(normal) { card->add_skill(skill_id, skill_value(skill_node), skill_faction(skill_node), skill_cd(skill_node), skill_target_skill(skill_node), all); }
         }
+        ++ skill_pos;
     }
     cards.cards.push_back(card);
 #if defined(TYRANT_UNLEASHED)
