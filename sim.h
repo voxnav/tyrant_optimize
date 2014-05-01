@@ -135,11 +135,7 @@ struct CardStatus
     bool m_chaosed;
     unsigned m_delay;
     bool m_diseased;
-// begin for TYRANT_UNLEASHED
-    Skill m_enhanced_skill;
-    unsigned m_enhanced_value;
     unsigned m_evaded;
-// end
     unsigned m_enfeebled;
     Faction m_faction;
     bool m_frozen;
@@ -159,7 +155,9 @@ struct CardStatus
     bool m_is_summoned; // is this card summoned (or split)?
     CardStep m_step;
 // begin for TYRANT_UNLEASHED
-    unsigned m_skill_cd[4]; // XXX
+    // indexed by m_card->m_skill_pos[skill_id], [0] as fallback
+    unsigned m_enhanced_value[5]; // XXX
+    unsigned m_skill_cd[5]; // XXX
 // end
 
     CardStatus() {}
@@ -168,7 +166,7 @@ struct CardStatus
     void set(const Card* card);
     void set(const Card& card);
     std::string description();
-    unsigned enhanced(Field* fd, Skill skill);
+    unsigned enhanced(Skill skill);
 };
 //------------------------------------------------------------------------------
 // Represents a particular draw from a deck.

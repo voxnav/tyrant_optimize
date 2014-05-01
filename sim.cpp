@@ -89,8 +89,6 @@ CardStatus::CardStatus(const Card* card) :
     m_chaosed(false),
     m_delay(card->m_delay),
     m_diseased(false),
-    m_enhanced_skill(no_skill),
-    m_enhanced_value(0),
     m_evaded(0),
     m_enfeebled(0),
     m_faction(card->m_faction),
@@ -111,13 +109,14 @@ CardStatus::CardStatus(const Card* card) :
     m_is_summoned(false),
     m_step(CardStep::none)
 {
+    std::memset(m_enhanced_value, 0, sizeof m_enhanced_value);
     std::memset(m_skill_cd, 0, sizeof m_skill_cd);
 }
 
 //------------------------------------------------------------------------------
-inline unsigned CardStatus::enhanced(Field* fd, Skill skill)
+inline unsigned CardStatus::enhanced(Skill skill)
 {
-    return (fd->bg_enhanced_skill == skill ? fd->bg_enhanced_value : 0) + (m_enhanced_skill == skill ? m_enhanced_value : 0);
+    return m_enhanced_value[m_card->m_skill_pos[skill]];
 }
 //------------------------------------------------------------------------------
 inline void CardStatus::set(const Card* card)
@@ -136,8 +135,6 @@ inline void CardStatus::set(const Card& card)
     m_chaosed = false;
     m_delay = card.m_delay;
     m_diseased = false;
-    m_enhanced_skill = no_skill;
-    m_enhanced_value = 0;
     m_evaded = 0;
     m_enfeebled = 0;
     m_faction = card.m_faction;
@@ -157,6 +154,7 @@ inline void CardStatus::set(const Card& card)
     m_weakened = 0;
     m_is_summoned = false;
     m_step = CardStep::none;
+    std::memset(m_enhanced_value, 0, sizeof m_enhanced_value);
     std::memset(m_skill_cd, 0, sizeof m_skill_cd);
 }
 //------------------------------------------------------------------------------
@@ -604,7 +602,7 @@ void resolve_skill(Field* fd)
         else if(!status->m_jammed)
         {
 #if defined(TYRANT_UNLEASHED)
-            unsigned enhanced_value = status->enhanced(fd, skill.id);
+            unsigned enhanced_value = status->enhanced(skill.id);
             auto& enhanced_s = enhanced_value > 0 ? apply_enhance(skill, enhanced_value) : skill;
             auto& modified_s = enhanced_s;
 #else
@@ -629,9 +627,9 @@ void evaluate_skills(Field* fd, CardStatus* status, const std::vector<SkillSpec>
     {
         auto& battleground_s = need_add_skill ? apply_battleground_effect(fd, status, ss, mod, need_add_skill) : ss;
         auto skill_pos = status->m_card->m_skill_pos[ss.id];
-        if (skill_pos > 0 && status->m_skill_cd[skill_pos - 1] > 0)
+        if (status->m_skill_cd[skill_pos] > 0)
         {
-            _DEBUG_MSG(2, "Cooling down (%u) %s skill %s\n", status->m_skill_cd[skill_pos - 1], status_description(status).c_str(), skill_description(fd->cards, battleground_s).c_str());
+            _DEBUG_MSG(2, "Cooling down (%u) %s skill %s\n", status->m_skill_cd[skill_pos], status_description(status).c_str(), skill_description(fd->cards, battleground_s).c_str());
             continue;
         }
         _DEBUG_MSG(2, "Evaluating %s skill %s\n", status_description(status).c_str(), skill_description(fd->cards, battleground_s).c_str());
@@ -803,6 +801,14 @@ Results<uint64_t> play(Field* fd)
         {
             PlayCard(played_card, fd).op<CardType::structure>();
         }
+        auto& structures(fd->tap->structures);
+        for(unsigned index(0), end(structures.size());
+            index < end;
+            ++index)
+        {
+            CardStatus& status(structures[index]);
+            --status.m_delay;
+        }
         std::swap(fd->tapi, fd->tipi);
         std::swap(fd->tap, fd->tip);
     }
@@ -880,9 +886,20 @@ Results<uint64_t> play(Field* fd)
         }
         if(__builtin_expect(fd->end, false)) { break; }
 
+#if defined(TYRANT_UNLEASHED)
+        // Evaluate Unleashed Battleground effect (Enhance all)
+        if (fd->bg_enhanced_skill != no_skill)
+        {
+            SkillSpec battleground_s{enhance, fd->bg_enhanced_value, allfactions, 0, fd->bg_enhanced_skill, true, SkillMod::on_activate};
+            _DEBUG_MSG(2, "Evaluating Battleground skill %s\n", skill_description(fd->cards, battleground_s).c_str());
+            fd->skill_queue.emplace_back(&fd->tap->commander, battleground_s);
+            resolve_skill(fd);
+        }
+#else
         // Evaluate Legion skill
         fd->current_phase = Field::legion_phase;
         evaluate_legion(fd);
+#endif
 
         // Evaluate commander
         fd->current_phase = Field::commander_phase;
@@ -1240,10 +1257,12 @@ void turn_start_phase(Field* fd)
     remove_dead(fd->tip->structures);
     fd->fusion_count = 0;
     // Active player's commander card:
+#if defined(TYRANT_UNLEASHED)
     for (auto & skill_cd : fd->tip->commander.m_skill_cd)
     {
         if (skill_cd > 0) { -- skill_cd; }
     }
+#endif
     // Active player's assault cards:
     // update index
     // remove enfeeble, protect; apply poison damage, reduce delay
@@ -1256,8 +1275,6 @@ void turn_start_phase(Field* fd)
             CardStatus& status(assaults[index]);
             status.m_index = index;
             status.m_enfeebled = 0;
-            status.m_enhanced_skill = no_skill;
-            status.m_enhanced_value = 0;
             status.m_evaded = 0;
             status.m_protected = 0;
             if(status.m_poisoned > 0)
@@ -1271,10 +1288,13 @@ void turn_start_phase(Field* fd)
                 -- status.m_delay;
             }
             if(status.m_card->m_fusion && status.m_delay == 0) { ++ fd->fusion_count; }
+#if defined(TYRANT_UNLEASHED)
+            std::memset(status.m_enhanced_value, 0, sizeof status.m_enhanced_value);
             for (auto & skill_cd : status.m_skill_cd)
             {
                 if (skill_cd > 0) { -- skill_cd; }
             }
+#endif
         }
     }
     // Active player's structure cards:
@@ -1294,10 +1314,12 @@ void turn_start_phase(Field* fd)
                 --status.m_delay;
             }
             if(status.m_card->m_fusion && status.m_delay == 0) { ++fd->fusion_count; }
+#if defined(TYRANT_UNLEASHED)
             for (auto & skill_cd : status.m_skill_cd)
             {
                 if (skill_cd > 0) { -- skill_cd; }
             }
+#endif
         }
     }
     // Defending player's assault cards:
@@ -1403,7 +1425,7 @@ inline unsigned counter_damage(Field* fd, CardStatus* att, CardStatus* def)
 {
     assert(att->m_card->m_type == CardType::assault);
     assert(def->m_card->m_type != CardType::action);
-    return(safe_minus(def->m_card->m_counter + def->enhanced(fd, counter) + att->m_enfeebled, att->m_protected));
+    return(safe_minus(def->m_card->m_counter + def->enhanced(counter) + att->m_enfeebled, att->m_protected));
 }
 inline CardStatus* select_first_enemy_wall(Field* fd)
 {
@@ -1528,7 +1550,7 @@ struct PerformAttack
                 {
                     count_achievement<berserk>(fd, att_status);
                     // perform_skill_berserk
-                    att_status->m_berserk += att_status->m_card->m_berserk + att_status->enhanced(fd, berserk);
+                    att_status->m_berserk += att_status->m_card->m_berserk + att_status->enhanced(berserk);
                 }
             }
             crush_leech<def_cardtype>();
@@ -1575,7 +1597,7 @@ struct PerformAttack
         // prevent damage
         std::string reduced_desc;
         unsigned reduced_dmg(0);
-        unsigned armored_value(def_card.m_armored + def_status->enhanced(fd, armored));
+        unsigned armored_value(def_card.m_armored + def_status->enhanced(armored));
         if(armored_value == 0 && fd->effect == Effect::photon_shield && def_status->m_player == (fd->optimization_mode == OptimizationMode::defense ? 0u : 1u))
         {
             armored_value = 2;
@@ -1632,7 +1654,7 @@ struct PerformAttack
         if(def_status->m_card->m_poison_oa > att_status->m_poisoned && skill_check<poison>(fd, def_status, att_status))
         {
             count_achievement<poison>(fd, def_status);
-            unsigned v = def_status->m_card->m_poison_oa + def_status->enhanced(fd, poison);
+            unsigned v = def_status->m_card->m_poison_oa + def_status->enhanced(poison);
             _DEBUG_MSG(1, "%s (on attacked) poisons %s by %u\n", status_description(def_status).c_str(), status_description(att_status).c_str(), v);
             att_status->m_poisoned = v;
         }
@@ -1646,7 +1668,7 @@ struct PerformAttack
         if(def_status->m_hp > 0 && def_status->m_card->m_berserk_oa > 0 && skill_check<berserk>(fd, def_status, nullptr))
         {
             count_achievement<berserk>(fd, def_status);
-            def_status->m_berserk += def_status->m_card->m_berserk_oa + def_status->enhanced(fd, berserk);
+            def_status->m_berserk += def_status->m_card->m_berserk_oa + def_status->enhanced(berserk);
         }
         if(def_status->m_card->m_sunder_oa && skill_check<sunder>(fd, def_status, att_status))
         {
@@ -1696,7 +1718,7 @@ void PerformAttack::damage_dependant_pre_oa<CardType::assault>()
     {
         count_achievement<poison>(fd, att_status);
         // perform_skill_poison
-        unsigned v = att_status->m_card->m_poison + att_status->enhanced(fd, poison);
+        unsigned v = att_status->m_card->m_poison + att_status->enhanced(poison);
         _DEBUG_MSG(1, "%s poisons %s by %u\n", status_description(att_status).c_str(), status_description(def_status).c_str(), v);
         def_status->m_poisoned = v;
     }
@@ -1729,7 +1751,7 @@ void PerformAttack::damage_dependant_pre_oa<CardType::assault>()
     {
         count_achievement<inhibit>(fd, att_status);
         // perform_skill_inhibit
-        unsigned v = att_status->m_card->m_inhibit + att_status->enhanced(fd, inhibit);
+        unsigned v = att_status->m_card->m_inhibit + att_status->enhanced(inhibit);
         _DEBUG_MSG(1, "%s inhibits %s by %u\n", status_description(att_status).c_str(), status_description(def_status).c_str(), v);
         def_status->m_inhibited += v;
     }
@@ -1767,7 +1789,7 @@ void PerformAttack::crush_leech<CardType::assault>()
     if(att_status->m_card->m_leech > 0 && skill_check<leech>(fd, att_status, nullptr))
     {
         count_achievement<leech>(fd, att_status);
-        auto leech_value = std::min(att_dmg, att_status->m_card->m_leech + att_status->enhanced(fd, leech));
+        auto leech_value = std::min(att_dmg, att_status->m_card->m_leech + att_status->enhanced(leech));
         _DEBUG_MSG(1, "%s leeches %u health\n", status_description(att_status).c_str(), leech_value);
         add_hp(fd, att_status, leech_value);
     }
@@ -1943,7 +1965,7 @@ inline bool skill_predicate<enhance>(Field* fd, CardStatus* src, CardStatus* c, 
         assert(battleground_s.id != no_skill);
         if(battleground_s.id == s.s) { return(true); }
     }
-    return(c->m_card->m_skill_pos[s.s] > 0);
+    return (c->m_card->m_skill_pos[s.s] > 0) && (defensive_skills.find(s.s) != defensive_skills.end() || is_active(c));
 }
 
 template<>
@@ -2066,8 +2088,9 @@ inline void perform_skill<enfeeble>(Field* fd, CardStatus* c, const SkillSpec& s
 template<>
 inline void perform_skill<enhance>(Field* fd, CardStatus* c, const SkillSpec& s)
 {
-    c->m_enhanced_skill = s.s;
-    c->m_enhanced_value += s.x;
+    auto skill_pos = c->m_card->m_skill_pos[s.s];
+    assert(skill_pos > 0);
+    c->m_enhanced_value[skill_pos] += s.x;
 }
 
 template<>
@@ -2316,7 +2339,7 @@ bool check_and_perform_skill(Field* fd, CardStatus* src_status, CardStatus* dst_
     {
         if(is_evadable &&
 #if defined(TYRANT_UNLEASHED)
-                dst_status->m_evaded < dst_status->m_card->m_evade + dst_status->enhanced(fd, evade) &&
+                dst_status->m_evaded < dst_status->m_card->m_evade + dst_status->enhanced(evade) &&
 #else
                 (dst_status->m_card->m_evade || (fd->effect == Effect::quicksilver && dst_status->m_card->m_type == CardType::assault)) && fd->flip() &&
 #endif
@@ -2336,7 +2359,7 @@ bool check_and_perform_skill(Field* fd, CardStatus* src_status, CardStatus* dst_
         auto skill_pos = src_status->m_card->m_skill_pos[skill_id];
         if (skill_pos > 0 && s.c > 0)
         {
-            src_status->m_skill_cd[skill_pos - 1] = s.c;
+            src_status->m_skill_cd[skill_pos] = s.c;
         }
         return(true);
     }
@@ -2629,7 +2652,7 @@ void perform_mimic(Field* fd, CardStatus* src_status, const SkillSpec& s)
     // but resolve_skill will handle those.
     if(
 #if defined(TYRANT_UNLEASHED)
-            c->m_evaded < c->m_card->m_evade + c->enhanced(fd, evade) &&
+            c->m_evaded < c->m_card->m_evade + c->enhanced(evade) &&
 #else
             (c->m_card->m_evade || (fd->effect == Effect::quicksilver && c->m_card->m_type == CardType::assault)) && fd->flip() &&
 #endif

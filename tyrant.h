@@ -48,6 +48,7 @@ enum Skill
 };
 extern std::string skill_names[num_skills];
 extern std::set<Skill> helpful_skills;
+extern std::set<Skill> defensive_skills;
 
 namespace SkillMod {
 enum SkillMod
