@@ -10,6 +10,7 @@ class Achievement;
 
 Skill skill_name_to_id(const char* name);
 void load_decks_xml(Decks& decks, const Cards& cards);
+void load_recipes_xml(Cards& cards);
 void read_cards(Cards& cards);
 void read_missions(Decks& decks, const Cards& cards, std::string filename);
 void read_raids(Decks& decks, const Cards& cards, std::string filename);

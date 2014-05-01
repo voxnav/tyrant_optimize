@@ -75,26 +75,10 @@ Faction skill_faction(xml_node<>* skill)
     return(unmapped_faction == 0 ? allfactions : map_to_faction(unmapped_faction));
 }
 
-unsigned skill_value(xml_node<>* skill)
+unsigned node_value(xml_node<>* skill, const char* attribute)
 {
-    unsigned value(0);
-    xml_attribute<>* x(skill->first_attribute("x"));
-    if(x)
-    {
-        value = atoi(x->value());
-    }
-    return(value);
-}
-
-unsigned skill_cd(xml_node<>* skill)
-{
-    unsigned value(0);
-    xml_attribute<>* c(skill->first_attribute("c"));
-    if(c)
-    {
-        value = atoi(c->value());
-    }
-    return(value);
+    xml_attribute<>* value_node(skill->first_attribute(attribute));
+    return value_node ? atoi(value_node->value()) : 0;
 }
 
 Skill skill_target_skill(xml_node<>* skill)
@@ -251,22 +235,22 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
         if(normal) { card->m_skill_pos[skill_id] = skill_pos; }
 
         if(skill_id == antiair)
-        { card->m_antiair = skill_value(skill_node); }
+        { card->m_antiair = node_value(skill_node, "x"); }
         else if(skill_id == armored)
-        { card->m_armored = skill_value(skill_node); }
+        { card->m_armored = node_value(skill_node, "x"); }
         else if(skill_id == berserk)
         {
-            if(attacked) { card->m_berserk_oa = skill_value(skill_node); }
-            else {card->m_berserk = skill_value(skill_node); }
+            if(attacked) { card->m_berserk_oa = node_value(skill_node, "x"); }
+            else {card->m_berserk = node_value(skill_node, "x"); }
         }
         else if(skill_id == blitz)
         { card->m_blitz = true; }
         else if(skill_id == burst)
-        { card->m_burst = skill_value(skill_node); }
+        { card->m_burst = node_value(skill_node, "x"); }
         else if(skill_id == counter)
-        { card->m_counter = skill_value(skill_node); }
+        { card->m_counter = node_value(skill_node, "x"); }
         else if(skill_id == crush)
-        { card->m_crush = skill_value(skill_node); }
+        { card->m_crush = node_value(skill_node, "x"); }
         else if(skill_id == disease)
         {
             if(attacked) { card->m_disease_oa = true; }
@@ -276,14 +260,14 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
         { card->m_emulate = true; }
         else if(skill_id == evade)
 #if defined(TYRANT_UNLEASHED)
-        { card->m_evade = skill_value(skill_node); }
+        { card->m_evade = node_value(skill_node, "x"); }
 #else
         { card->m_evade = 1; }
 #endif
         else if(skill_id == fear)
         { card->m_fear = true; }
         else if(skill_id == flurry)
-        { card->m_flurry = skill_value(skill_node); }
+        { card->m_flurry = node_value(skill_node, "x"); }
         else if(skill_id == flying)
         { card->m_flying = true; }
         else if(skill_id == fusion)
@@ -292,31 +276,31 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
         { card->m_immobilize = true; }
 #if defined(TYRANT_UNLEASHED)
         else if(skill_id == inhibit)
-        { card->m_inhibit = skill_value(skill_node); }
+        { card->m_inhibit = node_value(skill_node, "x"); }
 #endif
         else if(skill_id == intercept)
         { card->m_intercept = true; }
         else if(skill_id == leech)
-        { card->m_leech = skill_value(skill_node); }
+        { card->m_leech = node_value(skill_node, "x"); }
         else if(skill_id == legion)
-        { card->m_legion = skill_value(skill_node); }
+        { card->m_legion = node_value(skill_node, "x"); }
         else if(skill_id == payback)
         { card->m_payback = true; }
         else if(skill_id == pierce)
-        { card->m_pierce = skill_value(skill_node); }
+        { card->m_pierce = node_value(skill_node, "x"); }
         else if(skill_id == phase)
         { card->m_phase = true; }
         else if(skill_id == poison)
         {
-            if(attacked) { card->m_poison_oa = skill_value(skill_node); }
-            else {card->m_poison = skill_value(skill_node); }
+            if(attacked) { card->m_poison_oa = node_value(skill_node, "x"); }
+            else {card->m_poison = node_value(skill_node, "x"); }
         }
         else if(skill_id == refresh)
         { card->m_refresh = true; }
         else if(skill_id == regenerate)
-        { card->m_regenerate = skill_value(skill_node); }
+        { card->m_regenerate = node_value(skill_node, "x"); }
         else if(skill_id == siphon)
-        { card->m_siphon = skill_value(skill_node); }
+        { card->m_siphon = node_value(skill_node, "x"); }
         else if(skill_id == stun)
         { card->m_stun = true; }
         else if(skill_id == sunder)
@@ -329,16 +313,16 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
         else if(skill_id == tribute)
         { card->m_tribute = true; }
         else if(skill_id == valor)
-        { card->m_valor = skill_value(skill_node); }
+        { card->m_valor = node_value(skill_node, "x"); }
         else if(skill_id == wall)
         { card->m_wall = true; }
         else
         {
-            if(played) { card->add_skill(skill_id, skill_value(skill_node), skill_faction(skill_node), skill_cd(skill_node), skill_target_skill(skill_node), all, SkillMod::on_play); }
-            if(attacked) { card->add_skill(skill_id, skill_value(skill_node), skill_faction(skill_node), skill_cd(skill_node), skill_target_skill(skill_node), all, SkillMod::on_attacked); }
-            if(kill) { card->add_skill(skill_id, skill_value(skill_node), skill_faction(skill_node), skill_cd(skill_node), skill_target_skill(skill_node), all, SkillMod::on_kill); }
-            if(died) { card->add_skill(skill_id, skill_value(skill_node), skill_faction(skill_node), skill_cd(skill_node), skill_target_skill(skill_node), all, SkillMod::on_death); }
-            if(normal) { card->add_skill(skill_id, skill_value(skill_node), skill_faction(skill_node), skill_cd(skill_node), skill_target_skill(skill_node), all); }
+            if(played) { card->add_skill(skill_id, node_value(skill_node, "x"), skill_faction(skill_node), node_value(skill_node, "c"), skill_target_skill(skill_node), all, SkillMod::on_play); }
+            if(attacked) { card->add_skill(skill_id, node_value(skill_node, "x"), skill_faction(skill_node), node_value(skill_node, "c"), skill_target_skill(skill_node), all, SkillMod::on_attacked); }
+            if(kill) { card->add_skill(skill_id, node_value(skill_node, "x"), skill_faction(skill_node), node_value(skill_node, "c"), skill_target_skill(skill_node), all, SkillMod::on_kill); }
+            if(died) { card->add_skill(skill_id, node_value(skill_node, "x"), skill_faction(skill_node), node_value(skill_node, "c"), skill_target_skill(skill_node), all, SkillMod::on_death); }
+            if(normal) { card->add_skill(skill_id, node_value(skill_node, "x"), skill_faction(skill_node), node_value(skill_node, "c"), skill_target_skill(skill_node), all); }
         }
         ++ skill_pos;
     }
@@ -556,6 +540,40 @@ void read_quests(Decks& decks, const Cards& cards, std::string filename)
         deck->effect = static_cast<enum Effect>(effect_id);
     }
 }
+
+//------------------------------------------------------------------------------
+void load_recipes_xml(Cards& cards)
+{
+    std::vector<char> buffer;
+    xml_document<> doc;
+    parse_file("fusion_recipes_cj2.xml", buffer, doc);
+    xml_node<>* root = doc.first_node();
+
+    if(!root)
+    {
+        return;
+    }
+
+    for(xml_node<>* recipe_node = root->first_node("fusion_recipe");
+        recipe_node;
+        recipe_node = recipe_node->next_sibling("fusion_recipe"))
+    {
+        xml_node<>* card_id_node(recipe_node->first_node("card_id"));
+        if (!card_id_node) { continue; }
+        unsigned card_id(atoi(card_id_node->value()));
+        auto & card = cards.cards_by_id[card_id];
+        for(xml_node<>* resource_node = recipe_node->first_node("resource");
+                resource_node;
+                resource_node = resource_node->next_sibling("resource"))
+        {
+            unsigned card_id(node_value(resource_node, "card_id"));
+            unsigned number(node_value(resource_node, "number"));
+            if (card_id == 0 || number == 0) { continue; }
+            card->m_material_list[cards.by_id(card_id)] += number;
+        }
+    }
+}
+
 //------------------------------------------------------------------------------
 extern unsigned turn_limit;
 Comparator get_comparator(xml_node<>* node, Comparator default_comparator)

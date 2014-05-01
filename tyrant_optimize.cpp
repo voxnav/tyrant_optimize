@@ -1210,7 +1210,7 @@ int main(int argc, char** argv)
     load_decks_xml(decks, cards);
     load_decks(decks, cards);
 #if defined(TYRANT_UNLEASHED)
-    load_fusions(cards);
+    load_recipes_xml(cards);
 #endif
     fill_skill_table();
 
