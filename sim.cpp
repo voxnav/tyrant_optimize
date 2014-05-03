@@ -801,14 +801,6 @@ Results<uint64_t> play(Field* fd)
         {
             PlayCard(played_card, fd).op<CardType::structure>();
         }
-        auto& structures(fd->tap->structures);
-        for(unsigned index(0), end(structures.size());
-            index < end;
-            ++index)
-        {
-            CardStatus& status(structures[index]);
-            --status.m_delay;
-        }
         std::swap(fd->tapi, fd->tipi);
         std::swap(fd->tap, fd->tip);
     }

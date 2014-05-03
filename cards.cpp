@@ -84,18 +84,13 @@ void Cards::organize()
             card->m_name.erase(pos, 1);
         }
 #if defined(TYRANT_UNLEASHED)
-        if(card->m_level == 1)
+        if (card->m_level > 1 && card->m_id == by_id(card->m_base_id)->m_final_id)
         {
-            player_cards_by_name[{simplify_name(card->m_name + " Lv.1"), card->m_hidden}] = card;
+            player_cards_by_name[{simplify_name(card->m_name + "-" + to_string(card->m_level)), card->m_hidden}] = card;
         }
         else
         {
-            if (card->m_id == by_id(card->m_base_id)->m_final_id)
-            {
-                player_cards_by_name[{simplify_name(card->m_name + "*"), card->m_hidden}] = card;
-            }
-            card->m_name += " Lv.";
-            card->m_name += to_string(card->m_level);
+            card->m_name += "-" + to_string(card->m_level);
         }
 #else
         if(card->m_set == 5002)
