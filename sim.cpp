@@ -777,6 +777,7 @@ inline bool can_attack(CardStatus* c) { return(can_act(c) && !c->m_immobilized &
 inline bool can_be_healed(CardStatus* c) { return(c->m_hp > 0 && c->m_hp < c->m_card->m_health && !c->m_diseased); }
 //------------------------------------------------------------------------------
 void turn_start_phase(Field* fd);
+void turn_end_phase(Field* fd);
 void evaluate_legion(Field* fd);
 bool check_and_perform_refresh(Field* fd, CardStatus* src_status);
 // return value : (raid points) -> attacker wins, 0 -> defender wins
@@ -879,7 +880,7 @@ Results<uint64_t> play(Field* fd)
         if(__builtin_expect(fd->end, false)) { break; }
 
 #if defined(TYRANT_UNLEASHED)
-        // Evaluate Unleashed Battleground effect (Enhance all)
+        // Evaluate TU Battleground effect (Enhance all)
         if (fd->bg_enhanced_skill != no_skill)
         {
             SkillSpec battleground_s{enhance, fd->bg_enhanced_value, allfactions, 0, fd->bg_enhanced_skill, true, SkillMod::on_activate};
@@ -933,6 +934,8 @@ Results<uint64_t> play(Field* fd)
             }
             current_status.m_step = CardStep::attacked;
         }
+        fd->current_phase = Field::end_phase;
+        turn_end_phase(fd);
         if(__builtin_expect(fd->end, false)) { break; }
         _DEBUG_MSG(1, "TURN %u ends for %s\n", fd->turn, status_description(&fd->tap->commander).c_str());
         std::swap(fd->tapi, fd->tipi);
@@ -1243,21 +1246,18 @@ void check_regeneration(Field* fd)
 }
 void turn_start_phase(Field* fd)
 {
-    remove_dead(fd->tap->assaults);
-    remove_dead(fd->tap->structures);
-    remove_dead(fd->tip->assaults);
-    remove_dead(fd->tip->structures);
     fd->fusion_count = 0;
     // Active player's commander card:
 #if defined(TYRANT_UNLEASHED)
-    for (auto & skill_cd : fd->tip->commander.m_skill_cd)
+    for (auto & skill_cd : fd->tap->commander.m_skill_cd)
     {
         if (skill_cd > 0) { -- skill_cd; }
     }
 #endif
     // Active player's assault cards:
     // update index
-    // remove enfeeble, protect; apply poison damage, reduce delay
+    // reduce delay; [TU] reduce skill cooldown
+    // [WM:T] apply poison damage
     {
         auto& assaults(fd->tap->assaults);
         for(unsigned index(0), end(assaults.size());
@@ -1266,32 +1266,29 @@ void turn_start_phase(Field* fd)
         {
             CardStatus& status(assaults[index]);
             status.m_index = index;
-            status.m_enfeebled = 0;
-            status.m_evaded = 0;
-            status.m_protected = 0;
-            if(status.m_poisoned > 0)
-            {
-                _DEBUG_MSG(1, "%s takes poison damage\n", status_description(&status).c_str());
-                remove_hp(fd, status, status.m_poisoned);
-            }
             if(status.m_delay > 0 && !status.m_frozen)
             {
                 _DEBUG_MSG(1, "%s reduces its timer\n", status_description(&status).c_str());
                 -- status.m_delay;
             }
-            if(status.m_card->m_fusion && status.m_delay == 0) { ++ fd->fusion_count; }
 #if defined(TYRANT_UNLEASHED)
-            std::memset(status.m_enhanced_value, 0, sizeof status.m_enhanced_value);
             for (auto & skill_cd : status.m_skill_cd)
             {
                 if (skill_cd > 0) { -- skill_cd; }
             }
+#else
+            if(status.m_poisoned > 0)
+            {
+                _DEBUG_MSG(1, "%s takes poison damage\n", status_description(&status).c_str());
+                remove_hp(fd, status, status.m_poisoned);
+            }
+            if(status.m_card->m_fusion && status.m_delay == 0) { ++ fd->fusion_count; }
 #endif
         }
     }
     // Active player's structure cards:
     // update index
-    // reduce delay
+    // reduce delay; [TU] reduce skill cooldown
     {
         auto& structures(fd->tap->structures);
         for(unsigned index(0), end(structures.size());
@@ -1305,19 +1302,18 @@ void turn_start_phase(Field* fd)
                 _DEBUG_MSG(1, "%s reduces its timer\n", status_description(&status).c_str());
                 --status.m_delay;
             }
-            if(status.m_card->m_fusion && status.m_delay == 0) { ++fd->fusion_count; }
 #if defined(TYRANT_UNLEASHED)
             for (auto & skill_cd : status.m_skill_cd)
             {
                 if (skill_cd > 0) { -- skill_cd; }
             }
+#else
+            if(status.m_card->m_fusion && status.m_delay == 0) { ++fd->fusion_count; }
 #endif
         }
     }
     // Defending player's assault cards:
     // update index
-    // remove augment, chaos, freeze, immobilize, jam, rally, weaken, apply refresh
-    // remove temp split
     {
         auto& assaults(fd->tip->assaults);
         for(unsigned index(0), end(assaults.size());
@@ -1326,28 +1322,10 @@ void turn_start_phase(Field* fd)
         {
             CardStatus& status(assaults[index]);
             status.m_index = index;
-            status.m_augmented = 0;
-            status.m_chaosed = false;
-            status.m_enfeebled = 0;
-            status.m_frozen = false;
-            status.m_immobilized = false;
-            status.m_inhibited = 0;
-            status.m_jammed = false;
-            status.m_phased = false;
-            status.m_rallied = 0;
-            if(status.m_stunned > 0) { -- status.m_stunned; }
-            status.m_weakened = 0;
-            status.m_temporary_split = false;
-            status.m_step = CardStep::none;
-            if(status.m_card->m_refresh)
-            {
-                check_and_perform_refresh(fd, &status);
-            }
         }
     }
     // Defending player's structure cards:
     // update index
-    // apply refresh
     {
         auto& structures(fd->tip->structures);
         for(unsigned index(0), end(structures.size());
@@ -1356,17 +1334,126 @@ void turn_start_phase(Field* fd)
         {
             CardStatus& status(structures[index]);
             status.m_index = index;
+        }
+    }
+#if not defined(TYRANT_UNLEASHED)
+    // Perform on death skills (from cards killed by poison damage)
+    prepend_on_death(fd);
+    resolve_skill(fd);
+    // Regen from poison
+    check_regeneration(fd);
+#endif
+}
+void turn_end_phase(Field* fd)
+{
+    // Active player's assault cards:
+    // remove augment, chaos, freeze, immobilize, jam, rally, weaken; apply refresh
+    // remove temp split
+    // [TU] apply poison damage
+    {
+        auto& assaults(fd->tap->assaults);
+        for(unsigned index(0), end(assaults.size());
+            index < end;
+            ++index)
+        {
+            CardStatus& status(assaults[index]);
+            if (status.m_hp <= 0)
+            {
+                continue;
+            }
+            status.m_jammed = false;
+            status.m_rallied = 0;
+            status.m_weakened = 0;
+            status.m_step = CardStep::none;
+#if defined(TYRANT_UNLEASHED)
+            status.m_inhibited = 0;
+            if(status.m_poisoned > 0)
+            {
+                _DEBUG_MSG(1, "%s takes poison damage\n", status_description(&status).c_str());
+                remove_hp(fd, status, status.m_poisoned);
+            }
+#else
+            // not need to fade out in own turn in TU
+            status.m_enfeebled = 0;
+            // not in TU
+            status.m_augmented = 0;
+            status.m_chaosed = false;
+            status.m_frozen = false;
+            status.m_immobilized = false;
+            status.m_phased = false;
+            if(status.m_stunned > 0) { -- status.m_stunned; }
+            status.m_temporary_split = false;
+            if(status.m_card->m_refresh)
+            {
+                check_and_perform_refresh(fd, &status);
+            }
+#endif
+        }
+    }
+    // Active player's structure cards:
+    // apply refresh
+#if not defined(TYRANT_UNLEASHED)
+    {
+        auto& structures(fd->tap->structures);
+        for(unsigned index(0), end(structures.size());
+            index < end;
+            ++index)
+        {
+            CardStatus& status(structures[index]);
+            if (status.m_hp <= 0)
+            {
+                continue;
+            }
             if(status.m_card->m_refresh && fd->effect != Effect::impenetrable)
             {
                 check_and_perform_refresh(fd, &status);
             }
         }
     }
-    // Perform on death skills (from cards killed by poison damage)
-    prepend_on_death(fd);
-    resolve_skill(fd);
-    // Regen from poison
-    check_regeneration(fd);
+#endif
+    // Defending player's assault cards:
+    // remove enfeeble, protect
+    {
+        auto& assaults(fd->tip->assaults);
+        for(unsigned index(0), end(assaults.size());
+            index < end;
+            ++index)
+        {
+            CardStatus& status(assaults[index]);
+            if (status.m_hp <= 0)
+            {
+                continue;
+            }
+            status.m_enfeebled = 0;
+            status.m_protected = 0;
+#if defined(TYRANT_UNLEASHED)
+            // so far only useful in Defending turn
+            status.m_evaded = 0;
+            std::memset(status.m_enhanced_value, 0, sizeof status.m_enhanced_value);
+#endif
+        }
+    }
+    // Defending player's structure cards:
+    // nothing so far
+#if 0
+    {
+        auto& structures(fd->tip->structures);
+        for(unsigned index(0), end(structures.size());
+            index < end;
+            ++index)
+        {
+            CardStatus& status(structures[index]);
+            if (status.m_hp <= 0)
+            {
+                continue;
+            }
+        }
+    }
+#endif
+    remove_dead(fd->tap->assaults);
+    remove_dead(fd->tap->structures);
+    remove_dead(fd->tip->assaults);
+    remove_dead(fd->tip->structures);
 }
 void evaluate_legion(Field* fd)
 {

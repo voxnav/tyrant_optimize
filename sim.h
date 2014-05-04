@@ -224,7 +224,8 @@ public:
         legion_phase,
         commander_phase,
         structures_phase,
-        assaults_phase
+        assaults_phase,
+        end_phase,
     };
     // the current phase of the turn: starts with playcard_phase, then commander_phase, structures_phase, and assaults_phase
     phase current_phase;
