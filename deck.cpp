@@ -263,12 +263,40 @@ std::string Deck::short_description() const
     return ios.str();
 }
 
+std::string Deck::medium_description() const
+{
+    std::stringstream ios;
+    ios << short_description() << std::endl;
+    if(commander)
+    {
+        ios << commander->m_name;
+    }
+    else
+    {
+        ios << "No commander";
+    }
+    for(const Card * card: cards)
+    {
+        ios << ", " << card->m_name;
+    }
+    unsigned num_pool_cards = 0;
+    for(auto& pool: raid_cards)
+    {
+        num_pool_cards += pool.first;
+    }
+    if(num_pool_cards > 0)
+    {
+        ios << ", and " << num_pool_cards << " cards from pool";
+    }
+    return ios.str();
+}
+
 extern std::string card_description(const Cards& cards, const Card* c);
 
 std::string Deck::long_description(const Cards& all_cards) const
 {
     std::stringstream ios;
-    ios << short_description() << std::endl;
+    ios << medium_description() << "\n";
     if(effect != Effect::none)
     {
         ios << "Effect: " << effect_names[effect] << "\n";
@@ -280,10 +308,6 @@ std::string Deck::long_description(const Cards& all_cards) const
     else
     {
         ios << "No commander\n";
-    }
-    if(!cards.empty() && !raid_cards.empty())
-    {
-        ios << "Always include:\n";
     }
     for(const Card* card: cards)
     {

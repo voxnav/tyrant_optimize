@@ -7,19 +7,12 @@
 #include <sstream>
 #include <vector>
 
+#include "tyrant.h"
 #include "card.h"
 #include "cards.h"
 #include "deck.h"
 #include "achievement.h"
 
-//---------------------- $00 general stuff -------------------------------------
-template<typename T>
-std::string to_string(T val)
-{
-    std::stringstream s;
-    s << val;
-    return s.str();
-}
 //---------------------- Debugging stuff ---------------------------------------
 unsigned debug_print(0);
 unsigned debug_cached(0);
@@ -73,10 +66,12 @@ inline unsigned Field::make_selection_array(CardsIter first, CardsIter last, Fun
 }
 inline void Field::print_selection_array()
 {
+#ifndef NDEBUG
     for(auto c: this->selection_array)
     {
         _DEBUG_MSG(2, "+ %s\n", status_description(c).c_str());
     }
+#endif
 }
 //------------------------------------------------------------------------------
 CardStatus::CardStatus(const Card* card) :
@@ -207,13 +202,13 @@ std::string card_description(const Cards& cards, const Card* c)
     case CardType::action:
         break;
     case CardType::assault:
-        desc += " " + to_string(c->m_attack) + "/" + to_string(c->m_health) + "/" + to_string(c->m_delay);
+        desc += ": " + to_string(c->m_attack) + "/" + to_string(c->m_health) + "/" + to_string(c->m_delay);
         break;
     case CardType::structure:
-        desc += " " + to_string(c->m_health) + "/" + to_string(c->m_delay);
+        desc += ": " + to_string(c->m_health) + "/" + to_string(c->m_delay);
         break;
     case CardType::commander:
-        desc += " hp:" + to_string(c->m_health);
+        desc += ": hp:" + to_string(c->m_health);
         break;
     case CardType::num_cardtypes:
         assert(false);
@@ -610,7 +605,7 @@ void resolve_skill(Field* fd)
             auto& augmented_s = status->m_augmented > 0 ? apply_augment(status, skill) : skill;
             auto& fusioned_s = fusion_active ? apply_fusion(augmented_s) : augmented_s;
             auto& infused_s = status->m_infused ? apply_infuse(fusioned_s) : fusioned_s;
-            auto& modified_s = modified_s;
+            auto& modified_s = infused_s;
 #endif
             skill_table[skill.id](fd, status, modified_s);
         }

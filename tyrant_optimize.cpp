@@ -1220,7 +1220,7 @@ int main(int argc, char** argv)
         return(4);
     }
     std::string att_deck_name{argv[1]};
-    auto deck_list_parsed = parse_deck_list(argv[2]);
+    auto && deck_list_parsed = parse_deck_list(argv[2], decks);
 
     Deck* att_deck{nullptr};
     std::vector<Deck*> def_decks;
@@ -1541,10 +1541,10 @@ int main(int argc, char** argv)
         min_deck_len = max_deck_len = att_deck->cards.size();
     }
 
-    std::cout << "Your Deck: " << (debug_print ? att_deck->long_description(cards) : att_deck->short_description()) << std::endl;
-    for(auto def_deck: def_decks)
+    std::cout << "Your Deck: " << (debug_print ? att_deck->long_description(cards) : att_deck->medium_description()) << std::endl;
+    for (unsigned i(0); i < def_decks.size(); ++i)
     {
-        std::cout << "Enemy's Deck: " << (debug_print ? def_deck->long_description(cards) : def_deck->short_description()) << std::endl;
+        std::cout << "Enemy's Deck:" << def_decks_factors[i] << ": " << (debug_print ? def_decks[i]->long_description(cards) : def_decks[i]->medium_description()) << std::endl;
     }
     if(effect != Effect::none)
     {

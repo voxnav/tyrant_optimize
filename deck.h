@@ -103,6 +103,7 @@ struct Deck
 
     Deck* clone() const;
     std::string short_description() const;
+    std::string medium_description() const;
     std::string long_description(const Cards& all_cards) const;
     const Card* get_commander();
     const Card* next();
@@ -110,13 +111,12 @@ struct Deck
     void place_at_bottom(const Card* card);
 };
 
-// + also the custom decks
+typedef std::map<std::string, long double> DeckList;
 struct Decks
 {
     std::list<Deck> decks;
     std::map<std::pair<DeckType::DeckType, unsigned>, Deck*> by_type_id;
     std::map<std::string, Deck*> by_name;
-    std::map<std::string, std::string> custom_decks;
 };
 
 #if defined(TYRANT_UNLEASHED)

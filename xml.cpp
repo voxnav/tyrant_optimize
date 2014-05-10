@@ -542,6 +542,7 @@ void read_quests(Decks& decks, const Cards& cards, std::string filename)
 }
 
 //------------------------------------------------------------------------------
+#if defined(TYRANT_UNLEASHED)
 void load_recipes_xml(Cards& cards)
 {
     std::vector<char> buffer;
@@ -573,6 +574,7 @@ void load_recipes_xml(Cards& cards)
         }
     }
 }
+#endif
 
 //------------------------------------------------------------------------------
 extern unsigned turn_limit;

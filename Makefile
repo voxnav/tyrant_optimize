@@ -3,8 +3,8 @@ SRCS := $(wildcard *.cpp)
 OBJS := $(patsubst %.cpp,obj/%.o,$(SRCS))
 INCS := $(wildcard *.h)
 
-CPPFLAGS := -Wall -Werror -std=gnu++11 -O3 -DTYRANT_UNLEASHED
-LDFLAGS := -lboost_system -lboost_thread -lboost_filesystem
+CPPFLAGS := -Wall -Werror -std=gnu++11 -O3 -DTYRANT_UNLEASHED -DNDEBUG
+LDFLAGS := -lboost_system -lboost_thread -lboost_filesystem -lboost_regex
 
 all: $(MAIN)
 
@@ -15,4 +15,4 @@ $(MAIN): $(OBJS)
 	$(CXX) -o $@ $(OBJS) $(LDFLAGS)
 
 clean:
-	rm -f $(MAIN) obj/*.o
+	del /q $(MAIN).exe obj\*.o

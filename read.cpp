@@ -3,12 +3,15 @@
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/tokenizer.hpp>
+#include <boost/regex.hpp>
 #include <cstring>
-#include <vector>
+#include <map>
+#include <unordered_set>
 #include <fstream>
 #include <iostream>
 #include <exception>
 
+#include "tyrant.h"
 #include "card.h"
 #include "cards.h"
 #include "deck.h"
@@ -19,24 +22,6 @@ void load_decks(Decks& decks, Cards& cards)
     {
         read_custom_decks(decks, cards, "Custom.txt");
     }
-}
-
-std::vector<std::pair<std::string, long double>> parse_deck_list(std::string list_string)
-{
-    std::vector<std::pair<std::string, long double>> res;
-    boost::tokenizer<boost::char_delimiters_separator<char>> list_tokens{list_string, boost::char_delimiters_separator<char>{false, ";", ""}};
-    for(const auto list_token : list_tokens)
-    {
-        boost::tokenizer<boost::char_delimiters_separator<char>> deck_tokens{list_token, boost::char_delimiters_separator<char>{false, ":", ""}};
-        auto deck_token = deck_tokens.begin();
-        res.push_back(std::make_pair(*deck_token, 1.0d));
-        ++deck_token;
-        if(deck_token != deck_tokens.end())
-        {
-            res.back().second = boost::lexical_cast<long double>(*deck_token);
-        }
-    }
-    return(res);
 }
 
 template<typename Iterator, typename Functor> Iterator advance_until(Iterator it, Iterator it_end, Functor f)
@@ -80,9 +65,105 @@ template<typename Iterator, typename Functor, typename Token> Iterator read_toke
     return(token_end_after_spaces);
 }
 
+DeckList & normalize(DeckList & decklist)
+{
+    long double factor_sum = 0;
+    for (const auto & it : decklist)
+    {
+        factor_sum += it.second;
+    }
+    if (factor_sum > 0)
+    {
+        for (auto & it : decklist)
+        {
+            it.second /= factor_sum;
+        }
+    }
+    return decklist;
+}
+
+DeckList expand_deck_to_list(std::string deck_name, const Decks& decks)
+{
+    static std::unordered_set<std::string> expanding_decks;
+    if (expanding_decks.count(deck_name))
+    {
+        std::cerr << "Warning: circular referred deck: " << deck_name << std::endl;
+        return {};
+    }
+    auto deck_string = deck_name;
+    const auto & deck = decks.by_name.find(deck_name);
+    if (deck != decks.by_name.end())
+    {
+        deck_string = deck->second->deck_string;
+        if (deck_string.find_first_of(";:") != std::string::npos || decks.by_name.find(deck_string) != decks.by_name.end())
+        {
+            // deck_name refers to a deck list
+            expanding_decks.insert(deck_name);
+            auto && decklist = parse_deck_list(deck_string, decks);
+            expanding_decks.erase(deck_name);
+            return normalize(decklist);
+        }
+    }
+
+    if (deck_string.length() >= 3 && deck_string.front() == '/' && deck_string.back() == '/')
+    {
+        // deck_name is, or refers to, a regex
+        DeckList res;
+        std::string regex_string(deck_string, 1, deck_string.length() - 2);
+        boost::regex regex(regex_string);
+        boost::smatch smatch;
+        expanding_decks.insert(deck_name);
+        for (const auto & deck: decks.by_name)
+        {
+            if (boost::regex_search(deck.first, smatch, regex))
+            {
+                auto && decklist = expand_deck_to_list(deck.first, decks);
+                for (const auto & it : decklist)
+                {
+                    res[it.first] += it.second;
+                }
+            }
+        }
+        expanding_decks.erase(deck_name);
+        if (res.size() == 0)
+        {
+            std::cerr << "Warning: regular expression matches nothing: /" << regex_string << "/." << std::endl;
+        }
+        return normalize(res);
+    }
+    else
+    {
+        return {{deck_name, 1}};
+    }
+}
+
+DeckList parse_deck_list(std::string list_string, const Decks& decks)
+{
+    DeckList res;
+    boost::tokenizer<boost::char_delimiters_separator<char>> list_tokens{list_string, boost::char_delimiters_separator<char>{false, ";", ""}};
+    for(const auto & list_token : list_tokens)
+    {
+        boost::tokenizer<boost::char_delimiters_separator<char>> deck_tokens{list_token, boost::char_delimiters_separator<char>{false, ":", ""}};
+        auto deck_token = deck_tokens.begin();
+        auto deck_name = *deck_token;
+        double factor = 1.0d;
+        ++ deck_token;
+        if(deck_token != deck_tokens.end())
+        {
+            factor = boost::lexical_cast<long double>(*deck_token);
+        }
+        auto && decklist = expand_deck_to_list(deck_name, decks);
+        for (const auto & it : decklist)
+        {
+            res[it.first] += it.second * factor;
+        }
+    }
+    return res;
+}
+
 void parse_card_spec(const Cards& cards, std::string& card_spec, unsigned& card_id, unsigned& card_num, char& num_sign, char& mark)
 {
-    static std::set<std::string> recognized_abbr;
+//    static std::set<std::string> recognized_abbr;
     auto card_spec_iter = card_spec.begin();
     card_id = 0;
     card_num = 1;
@@ -101,14 +182,14 @@ void parse_card_spec(const Cards& cards, std::string& card_spec, unsigned& card_
     }
     // If card name is not found, try find card id quoted in '[]' in name, ignoring other characters.
     std::string simple_name{simplify_name(card_name)};
-    auto abbr_it = cards.player_cards_abbr.find(simple_name);
+    const auto && abbr_it = cards.player_cards_abbr.find(simple_name);
     if(abbr_it != cards.player_cards_abbr.end())
     {
-        if(recognized_abbr.count(card_name) == 0)
-        {
-            std::cout << "Recognize abbreviation " << card_name << ": " << abbr_it->second << std::endl;
-            recognized_abbr.insert(card_name);
-        }
+//        if(recognized_abbr.count(card_name) == 0)
+//        {
+//            std::cout << "Recognize abbreviation " << card_name << ": " << abbr_it->second << std::endl;
+//            recognized_abbr.insert(card_name);
+//        }
         simple_name = simplify_name(abbr_it->second);
     }
     auto card_it = cards.player_cards_by_name.find({simple_name, 0});
@@ -170,7 +251,7 @@ unsigned read_card_abbrs(Cards& cards, const std::string& filename)
             auto abbr_string_iter = read_token(abbr_string.begin(), abbr_string.end(), [](char c){return(c == ':');}, abbr_name);
             if(abbr_string_iter == abbr_string.end() || abbr_name.empty())
             {
-                std::cerr << "Error in custom deck file " << filename << " at line " << num_line << ", could not read the deck name.\n";
+                std::cerr << "Error in card abbreviation file " << filename << " at line " << num_line << ", could not read the name.\n";
                 continue;
             }
             abbr_string_iter = advance_until(abbr_string_iter + 1, abbr_string.end(), [](const char& c){return(c != ' ');});
@@ -223,7 +304,7 @@ unsigned read_custom_decks(Decks& decks, Cards& cards, std::string filename)
                 continue;
             }
             std::string deck_name;
-            auto deck_string_iter = read_token(deck_string.begin(), deck_string.end(), [](char c){return(strchr(":,", c));}, deck_name);
+            auto deck_string_iter = read_token(deck_string.begin(), deck_string.end(), [](char c){return(strchr(":", c));}, deck_name);
             if(deck_string_iter == deck_string.end() || deck_name.empty())
             {
                 std::cerr << "Error in custom deck file " << filename << " at line " << num_line << ", could not read the deck name.\n";

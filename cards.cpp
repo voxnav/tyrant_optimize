@@ -7,16 +7,8 @@
 #include <cstring>
 #include <list>
 
-#include "card.h"
 #include "tyrant.h"
-
-template<typename T>
-std::string to_string(T val)
-{
-    std::stringstream s;
-    s << val;
-    return s.str();
-}
+#include "card.h"
 
 std::string simplify_name(const std::string& card_name)
 {

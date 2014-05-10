@@ -1,9 +1,10 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "1.2.3"
+#define TYRANT_OPTIMIZER_VERSION "1.2.4"
 
 #include <string>
+#include <sstream>
 #include <set>
 #include <tuple>
 
@@ -181,5 +182,15 @@ struct SkillSpec
     bool all;
     SkillMod::SkillMod mod;
 };
+
+// --------------------------------------------------------------------------------
+// Common functions
+template<typename T>
+std::string to_string(const T val)
+{
+    std::stringstream s;
+    s << val;
+    return s.str();
+}
 
 #endif
