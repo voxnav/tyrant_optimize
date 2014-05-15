@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "1.2.4"
+#define TYRANT_OPTIMIZER_VERSION "1.2.5"
 
 #include <string>
 #include <sstream>
@@ -36,7 +36,7 @@ enum Skill
     // Damage-Dependant:
     berserk, crush, disease, immobilize, inhibit, leech, phase, poison, siphon, sunder,
     // Defensive:
-    armored, counter, emulate, evade, flying, intercept, payback, refresh, regenerate, stun, tribute, wall,
+    armored, corrosive, counter, emulate, evade, flying, intercept, payback, refresh, regenerate, stun, tribute, wall,
     // Triggered:
     blitz, legion,
     // Tyrant Unleashed:

@@ -197,10 +197,8 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
     { card->m_type = CardType::structure; }
     else if(id < 4000)
     { card->m_type = CardType::action; }
-    else if(id < 6000)
-    { card->m_type = CardType::assault; }
     else
-    { card->m_type = cost_node ? (attack_node ? CardType::assault : CardType::structure) : (health_node ? CardType::commander : CardType::action); }
+    { card->m_type = CardType::assault; }
     if(hidden_node) { card->m_hidden = atoi(hidden_node->value()); }
     if(replace_node) { card->m_replace = atoi(replace_node->value()); }
     if(attack_node) { card->m_attack = atoi(attack_node->value()); }
@@ -247,6 +245,8 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
         { card->m_blitz = true; }
         else if(skill_id == burst)
         { card->m_burst = node_value(skill_node, "x"); }
+        else if(skill_id == corrosive)
+        { card->m_corrosive = node_value(skill_node, "x"); }
         else if(skill_id == counter)
         { card->m_counter = node_value(skill_node, "x"); }
         else if(skill_id == crush)
