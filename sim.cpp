@@ -1383,10 +1383,11 @@ void turn_end_phase(Field* fd)
             status.m_step = CardStep::none;
 #if defined(TYRANT_UNLEASHED)
             status.m_inhibited = 0;
-            if(status.m_poisoned > 0)
+            unsigned poison_dmg = safe_minus(status.m_poisoned, status.m_protected);
+            if(poison_dmg > 0)
             {
-                _DEBUG_MSG(1, "%s takes poison damage\n", status_description(&status).c_str());
-                remove_hp(fd, status, status.m_poisoned);
+                _DEBUG_MSG(1, "%s takes poison damage %u\n", status_description(&status).c_str(), poison_dmg);
+                remove_hp(fd, status, poison_dmg);
             }
 #else
             // not need to fade out in own turn in TU
