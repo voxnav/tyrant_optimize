@@ -31,57 +31,6 @@ void partial_shuffle(RandomAccessIterator first, RandomAccessIterator middle,
 }
 
 //------------------------------------------------------------------------------
-std::string deck_hash(const Card* commander, std::vector<const Card*> cards, bool is_ordered)
-{
-    std::string base64= "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    std::stringstream ios;
-    unsigned card_id = commander->m_id;
-    if(card_id > 4000)
-    {
-        ios << '-';
-        card_id -= 4000;
-    }
-    ios << base64[card_id / 64];
-    ios << base64[card_id % 64];
-    if(!is_ordered)
-    {
-        std::sort(cards.begin(), cards.end(), [](const Card* a, const Card* b) { return a->m_id < b->m_id; });
-    }
-    unsigned last_id = 0;
-    unsigned num_repeat = 0;
-    for(const Card* card: cards)
-    {
-        card_id = card->m_id;
-        if(card_id == last_id)
-        {
-            ++ num_repeat;
-        }
-        else
-        {
-            if(num_repeat > 1)
-            {
-                ios << base64[(num_repeat + 4000) / 64];
-                ios << base64[(num_repeat + 4000) % 64];
-            }
-            last_id = card_id;
-            num_repeat = 1;
-            if(card_id > 4000)
-            {
-                ios << '-';
-                card_id -= 4000;
-            }
-            ios << base64[card_id / 64];
-            ios << base64[card_id % 64];
-        }
-    }
-    if(num_repeat > 1)
-    {
-        ios << base64[(num_repeat + 4000) / 64];
-        ios << base64[(num_repeat + 4000) % 64];
-    }
-    return ios.str();
-}
-//------------------------------------------------------------------------------
 namespace {
 const char* base64_chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -246,7 +195,58 @@ void Deck::set_forts(const Cards& all_cards, const std::string& deck_string)
     }
 }
 
-std::string Deck::short_description() const
+std::string Deck::hash()
+{
+    std::string base64= "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::stringstream ios;
+    unsigned card_id = commander->m_id;
+    if(card_id > 4000)
+    {
+        ios << '-';
+        card_id -= 4000;
+    }
+    ios << base64[card_id / 64];
+    ios << base64[card_id % 64];
+    if (strategy == DeckStrategy::random)
+    {
+        std::sort(cards.begin(), cards.end(), [](const Card* a, const Card* b) { return a->m_id < b->m_id; });
+    }
+    unsigned last_id = 0;
+    unsigned num_repeat = 0;
+    for(const Card* card: cards)
+    {
+        card_id = card->m_id;
+        if(card_id == last_id)
+        {
+            ++ num_repeat;
+        }
+        else
+        {
+            if(num_repeat > 1)
+            {
+                ios << base64[(num_repeat + 4000) / 64];
+                ios << base64[(num_repeat + 4000) % 64];
+            }
+            last_id = card_id;
+            num_repeat = 1;
+            if(card_id > 4000)
+            {
+                ios << '-';
+                card_id -= 4000;
+            }
+            ios << base64[card_id / 64];
+            ios << base64[card_id % 64];
+        }
+    }
+    if(num_repeat > 1)
+    {
+        ios << base64[(num_repeat + 4000) / 64];
+        ios << base64[(num_repeat + 4000) % 64];
+    }
+    return ios.str();
+}
+
+std::string Deck::short_description()
 {
     std::stringstream ios;
     ios << decktype_names[decktype];
@@ -254,7 +254,7 @@ std::string Deck::short_description() const
     if(!name.empty()) { ios << " \"" << name << "\""; }
     if(deck_string.empty())
     {
-        if(raid_cards.empty()) { ios << ": " << deck_hash(commander, cards, strategy == DeckStrategy::ordered || strategy == DeckStrategy::exact_ordered); }
+        if(raid_cards.empty()) { ios << ": " << hash(); }
     }
     else
     {
@@ -263,7 +263,7 @@ std::string Deck::short_description() const
     return ios.str();
 }
 
-std::string Deck::medium_description() const
+std::string Deck::medium_description()
 {
     std::stringstream ios;
     ios << short_description() << std::endl;
@@ -293,7 +293,7 @@ std::string Deck::medium_description() const
 
 extern std::string card_description(const Cards& cards, const Card* c);
 
-std::string Deck::long_description(const Cards& all_cards) const
+std::string Deck::long_description(const Cards& all_cards)
 {
     std::stringstream ios;
     ios << medium_description() << "\n";

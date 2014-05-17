@@ -22,6 +22,7 @@
 #include <map>
 #include <set>
 #include <tuple>
+#include <chrono>
 #include <boost/range/join.hpp>
 #include <boost/optional.hpp>
 #include <boost/thread/thread.hpp>
@@ -68,6 +69,38 @@ std::string card_id_name(const Card* card)
     }
     return ios.str();
 }
+std::string card_id_names(const std::vector<std::pair<signed, const Card *>> card_list)
+{
+    if (card_list.empty())
+    {
+        return "-void-";
+    }
+    std::stringstream ios;
+    for (const auto & card_it : card_list)
+    {
+        if (card_it != *card_list.cbegin())
+        { ios << ", "; }
+        ios << "[" << card_it.second->m_id << "] " << card_it.second->m_name;
+    }
+    return ios.str();
+}
+std::string card_slot_id_names(const std::vector<std::pair<signed, const Card *>> card_list)
+{
+    if (card_list.empty())
+    {
+        return "-void-";
+    }
+    std::stringstream ios;
+    for (const auto & card_it : card_list)
+    {
+        if (card_it != *card_list.cbegin())
+        { ios << ", "; }
+        if (card_it.first >= 0)
+        { ios << card_it.first << " "; }
+        ios << "[" << card_it.second->m_id << "] " << card_it.second->m_name;
+    }
+    return ios.str();
+}
 //------------------------------------------------------------------------------
 Deck* find_deck(Decks& decks, const Cards& cards, std::string deck_name)
 {
@@ -84,12 +117,11 @@ Deck* find_deck(Decks& decks, const Cards& cards, std::string deck_name)
     return(deck);
 }
 //---------------------- $80 deck optimization ---------------------------------
-
-unsigned get_required_cards_before_upgrade(const std::vector<const Card*> & card_list, const Cards & cards, std::map<const Card*, unsigned> & num_cards)
+unsigned get_required_cards_before_upgrade(const std::vector<const Card *> & card_list, std::map<const Card*, unsigned> & num_cards)
 {
     unsigned deck_cost = 0;
     std::set<const Card*> unresolved_cards;
-    for(const Card * card: card_list)
+    for (const Card * card : card_list)
     {
         ++ num_cards[card];
         unresolved_cards.insert(card);
@@ -117,12 +149,69 @@ unsigned get_required_cards_before_upgrade(const std::vector<const Card*> & card
     return deck_cost;
 }
 
+unsigned get_deck_cost(const Deck * deck)
+{
+    if (!use_owned_cards)
+    { return 0; }
+    std::map<const Card *, unsigned> num_in_deck;
+    unsigned deck_cost = get_required_cards_before_upgrade({deck->commander}, num_in_deck);
+    deck_cost += get_required_cards_before_upgrade(deck->cards, num_in_deck);
+    for(auto it: num_in_deck)
+    {
+        unsigned card_id = it.first->m_id;
+        unsigned num_to_buy = safe_minus(it.second, owned_cards[card_id]);
+//        std::cout << "BUY " << it.first->m_name << " +" << num_to_buy << " =" << it.second << ".\n"; // XXX
+        if(num_to_buy > 0)
+        {
+            auto buyable_iter = buyable_cards.find(card_id);
+            if(buyable_iter == buyable_cards.end())
+            { return UINT_MAX; }
+            deck_cost += num_to_buy * buyable_iter->second;
+        }
+    }
+//    std::cout << "\n"; // XXX
+    return deck_cost;
+}
+
+// insert card at to_slot into deck limited by fund; store deck_cost
+// return true if affordable
+bool adjust_deck(Deck * deck, const unsigned to_slot, const Card * card, unsigned fund, std::mt19937 & re, unsigned & deck_cost, std::vector<std::pair<signed, const Card *>> & costed_cards)
+{
+    std::vector<const Card *> cards = deck->cards;
+    deck->cards.clear();
+    if (card)
+    { deck->cards.push_back(card); }
+    deck_cost = get_deck_cost(deck);
+    if (deck_cost > fund)
+    { return false; }
+    if (deck->strategy == DeckStrategy::random)
+    { std::shuffle(cards.begin(), cards.end(), re); }
+    for (unsigned i = 0; i < cards.size(); ++ i)
+    {
+        auto saved_cards = deck->cards;
+        if (i < to_slot && card)
+        { deck->cards.insert(deck->cards.end() - 1, cards[i]); }
+        else
+        { deck->cards.push_back(cards[i]); }
+        deck_cost = get_deck_cost(deck);
+        if (deck_cost > fund)
+        {
+            if (card == nullptr || cards[i] == card)
+            { return false; }
+            deck->cards = saved_cards;
+            costed_cards.push_back({i, cards[i]});
+        }
+    }
+    deck_cost = get_deck_cost(deck);
+    return true;
+}
+
 // @claim_all: true = claim all cards; false = claim only non-buyable cards.
 // @is_reward: not claim a card if there is upgraded version (assuming the reward card has been upgraded).
-void claim_cards(const std::vector<const Card*> & card_list, const Cards & cards, bool claim_all, bool is_reward=false)
+void claim_cards(const std::vector<const Card*> & card_list, bool claim_all, bool is_reward=false)
 {
     std::map<const Card *, unsigned> num_cards;
-    get_required_cards_before_upgrade(card_list, cards, num_cards);
+    get_required_cards_before_upgrade(card_list, num_cards);
     for(auto it: num_cards)
     {
         const Card * card = it.first;
@@ -146,31 +235,6 @@ void claim_cards(const std::vector<const Card*> & card_list, const Cards & cards
             }
         }
     }
-}
-
-unsigned get_deck_cost(const Deck * deck, const Cards & cards)
-{
-    if(!use_owned_cards)
-    {
-        return 0;
-    }
-    std::map<const Card *, unsigned> num_in_deck;
-    unsigned deck_cost = get_required_cards_before_upgrade({deck->commander}, cards, num_in_deck);
-    deck_cost += get_required_cards_before_upgrade(deck->cards, cards, num_in_deck);
-    for(auto it: num_in_deck)
-    {
-        unsigned card_id = it.first->m_id;
-        unsigned num_to_buy = safe_minus(it.second, owned_cards[card_id]);
-//        std::cout << "BUY " << cards.by_id(card_id)->m_name << " +" << num_to_buy << " =" << it.second << ".\n"; // XXX
-        if(num_to_buy > 0)
-        {
-            auto buyable_iter = buyable_cards.find(card_id);
-            if(buyable_iter == buyable_cards.end()) { return UINT_MAX; }
-            deck_cost += num_to_buy * buyable_iter->second;
-        }
-    }
-//    std::cout << "\n"; // XXX
-    return deck_cost;
 }
 
 //------------------------------------------------------------------------------
@@ -405,7 +469,8 @@ void thread_evaluate(boost::barrier& main_barrier,
     {
         main_barrier.wait();
         sim.set_decks(p.att_deck, p.def_decks);
-        if(destroy_threads) { return; }
+        if(destroy_threads)
+        { return; }
         while(true)
         {
             shared_mutex.lock(); //<<<<
@@ -452,7 +517,8 @@ void thread_evaluate(boost::barrier& main_barrier,
                     long double best_possible = (optimization_mode == OptimizationMode::raid ? 250 : 100);
                     // Get a loose (better than no) upper bound. TODO: Improve it.
                     compare_stop = (boost::math::binomial_distribution<>::find_upper_bound_on_p(thread_total_local, score_accum / best_possible, 0.01) * best_possible < thread_prev_score);
-                    if(compare_stop) {
+                    if(compare_stop)
+                    {
                         shared_mutex.lock(); //<<<<
                         //std::cout << thread_total_local << "\n";
                         thread_compare_stop = true; //!
@@ -548,7 +614,7 @@ void print_results(const std::pair<std::vector<Results<uint64_t>> , unsigned>& r
     }
 }
 //------------------------------------------------------------------------------
-void print_deck_inline(const unsigned deck_cost, const Results<long double> score, const Card *commander, std::vector<const Card*> cards, bool is_ordered)
+void print_deck_inline(const unsigned deck_cost, const Results<long double> score, Deck * deck)
 {
     if(fund > 0)
     {
@@ -558,7 +624,8 @@ void print_deck_inline(const unsigned deck_cost, const Results<long double> scor
     {
         case OptimizationMode::raid:
             std::cout << "(" << (score.wins + score.draws) * 100 << "% win, " << score.wins * 100.0 << "% slay";
-            if (show_stdev) {
+            if (show_stdev)
+            {
                 std::cout << ", " << sqrt(score.sq_points - score.points * score.points) << " stdev";
             }
             std::cout << ") ";
@@ -572,14 +639,14 @@ void print_deck_inline(const unsigned deck_cost, const Results<long double> scor
         default:
             break;
     }
-    std::cout << score.points << ": " << commander->m_name;
-    if(!is_ordered)
+    std::cout << score.points << ": " << deck->commander->m_name;
+    if (deck->strategy == DeckStrategy::random)
     {
-        std::sort(cards.begin(), cards.end(), [](const Card* a, const Card* b) { return a->m_id < b->m_id; });
+        std::sort(deck->cards.begin(), deck->cards.end(), [](const Card* a, const Card* b) { return a->m_id < b->m_id; });
     }
     std::string last_name;
     unsigned num_repeat(0);
-    for(const Card* card: cards)
+    for(const Card* card: deck->cards)
     {
         if(card->m_name == last_name)
         {
@@ -617,15 +684,15 @@ void hill_climbing(unsigned num_iterations, Deck* d1, Process& proc, std::map<si
     non_commander_cards.insert(non_commander_cards.end(), std::initializer_list<Card *>{NULL,});
     const Card* best_commander = d1->commander;
     std::vector<const Card*> best_cards = d1->cards;
-    unsigned deck_cost = get_deck_cost(d1, proc.cards);
+    unsigned deck_cost = get_deck_cost(d1);
     fund = std::max(fund, deck_cost);
-    print_deck_inline(deck_cost, best_score, best_commander, best_cards, false);
-    std::mt19937 re(time(NULL));
+    print_deck_inline(deck_cost, best_score, d1);
+    std::mt19937 re(std::chrono::system_clock::now().time_since_epoch().count());
     bool deck_has_been_improved = true;
     unsigned long skipped_simulations = 0;
+    std::vector<std::pair<signed, const Card *>> costed_cards;
     for(unsigned slot_i(0), dead_slot(0); (deck_has_been_improved || slot_i != dead_slot) && best_score.points - target_score < -1e-9; slot_i = (slot_i + 1) % std::min<unsigned>(max_deck_len, best_cards.size() + 1))
     {
-        if(card_marks.count(slot_i)) { continue; }
         if(deck_has_been_improved)
         {
             dead_slot = slot_i;
@@ -637,69 +704,21 @@ void hill_climbing(unsigned num_iterations, Deck* d1, Process& proc, std::map<si
             {
                 // Various checks to check if the card is accepted
                 assert(commander_candidate->m_type == CardType::commander);
-                if(commander_candidate->m_name == best_commander->m_name) { continue; }
-                // Place it in the deck
+                if(commander_candidate->m_name == best_commander->m_name)
+                { continue; }
+                d1->cards = best_cards;
+                // Place it in the deck and restore other cards
+                costed_cards.clear();
+                costed_cards.push_back({-1, best_commander});
                 d1->commander = commander_candidate;
+                if (! adjust_deck(d1, 0, nullptr, fund, re, deck_cost, costed_cards))
+                { continue; }
                 auto &&cur_deck = d1->card_ids<std::multiset<unsigned>>();
-                if(evaluated_decks.count(cur_deck) == 0)
-                {
-                    deck_cost = get_deck_cost(d1, proc.cards);
-                    if(deck_cost > fund) { continue; }
-                    // Evaluate new deck
-                    auto compare_results = proc.compare(num_iterations, best_score.points);
-                    current_score = compute_score(compare_results, proc.factors);
-                    evaluated_decks[cur_deck] = compare_results.second;
-                    // Is it better ?
-                    if(current_score.points > best_score.points)
-                    {
-                        // Then update best score/commander, print stuff
-                        best_score = current_score;
-                        best_commander = commander_candidate;
-                        deck_has_been_improved = true;
-                        std::cout << "Deck improved: " << deck_hash(commander_candidate, best_cards, false) << " commander -> " << card_id_name(commander_candidate) << ": ";
-                        print_score_info(compare_results, proc.factors);
-                        print_deck_inline(deck_cost, best_score, best_commander, best_cards, false);
-                    }
-                }
-                else
+                if (evaluated_decks.count(cur_deck) > 0)
                 {
                     skipped_simulations += evaluated_decks[cur_deck];
+                    continue;
                 }
-            }
-            // Now that all commanders are evaluated, take the best one
-            d1->commander = best_commander;
-        }
-        std::shuffle(non_commander_cards.begin(), non_commander_cards.end(), re);
-        for(const Card* card_candidate: non_commander_cards)
-        {
-            d1->cards = best_cards;
-            if(card_candidate)
-            {
-                // Various checks to check if the card is accepted
-                assert(card_candidate->m_type != CardType::commander);
-                if(slot_i < best_cards.size() && card_candidate->m_name == best_cards[slot_i]->m_name) { continue; }
-                if(!suitable_non_commander(*d1, slot_i, card_candidate)) { continue; }
-                // Place it in the deck
-                if(slot_i == d1->cards.size())
-                {
-                    d1->cards.emplace_back(card_candidate);
-                }
-                else
-                {
-                    d1->cards[slot_i] = card_candidate;
-                }
-            }
-            else
-            {
-                if(best_cards.size() <= min_deck_len || slot_i == best_cards.size()) { continue; }
-                // Remove it from the deck
-                d1->cards.erase(d1->cards.begin() + slot_i);
-            }
-            auto &&cur_deck = d1->card_ids<std::multiset<unsigned>>();
-            if(evaluated_decks.count(cur_deck) == 0)
-            {
-                deck_cost = get_deck_cost(d1, proc.cards);
-                if(deck_cost > fund) { continue; }
                 // Evaluate new deck
                 auto compare_results = proc.compare(num_iterations, best_score.points);
                 current_score = compute_score(compare_results, proc.factors);
@@ -707,21 +726,62 @@ void hill_climbing(unsigned num_iterations, Deck* d1, Process& proc, std::map<si
                 // Is it better ?
                 if(current_score.points > best_score.points)
                 {
-                    std::cout << "Deck improved: " << deck_hash(best_commander, d1->cards, false) << " " << card_id_name(slot_i < best_cards.size() ? best_cards[slot_i] : NULL) <<
-                        " -> " << card_id_name(card_candidate) << ": ";
-                    // Then update best score/slot, print stuff
+                    std::cout << "Deck improved: " << d1->hash() << ": " << card_id_names(costed_cards) << " -> " << card_id_name(commander_candidate) << ": ";
+                    // Then update best score/commander, print stuff
                     best_score = current_score;
+                    best_commander = d1->commander;
                     best_cards = d1->cards;
                     deck_has_been_improved = true;
                     print_score_info(compare_results, proc.factors);
-                    print_deck_inline(deck_cost, best_score, best_commander, best_cards, false);
+                    print_deck_inline(deck_cost, best_score, d1);
                 }
             }
-            else
+            // Now that all commanders are evaluated, take the best one
+            d1->commander = best_commander;
+            d1->cards = best_cards;
+        }
+        std::shuffle(non_commander_cards.begin(), non_commander_cards.end(), re);
+        for(const Card* card_candidate: non_commander_cards)
+        {
+            d1->cards = best_cards;
+            if (card_candidate ?
+                    ((slot_i < best_cards.size() && card_candidate->m_name == best_cards[slot_i]->m_name) || // Omega -> Omega
+                     !suitable_non_commander(*d1, slot_i, card_candidate))
+                    :
+                    (best_cards.size() <= min_deck_len ||
+                     slot_i == best_cards.size()))  // void -> void
+            { continue; }
+            costed_cards.clear();
+            if (slot_i < d1->cards.size())
+            {
+                costed_cards.push_back({slot_i, d1->cards[slot_i]});
+                d1->cards.erase(d1->cards.begin() + slot_i);
+            }
+            if (! adjust_deck(d1, 0, card_candidate, fund, re, deck_cost, costed_cards))
+            { continue; }
+            auto &&cur_deck = d1->card_ids<std::multiset<unsigned>>();
+            if (evaluated_decks.count(cur_deck) > 0)
             {
                 skipped_simulations += evaluated_decks[cur_deck];
+                continue;
             }
-            if(best_score.points - target_score > -1e-9) { break; }
+            // Evaluate new deck
+            auto compare_results = proc.compare(num_iterations, best_score.points);
+            current_score = compute_score(compare_results, proc.factors);
+            evaluated_decks[cur_deck] = compare_results.second;
+            // Is it better ?
+            if(current_score.points > best_score.points)
+            {
+                std::cout << "Deck improved: " << d1->hash() << ": " << card_id_names(costed_cards) << " -> " << card_id_name(card_candidate) << ": ";
+                // Then update best score/slot, print stuff
+                best_score = current_score;
+                best_cards = d1->cards;
+                deck_has_been_improved = true;
+                print_score_info(compare_results, proc.factors);
+                print_deck_inline(deck_cost, best_score, d1);
+            }
+            if(best_score.points - target_score > -1e-9)
+            { break; }
         }
         d1->cards = best_cards;
     }
@@ -730,7 +790,7 @@ void hill_climbing(unsigned num_iterations, Deck* d1, Process& proc, std::map<si
     { simulations += evaluation.second; }
     std::cout << "Evaluated " << evaluated_decks.size() << " decks (" << simulations << " + " << skipped_simulations << " simulations)." << std::endl;
     std::cout << "Optimized Deck: ";
-    print_deck_inline(get_deck_cost(d1, proc.cards), best_score, best_commander, best_cards, false);
+    print_deck_inline(get_deck_cost(d1), best_score, d1);
 }
 //------------------------------------------------------------------------------
 void hill_climbing_ordered(unsigned num_iterations, Deck* d1, Process& proc, std::map<signed, char> card_marks)
@@ -747,12 +807,13 @@ void hill_climbing_ordered(unsigned num_iterations, Deck* d1, Process& proc, std
     non_commander_cards.insert(non_commander_cards.end(), std::initializer_list<Card *>{NULL,});
     const Card* best_commander = d1->commander;
     std::vector<const Card*> best_cards = d1->cards;
-    unsigned deck_cost = get_deck_cost(d1, proc.cards);
+    unsigned deck_cost = get_deck_cost(d1);
     fund = std::max(fund, deck_cost);
-    print_deck_inline(deck_cost, best_score, best_commander, best_cards, true);
-    std::mt19937 re(time(NULL));
+    print_deck_inline(deck_cost, best_score, d1);
+    std::mt19937 re(std::chrono::system_clock::now().time_since_epoch().count());
     bool deck_has_been_improved = true;
     unsigned long skipped_simulations = 0;
+    std::vector<std::pair<signed, const Card *>> costed_cards;
     for(unsigned from_slot(0), dead_slot(0); (deck_has_been_improved || from_slot != dead_slot) && best_score.points - target_score < -1e-9; from_slot = (from_slot + 1) % std::min<unsigned>(max_deck_len, d1->cards.size() + 1))
     {
         if(deck_has_been_improved)
@@ -764,40 +825,45 @@ void hill_climbing_ordered(unsigned num_iterations, Deck* d1, Process& proc, std
         {
             for(const Card* commander_candidate: proc.cards.player_commanders)
             {
-                if(best_score.points - target_score > -1e-9) { break; }
+                if(best_score.points - target_score > -1e-9)
+                { break; }
                 // Various checks to check if the card is accepted
                 assert(commander_candidate->m_type == CardType::commander);
-                if(commander_candidate->m_name == best_commander->m_name) { continue; }
+                if(commander_candidate->m_name == best_commander->m_name)
+                { continue; }
+                d1->cards = best_cards;
                 // Place it in the deck
+                costed_cards.clear();
+                costed_cards.push_back({-1, best_commander});
                 d1->commander = commander_candidate;
+                if (! adjust_deck(d1, 0, nullptr, fund, re, deck_cost, costed_cards))
+                { continue; }
                 auto &&cur_deck = d1->card_ids<std::vector<unsigned>>();
-                if(evaluated_decks.count(cur_deck) == 0)
-                {
-                    deck_cost = get_deck_cost(d1, proc.cards);
-                    if(deck_cost > fund) { continue; }
-                    // Evaluate new deck
-                    auto compare_results = proc.compare(num_iterations, best_score.points);
-                    current_score = compute_score(compare_results, proc.factors);
-                    evaluated_decks[cur_deck] = compare_results.second;
-                    // Is it better ?
-                    if(current_score.points > best_score.points)
-                    {
-                        // Then update best score/commander, print stuff
-                        best_score = current_score;
-                        best_commander = commander_candidate;
-                        deck_has_been_improved = true;
-                        std::cout << "Deck improved: " << deck_hash(commander_candidate, best_cards, true) << " commander -> " << card_id_name(commander_candidate) << ": ";
-                        print_score_info(compare_results, proc.factors);
-                        print_deck_inline(deck_cost, best_score, best_commander, best_cards, true);
-                    }
-                }
-                else
+                if (evaluated_decks.count(cur_deck) > 0)
                 {
                     skipped_simulations += evaluated_decks[cur_deck];
+                    continue;
+                }
+                // Evaluate new deck
+                auto compare_results = proc.compare(num_iterations, best_score.points);
+                current_score = compute_score(compare_results, proc.factors);
+                evaluated_decks[cur_deck] = compare_results.second;
+                // Is it better ?
+                if(current_score.points > best_score.points)
+                {
+                    std::cout << "Deck improved: " << d1->hash() << ": " << card_slot_id_names(costed_cards) << " -> " << card_id_name(commander_candidate) << ": ";
+                    // Then update best score/commander, print stuff
+                    best_score = current_score;
+                    best_commander = commander_candidate;
+                    best_cards = d1->cards;
+                    deck_has_been_improved = true;
+                    print_score_info(compare_results, proc.factors);
+                    print_deck_inline(deck_cost, best_score, d1);
                 }
             }
             // Now that all commanders are evaluated, take the best one
             d1->commander = best_commander;
+            d1->cards = best_cards;
         }
         std::shuffle(non_commander_cards.begin(), non_commander_cards.end(), re);
         for(const Card* card_candidate: non_commander_cards)
@@ -806,72 +872,46 @@ void hill_climbing_ordered(unsigned num_iterations, Deck* d1, Process& proc, std
             assert(!card_candidate || card_candidate->m_type != CardType::commander);
             for(unsigned to_slot(card_candidate ? 0 : best_cards.size() - 1); to_slot < best_cards.size() + (from_slot < best_cards.size() ? 0 : 1); ++to_slot)
             {
-                if(card_marks.count(from_slot) && card_candidate != best_cards[from_slot]) { break; }
                 d1->cards = best_cards;
-                if(card_candidate)
+                if (card_candidate ?
+                        ((from_slot < best_cards.size() && (from_slot == to_slot && card_candidate->m_name == best_cards[to_slot]->m_name)) || // 2 Omega -> 2 Omega
+                         !suitable_non_commander(*d1, from_slot, card_candidate))
+                        :
+                        (best_cards.size() <= min_deck_len ||
+                         from_slot == best_cards.size())) // void -> void
+                { continue; }
+                costed_cards.clear();
+                if (from_slot < d1->cards.size())
                 {
-                    // Various checks to check if the card is accepted
-                    if(!suitable_non_commander(*d1, from_slot, card_candidate)) { continue; }
-                    // Place it in the deck
-                    if(from_slot < best_cards.size())
-                    {
-                        if(from_slot == to_slot && card_candidate->m_name == best_cards[to_slot]->m_name) { continue; }
-                        d1->cards.erase(d1->cards.begin() + from_slot);
-                    }
-                    d1->cards.insert(d1->cards.begin() + to_slot, card_candidate);
-                }
-                else
-                {
-                    if(best_cards.size() <= min_deck_len || from_slot == best_cards.size()) { continue; }
-                    // Remove it from the deck
+                    costed_cards.push_back({from_slot, d1->cards[from_slot]});
                     d1->cards.erase(d1->cards.begin() + from_slot);
                 }
+                if (! adjust_deck(d1, to_slot, card_candidate, fund, re, deck_cost, costed_cards))
+                { continue; }
                 auto &&cur_deck = d1->card_ids<std::vector<unsigned>>();
-                if(evaluated_decks.count(cur_deck) == 0)
-                {
-                    deck_cost = get_deck_cost(d1, proc.cards);
-                    if(deck_cost > fund) { continue; }
-                    // Evaluate new deck
-                    auto compare_results = proc.compare(num_iterations, best_score.points);
-                    current_score = compute_score(compare_results, proc.factors);
-                    evaluated_decks[cur_deck] = compare_results.second;
-                    // Is it better ?
-                    if(current_score.points > best_score.points)
-                    {
-                        // Then update best score/slot, print stuff
-                        std::cout << "Deck improved: " << deck_hash(best_commander, d1->cards, true) << " " << from_slot << " " << card_id_name(from_slot < best_cards.size() ? best_cards[from_slot] : NULL) <<
-                            " -> " << to_slot << " " << card_id_name(card_candidate) << ": ";
-                        best_score = current_score;
-                        best_cards = d1->cards;
-                        deck_has_been_improved = true;
-                        print_score_info(compare_results, proc.factors);
-                        print_deck_inline(deck_cost, best_score, best_commander, best_cards, true);
-                        std::map<signed, char> new_card_marks;
-                        for(auto it: card_marks)
-                        {
-                            signed pos = it.first;
-                            char mark = it.second;
-                            if(pos < 0) {}
-                            else if(static_cast<unsigned>(pos) == from_slot)
-                            {
-                                pos = to_slot;
-                            }
-                            else
-                            {
-                                if(static_cast<unsigned>(pos) > from_slot) { -- pos; }
-                                if(static_cast<unsigned>(pos) >= to_slot) { ++ pos; }
-                            }
-                            new_card_marks[pos] = mark;
-                        }
-                        card_marks = new_card_marks;
-                    }
-                }
-                else
+                if (evaluated_decks.count(cur_deck) > 0)
                 {
                     skipped_simulations += evaluated_decks[cur_deck];
+                    continue;
+                }
+                // Evaluate new deck
+                auto compare_results = proc.compare(num_iterations, best_score.points);
+                current_score = compute_score(compare_results, proc.factors);
+                evaluated_decks[cur_deck] = compare_results.second;
+                // Is it better ?
+                if(current_score.points > best_score.points)
+                {
+                    // Then update best score/slot, print stuff
+                    std::cout << "Deck improved: " << d1->hash() << ": " << card_slot_id_names(costed_cards) << " -> " << to_slot << " " << card_id_name(card_candidate) << ": ";
+                    best_score = current_score;
+                    best_cards = d1->cards;
+                    deck_has_been_improved = true;
+                    print_score_info(compare_results, proc.factors);
+                    print_deck_inline(deck_cost, best_score, d1);
                 }
             }
-            if(best_score.points - target_score > -1e-9) { break; }
+            if(best_score.points - target_score > -1e-9)
+            { break; }
         }
         d1->cards = best_cards;
     }
@@ -880,7 +920,7 @@ void hill_climbing_ordered(unsigned num_iterations, Deck* d1, Process& proc, std
     { simulations += evaluation.second; }
     std::cout << "Evaluated " << evaluated_decks.size() << " decks (" << simulations << " + " << skipped_simulations << " simulations)." << std::endl;
     std::cout << "Optimized Deck: ";
-    print_deck_inline(get_deck_cost(d1, proc.cards), best_score, best_commander, best_cards, true);
+    print_deck_inline(get_deck_cost(d1), best_score, d1);
 }
 //------------------------------------------------------------------------------
 // Implements iteration over all combination of k elements from n elements.
@@ -945,98 +985,6 @@ private:
     unsigned nextIndex;
 };
 //------------------------------------------------------------------------------
-static unsigned total_num_combinations_test(0);
-inline void try_all_ratio_combinations(unsigned deck_size, unsigned var_k, unsigned num_iterations, const std::vector<unsigned>& card_indices, std::vector<const Card*>& cards, const Card* commander, Process& proc, Results<long double>& best_score, boost::optional<Deck>& best_deck)
-{
-    assert(card_indices.size() > 0);
-    assert(card_indices.size() <= deck_size);
-    unsigned num_cards_to_combine(deck_size);
-    std::vector<const Card*> unique_cards;
-    std::vector<const Card*> cards_to_combine;
-    bool legendary_found(false);
-    for(unsigned card_index: card_indices)
-    {
-        const Card* card(cards[card_index]);
-        if(card->m_unique || card->m_rarity == 4)
-        {
-            if(card->m_rarity == 4)
-            {
-                if(legendary_found) { return; }
-                legendary_found = true;
-            }
-            --num_cards_to_combine;
-            unique_cards.push_back(card);
-        }
-        else
-        {
-            cards_to_combine.push_back(card);
-        }
-    }
-    // all unique or legendaries, quit
-    if(cards_to_combine.size() == 0) { return; }
-    if(cards_to_combine.size() == 1)
-    {
-        std::vector<const Card*> deck_cards = unique_cards;
-        std::vector<const Card*> combined_cards(num_cards_to_combine, cards_to_combine[0]);
-        deck_cards.insert(deck_cards.end(), combined_cards.begin(), combined_cards.end());
-        Deck deck{};
-        deck.set(commander, deck_cards);
-        (*dynamic_cast<Deck*>(proc.att_deck)) = deck;
-        auto new_results = proc.compare(num_iterations, best_score.points);
-        auto new_score = compute_score(new_results, proc.factors);
-        if(new_score.points > best_score.points)
-        {
-            best_score = new_score;
-            best_deck = deck;
-            print_score_info(new_results, proc.factors);
-            print_deck_inline(0, best_score, commander, deck_cards, false);
-        }
-        //++num;
-        // num_cards = num_cards_to_combine ...
-    }
-    else
-    {
-        var_k = cards_to_combine.size() - 1;
-        Combination cardAmounts(num_cards_to_combine-1, var_k);
-        bool finished(false);
-        while(!finished)
-        {
-            const std::vector<unsigned>& indices = cardAmounts.getIndices();
-            std::vector<unsigned> num_cards(var_k+1, 0);
-            num_cards[0] = indices[0] + 1;
-            for(unsigned i(1); i < var_k; ++i)
-            {
-                num_cards[i] = indices[i] - indices[i-1];
-            }
-            num_cards[var_k] = num_cards_to_combine - (indices[var_k-1] + 1);
-            std::vector<const Card*> deck_cards = unique_cards;
-            //std::cout << "num cards: ";
-            for(unsigned num_index(0); num_index < num_cards.size(); ++num_index)
-            {
-                //std::cout << num_cards[num_index] << " ";
-                for(unsigned i(0); i < num_cards[num_index]; ++i) { deck_cards.push_back(cards[card_indices[num_index]]); }
-            }
-            //std::cout << "\n" << std::flush;
-            //std::cout << std::flush;
-            assert(deck_cards.size() == deck_size);
-            Deck deck{};
-            deck.set(commander, deck_cards);
-            *proc.att_deck = deck;
-            auto new_results = proc.compare(num_iterations, best_score.points);
-            auto new_score = compute_score(new_results, proc.factors);
-            if(new_score.points > best_score.points)
-            {
-                best_score = new_score;
-                best_deck = deck;
-                print_score_info(new_results, proc.factors);
-                print_deck_inline(0, best_score, commander, deck_cards, false);
-            }
-            ++total_num_combinations_test;
-            finished = cardAmounts.next();
-        }
-    }
-}
-//------------------------------------------------------------------------------
 enum Operation {
     simulate,
     climb,
@@ -1045,7 +993,7 @@ enum Operation {
     debuguntil
 };
 //------------------------------------------------------------------------------
-void print_available_decks(const Decks& decks, bool allow_card_pool)
+void print_available_decks(Decks & decks, bool allow_card_pool)
 {
     std::cout << "Available decks: (use double-quoted name)" << std::endl;
     std::cout << "(All missions, omitted because the list is too long.)" << std::endl;
@@ -1319,7 +1267,7 @@ int main(int argc, char** argv)
                 {
                     auto prev_deck = decks.by_type_id[{DeckType::mission, prev_mission_id}];
                     prev_mission_id = prev_deck->mission_req;
-                    claim_cards(prev_deck->reward_cards, cards, true, true);
+                    claim_cards(prev_deck->reward_cards, true, true);
                 }
             }
         }
@@ -1445,8 +1393,8 @@ int main(int argc, char** argv)
     // Force to claim non-buyable cards in your initial deck.
     if(use_owned_cards)
     {
-        claim_cards({att_deck->commander}, cards, fund == 0, false);
-        claim_cards(att_deck->cards, cards, fund == 0, false);
+        claim_cards({att_deck->commander}, fund == 0, false);
+        claim_cards(att_deck->cards, fund == 0, false);
     }
 
     att_deck->strategy = att_strategy;
@@ -1488,13 +1436,16 @@ int main(int argc, char** argv)
                 break;
             }
             case climb: {
-                if(att_strategy == DeckStrategy::random)
+                switch (att_strategy)
                 {
+                case DeckStrategy::random:
                     hill_climbing(std::get<0>(op), att_deck, p, att_deck->card_marks);
-                }
-                else
-                {
+                    break;
+//                case DeckStrategy::ordered:
+//                case DeckStrategy::exact_ordered:
+                default:
                     hill_climbing_ordered(std::get<0>(op), att_deck, p, att_deck->card_marks);
+                    break;
                 }
                 break;
             }
@@ -1504,8 +1455,8 @@ int main(int argc, char** argv)
                 use_owned_cards = true;
                 auto_upgrade_cards = false;
                 owned_cards.clear();
-                claim_cards({att_deck->commander}, cards, true, false);
-                claim_cards(att_deck->cards, cards, true, false);
+                claim_cards({att_deck->commander}, true, false);
+                claim_cards(att_deck->cards, true, false);
                 hill_climbing_ordered(std::get<0>(op), att_deck, p, att_deck->card_marks);
                 break;
             }
@@ -1530,7 +1481,8 @@ int main(int argc, char** argv)
                     debug_str.clear();
                     auto results = p.evaluate(1);
                     auto score = compute_score(results, p.factors);
-                    if(score.points >= std::get<0>(op) && score.points <= std::get<1>(op)) {
+                    if(score.points >= std::get<0>(op) && score.points <= std::get<1>(op))
+                    {
                         std::cout << debug_str << std::flush;
                         print_results(results, p.factors);
                         break;

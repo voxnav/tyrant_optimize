@@ -11,8 +11,6 @@
 
 class Cards;
 
-std::string deck_hash(const Card* commander, std::vector<const Card*> cards, bool is_ordered);
-
 //---------------------- $30 Deck: a commander + a sequence of cards -----------
 // Can be shuffled.
 // Implementations: random player and raid decks, ordered player decks.
@@ -102,9 +100,10 @@ struct Deck
     }
 
     Deck* clone() const;
-    std::string short_description() const;
-    std::string medium_description() const;
-    std::string long_description(const Cards& all_cards) const;
+    std::string hash();
+    std::string short_description();
+    std::string medium_description();
+    std::string long_description(const Cards& all_cards);
     const Card* get_commander();
     const Card* next();
     void shuffle(std::mt19937& re);
