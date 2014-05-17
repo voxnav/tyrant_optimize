@@ -211,10 +211,6 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
     if(rarity_node) { card->m_rarity = atoi(rarity_node->value()); }
     if(type_node) { card->m_faction = map_to_faction(atoi(type_node->value())); }
     card->m_set = set;
-    // Promo and Unpurchasable Reward cards will only require 1 copy
-    card->m_upgrade_consumables = set == 5001 || (set == 5000 && card->m_reserve) ? 1 : 2;
-    // Reward cards will still have a gold cost
-    card->m_upgrade_gold_cost = set == 5000 ? (card->m_rarity == 4 ? 100000 : 20000) : 0;
     unsigned skill_pos = 1;
     for(xml_node<>* skill_node = card_node->first_node("skill");
             skill_node;
@@ -274,10 +270,8 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
         { card->m_fusion = true; }
         else if(skill_id == immobilize)
         { card->m_immobilize = true; }
-#if defined(TYRANT_UNLEASHED)
         else if(skill_id == inhibit)
         { card->m_inhibit = node_value(skill_node, "x"); }
-#endif
         else if(skill_id == intercept)
         { card->m_intercept = true; }
         else if(skill_id == leech)
@@ -336,18 +330,19 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
         Card * pre_upgraded_card = top_card;
         top_card = new Card(*top_card);
         parse_card_node(cards, top_card, upgrade_node);
-        top_card->m_material_list.clear();
-        top_card->m_material_list[pre_upgraded_card] = 1;
         if (top_card->m_type == CardType::commander)
         {
             // Commanders cost twice and cannot be salvaged.
-            top_card->m_upgrade_gold_cost = 2 * upgrade_cost[pre_upgraded_card->m_level];
+            top_card->m_recipe_cost = 2 * upgrade_cost[pre_upgraded_card->m_level];
         }
         else
         {
             // Salvaging income counts?
-            top_card->m_upgrade_gold_cost = upgrade_cost[pre_upgraded_card->m_level]; // + salvaging_income[top_card->m_rarity][pre_upgraded_card->m_level] - salvaging_income[top_card->m_rarity][top_card->m_level];
+            top_card->m_recipe_cost = upgrade_cost[pre_upgraded_card->m_level]; // + salvaging_income[top_card->m_rarity][pre_upgraded_card->m_level] - salvaging_income[top_card->m_rarity][top_card->m_level];
         }
+        top_card->m_recipe_cards.clear();
+        top_card->m_recipe_cards[pre_upgraded_card] = 1;
+        pre_upgraded_card->m_used_for_cards[top_card] = 1;
     }
     card->m_final_id = top_card->m_id;
 #endif
@@ -542,7 +537,6 @@ void read_quests(Decks& decks, const Cards& cards, std::string filename)
 }
 
 //------------------------------------------------------------------------------
-#if defined(TYRANT_UNLEASHED)
 void load_recipes_xml(Cards& cards)
 {
     std::vector<char> buffer;
@@ -562,7 +556,7 @@ void load_recipes_xml(Cards& cards)
         xml_node<>* card_id_node(recipe_node->first_node("card_id"));
         if (!card_id_node) { continue; }
         unsigned card_id(atoi(card_id_node->value()));
-        auto & card = cards.cards_by_id[card_id];
+        Card * card = cards.cards_by_id[card_id];
         for(xml_node<>* resource_node = recipe_node->first_node("resource");
                 resource_node;
                 resource_node = resource_node->next_sibling("resource"))
@@ -570,11 +564,12 @@ void load_recipes_xml(Cards& cards)
             unsigned card_id(node_value(resource_node, "card_id"));
             unsigned number(node_value(resource_node, "number"));
             if (card_id == 0 || number == 0) { continue; }
-            card->m_material_list[cards.by_id(card_id)] += number;
+            Card * material_card = cards.cards_by_id[card_id];
+            card->m_recipe_cards[material_card] += number;
+            material_card->m_used_for_cards[card] += number;
         }
     }
 }
-#endif
 
 //------------------------------------------------------------------------------
 extern unsigned turn_limit;

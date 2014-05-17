@@ -85,29 +85,29 @@ Deck* find_deck(Decks& decks, const Cards& cards, std::string deck_name)
 }
 //---------------------- $80 deck optimization ---------------------------------
 
-#if defined(TYRANT_UNLEASHED)
-unsigned get_required_cards_before_upgrade(const std::vector<const Card*> & card_list, const Cards & cards, std::map<unsigned, unsigned> & num_cards)
+unsigned get_required_cards_before_upgrade(const std::vector<const Card*> & card_list, const Cards & cards, std::map<const Card*, unsigned> & num_cards)
 {
     unsigned deck_cost = 0;
     std::set<const Card*> unresolved_cards;
     for(const Card * card: card_list)
     {
-        ++ num_cards[card->m_id];
+        ++ num_cards[card];
         unresolved_cards.insert(card);
     }
     while (!unresolved_cards.empty())
     {
-        auto card = *unresolved_cards.begin();
-        unresolved_cards.erase(unresolved_cards.begin());
-        if(auto_upgrade_cards && owned_cards[card->m_id] < num_cards[card->m_id] && !card->m_material_list.empty())
+        auto card_it = unresolved_cards.end();
+        auto card = *(-- card_it);
+        unresolved_cards.erase(card_it);
+        if(auto_upgrade_cards && owned_cards[card->m_id] < num_cards[card] && !card->m_recipe_cards.empty())
         {
-            unsigned num_under = num_cards[card->m_id] - owned_cards[card->m_id];
-            num_cards[card->m_id] = owned_cards[card->m_id];
+            unsigned num_under = num_cards[card] - owned_cards[card->m_id];
+            num_cards[card] = owned_cards[card->m_id];
 //            std::cout << "-" << num_under << " " << card->m_name << "\n"; // XXX
-            deck_cost += num_under * card->m_upgrade_gold_cost;
-            for (auto material_it : card->m_material_list)
+            deck_cost += num_under * card->m_recipe_cost;
+            for (auto material_it : card->m_recipe_cards)
             {
-                num_cards[material_it.first->m_id] += num_under * material_it.second;
+                num_cards[material_it.first] += num_under * material_it.second;
 //                std::cout << "+" << num_under * material_it.second << " " << material_it.first->m_name << "\n"; // XXX
                 unresolved_cards.insert(material_it.first);
             }
@@ -121,76 +121,21 @@ unsigned get_required_cards_before_upgrade(const std::vector<const Card*> & card
 // @is_reward: not claim a card if there is upgraded version (assuming the reward card has been upgraded).
 void claim_cards(const std::vector<const Card*> & card_list, const Cards & cards, bool claim_all, bool is_reward=false)
 {
-    std::map<unsigned, unsigned> num_cards;
-    get_required_cards_before_upgrade(card_list, cards, num_cards);
-    for(auto it: num_cards)
-    {
-        unsigned card_id = it.first;
-        if(claim_all || buyable_cards.find(card_id) == buyable_cards.end())
-        {
-            unsigned num_to_claim = safe_minus(it.second, owned_cards[card_id]);
-            if(num_to_claim > 0)
-            {
-                owned_cards[card_id] += num_to_claim;
-                if(debug_print)
-                {
-                    std::cout << "Claim " << cards.by_id(card_id)->m_name << " (" << num_to_claim << ")" << std::endl;
-                }
-            }
-        }
-    }
-}
-
-unsigned get_deck_cost(const Deck * deck, const Cards & cards)
-{
-    if(!use_owned_cards)
-    {
-        return 0;
-    }
-    std::map<unsigned, unsigned> num_in_deck;
-    unsigned deck_cost = get_required_cards_before_upgrade({deck->commander}, cards, num_in_deck);
-    deck_cost += get_required_cards_before_upgrade(deck->cards, cards, num_in_deck);
-    for(auto it: num_in_deck)
-    {
-        unsigned card_id = it.first;
-        unsigned num_to_buy = safe_minus(it.second, owned_cards[card_id]);
-//        std::cout << "BUY " << cards.by_id(card_id)->m_name << " +" << num_to_buy << " =" << it.second << ".\n"; // XXX
-        if(num_to_buy > 0)
-        {
-            auto buyable_iter = buyable_cards.find(card_id);
-            if(buyable_iter == buyable_cards.end()) { return UINT_MAX; }
-            deck_cost += num_to_buy * buyable_iter->second;
-        }
-    }
-//    std::cout << "\n"; // XXX
-    return deck_cost;
-}
-
-#else
-
-// @claim_all: true = claim all cards; false = claim only non-buyable cards.
-// @is_reward: not claim a card if there is upgraded version (assuming the reward card has been upgraded).
-void claim_cards(const std::vector<const Card*> & card_list, const Cards & cards, bool claim_all, bool is_reward)
-{
     std::map<const Card *, unsigned> num_cards;
-    for(const Card * card: card_list)
-    {
-        if(card->m_proto_id > 0 && auto_upgrade_cards && owned_cards[card->m_id] <= num_cards[card])
-        {
-            const Card * proto_card = cards.by_id(card->m_proto_id);
-            num_cards[proto_card] += proto_card->m_upgrade_consumables;
-        }
-        else
-        {
-            num_cards[card] += 1;
-        }
-    }
+    get_required_cards_before_upgrade(card_list, cards, num_cards);
     for(auto it: num_cards)
     {
         const Card * card = it.first;
         if(claim_all || buyable_cards.find(card->m_id) == buyable_cards.end())
         {
-            unsigned num_to_claim = safe_minus(it.second, owned_cards[card->m_id] + (is_reward ? card->m_upgrade_consumables * owned_cards[card->m_upgraded_id] : 0));
+            unsigned num_to_claim = safe_minus(it.second, owned_cards[card->m_id]);
+            if (is_reward)
+            {
+                for (const auto & it : card->m_used_for_cards)
+                {
+                    num_to_claim = safe_minus(num_to_claim, owned_cards[it.first->m_id] * it.second);
+                }
+            }
             if(num_to_claim > 0)
             {
                 owned_cards[card->m_id] += num_to_claim;
@@ -209,36 +154,14 @@ unsigned get_deck_cost(const Deck * deck, const Cards & cards)
     {
         return 0;
     }
-    std::map<unsigned, unsigned> num_in_deck;
-    unsigned deck_cost = 0;
-    const Card * card = deck->commander;
-    if(card->m_proto_id > 0 && auto_upgrade_cards && owned_cards[card->m_id] == 0)
-    {
-        const Card * proto_card = cards.by_id(card->m_proto_id);
-        num_in_deck[proto_card->m_id] += proto_card->m_upgrade_consumables;
-        deck_cost += proto_card->m_upgrade_gold_cost;
-    }
-    else
-    {
-        num_in_deck[card->m_id] += 1;
-    }
-    for(const Card * card: deck->cards)
-    {
-        if(card->m_proto_id > 0 && auto_upgrade_cards && owned_cards[card->m_id] < num_in_deck[card->m_id])
-        {
-            const Card * proto_card = cards.by_id(card->m_proto_id);
-            num_in_deck[proto_card->m_id] += proto_card->m_upgrade_consumables;
-            deck_cost += proto_card->m_upgrade_gold_cost;
-        }
-        else
-        {
-            num_in_deck[card->m_id] += 1;
-        }
-    }
+    std::map<const Card *, unsigned> num_in_deck;
+    unsigned deck_cost = get_required_cards_before_upgrade({deck->commander}, cards, num_in_deck);
+    deck_cost += get_required_cards_before_upgrade(deck->cards, cards, num_in_deck);
     for(auto it: num_in_deck)
     {
-        unsigned card_id = it.first;
+        unsigned card_id = it.first->m_id;
         unsigned num_to_buy = safe_minus(it.second, owned_cards[card_id]);
+//        std::cout << "BUY " << cards.by_id(card_id)->m_name << " +" << num_to_buy << " =" << it.second << ".\n"; // XXX
         if(num_to_buy > 0)
         {
             auto buyable_iter = buyable_cards.find(card_id);
@@ -246,9 +169,9 @@ unsigned get_deck_cost(const Deck * deck, const Cards & cards)
             deck_cost += num_to_buy * buyable_iter->second;
         }
     }
+//    std::cout << "\n"; // XXX
     return deck_cost;
 }
-#endif
 
 //------------------------------------------------------------------------------
 inline bool suitable_non_commander(const Deck& deck, unsigned slot, const Card* card)

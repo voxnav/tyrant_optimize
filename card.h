@@ -40,16 +40,12 @@ public:
     unsigned m_leech;
     unsigned m_legion;
     unsigned m_level;
-#if defined(TYRANT_UNLEASHED)
-    std::map<const Card*, unsigned> m_material_list;
-#endif
     std::string m_name;
     bool m_payback;
     unsigned m_pierce;
     unsigned m_phase;
     unsigned m_poison;
     unsigned m_poison_oa;
-    unsigned m_proto_id;  // The id of the prototype card (before upgraded) for an upgraded card. 0 otherwise.
     unsigned m_rarity;
     bool m_refresh;
     unsigned m_regenerate;
@@ -64,13 +60,13 @@ public:
     bool m_swipe;
     bool m_tribute;
     bool m_unique;
-    unsigned m_upgrade_consumables;
-    unsigned m_upgrade_gold_cost;
-    unsigned m_upgraded_id;  // The id of the upgraded card for an upgradable card. 0 otherwise.
     unsigned m_valor;
     bool m_wall;
     std::vector<SkillSpec> m_skills[SkillMod::num_skill_activation_modifiers];
     CardType::CardType m_type;
+    unsigned m_recipe_cost;
+    std::map<const Card*, unsigned> m_recipe_cards;
+    std::map<const Card*, unsigned> m_used_for_cards;
     unsigned m_skill_pos[num_skills];
 
 public:
@@ -106,16 +102,12 @@ public:
         m_leech(0),
         m_legion(0),
         m_level(1),
-#if defined(TYRANT_UNLEASHED)
-        m_material_list(),
-#endif
         m_name(""),
         m_payback(false),
         m_pierce(0),
         m_phase(0),
         m_poison(0),
         m_poison_oa(0),
-        m_proto_id(0),
         m_rarity(1),
         m_refresh(false),
         m_regenerate(0),
@@ -132,7 +124,10 @@ public:
         m_valor(0),
         m_wall(false),
         m_skills(),
-        m_type(CardType::assault)
+        m_type(CardType::assault),
+        m_recipe_cost(0),
+        m_recipe_cards(),
+        m_used_for_cards()
     {
         std::memset(m_skill_pos, 0, sizeof m_skill_pos);
     }

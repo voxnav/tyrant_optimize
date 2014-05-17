@@ -141,14 +141,18 @@ void Cards::organize()
         }
 
 #if not defined(TYRANT_UNLEASHED)
-        // update proto_id and upgraded_id
+        // update recipes
         if(card->m_set == 5002)
         {
-            std::string proto_name{simplify_name(card->m_name)};
-            proto_name.erase(proto_name.size() - 1);  // remove suffix "*"
-            Card * proto_card = player_cards_by_name[{proto_name, card->m_hidden}];
-            card->m_proto_id = proto_card->m_id;
-            proto_card->m_upgraded_id = card->m_id;
+            std::string material_name{simplify_name(card->m_name)};
+            material_name.erase(material_name.size() - 1);  // remove suffix "*"
+            Card * material_card = player_cards_by_name[{material_name, card->m_hidden}];
+            // Promo and Unpurchasable Reward cards only require 1 copy
+            unsigned number = material_card->m_set == 5001 || (material_card->m_set == 5000 && material_card->m_reserve) ? 1 : 2;
+            // Reward cards still have gold cost
+            card->m_recipe_cost = material_card->m_set == 5000 ? (card->m_rarity == 4 ? 100000 : 20000) : 0;
+            card->m_recipe_cards[material_card] = number;
+            material_card->m_used_for_cards[card] = number;
         }
 #endif
     }

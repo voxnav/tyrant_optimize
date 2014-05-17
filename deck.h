@@ -119,8 +119,4 @@ struct Decks
     std::map<std::string, Deck*> by_name;
 };
 
-#if defined(TYRANT_UNLEASHED)
-void load_fusions(Cards& cards);
-#endif
-
 #endif

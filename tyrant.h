@@ -78,10 +78,10 @@ extern std::string cardtype_names[CardType::num_cardtypes];
 
 extern std::string rarity_names[];
 
-#if defined(TYRANT_UNLEASHED)
+// begin for TYRANT_UNLEASHED
 extern unsigned upgrade_cost[];
 extern unsigned salvaging_income[][7];
-#endif
+// end
 
 namespace DeckType {
 enum DeckType {
