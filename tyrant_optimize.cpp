@@ -180,24 +180,21 @@ void append_unless_remove(C & self, C & oppo, typename C::const_reference val)
 bool adjust_deck(Deck * deck, const signed from_slot, const signed to_slot, const Card * card, unsigned fund, std::mt19937 & re, unsigned & deck_cost,
         std::vector<std::pair<signed, const Card *>> & cards_out, std::vector<std::pair<signed, const Card *>> & cards_in)
 {
+    cards_in.clear();
     if (card == nullptr)
     {
+        if (to_slot < 0)
+        { // commander
+            cards_in.emplace_back(-1, deck->commander);
+        }
         deck_cost = get_deck_cost(deck);
         return (deck_cost <= fund);
     }
     bool is_random = deck->strategy == DeckStrategy::random;
     std::vector<const Card *> cards = deck->cards;
     deck->cards.clear();
-    cards_in.clear();
-    if (card)
-    {
-        deck->cards.emplace_back(card);
-        cards_in.emplace_back(is_random ? -1 : to_slot, card);
-    }
-    else if (to_slot < 0)
-    { // commander
-        cards_in.emplace_back(-1, deck->commander);
-    }
+    deck->cards.emplace_back(card);
+    cards_in.emplace_back(is_random ? -1 : to_slot, card);
     deck_cost = get_deck_cost(deck);
     if (deck_cost > fund)
     { return false; }
