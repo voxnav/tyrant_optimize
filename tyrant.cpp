@@ -45,7 +45,11 @@ std::string skill_activation_modifier_names[SkillMod::num_skill_activation_modif
 
 std::string cardtype_names[CardType::num_cardtypes]{"Commander", "Assault", "Structure", "Action", };
 
-std::string rarity_names[6]{"", "common", "uncommon", "rare", "legendary", "vindicator", };
+#if defined(TYRANT_UNLEASHED)
+std::string rarity_names[6]{"", "common", "rare", "epic", "legendary", "vindicator", };
+#else
+std::string rarity_names[5]{"", "common", "uncommon", "rare", "legendary", };
+#endif
 
 // begin for TYRANT_UNLEASHED
 unsigned upgrade_cost[]{0, 5, 15, 30, 75, 150};
