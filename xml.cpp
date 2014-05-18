@@ -380,7 +380,7 @@ void read_cards(Cards& cards)
 #endif
 }
 //------------------------------------------------------------------------------
-Deck* read_deck(Decks& decks, const Cards& cards, xml_node<>* node, DeckType::DeckType decktype, unsigned id, std::string& deck_name, unsigned level=1)
+Deck* read_deck(Decks& decks, const Cards& cards, xml_node<>* node, DeckType::DeckType decktype, unsigned id, std::string deck_name, unsigned level=1)
 {
     xml_node<>* commander_node(node->first_node("commander"));
     unsigned card_id = atoi(commander_node->value());
@@ -465,7 +465,13 @@ void read_missions(Decks& decks, const Cards& cards, std::string filename)
         unsigned id(id_node ? atoi(id_node->value()) : 0);
         xml_node<>* name_node(mission_node->first_node("name"));
         std::string deck_name{name_node->value()};
-        Deck* deck = read_deck(decks, cards, mission_node, DeckType::mission, id, deck_name, 10);
+        Deck* deck;
+#if defined(TYRANT_UNLEASHED)
+        {
+            deck = read_deck(decks, cards, mission_node, DeckType::mission, id, deck_name + "-1", 1);
+        }
+#endif
+        deck = read_deck(decks, cards, mission_node, DeckType::mission, id, deck_name, 10);
         xml_node<>* effect_id_node(mission_node->first_node("effect"));
         if(effect_id_node)
         {
