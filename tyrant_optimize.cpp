@@ -776,8 +776,7 @@ void hill_climbing(unsigned num_iterations, Deck* d1, Process& proc, std::map<si
                     ((slot_i < best_cards.size() && card_candidate->m_name == best_cards[slot_i]->m_name) || // Omega -> Omega
                      !suitable_non_commander(*d1, slot_i, card_candidate))
                     :
-                    (best_cards.size() <= min_deck_len ||
-                     slot_i == best_cards.size()))  // void -> void
+                     (slot_i == best_cards.size()))  // void -> void
             { continue; }
             cards_out.clear();
             if (slot_i < d1->cards.size())
@@ -785,7 +784,8 @@ void hill_climbing(unsigned num_iterations, Deck* d1, Process& proc, std::map<si
                 cards_out.emplace_back(-1, d1->cards[slot_i]);
                 d1->cards.erase(d1->cards.begin() + slot_i);
             }
-            if (! adjust_deck(d1, slot_i, slot_i, card_candidate, fund, re, deck_cost, cards_out, cards_in))
+            if (! adjust_deck(d1, slot_i, slot_i, card_candidate, fund, re, deck_cost, cards_out, cards_in) ||
+                    d1->cards.size() < min_deck_len)
             { continue; }
             auto &&cur_deck = d1->card_ids<std::multiset<unsigned>>();
             if (evaluated_decks.count(cur_deck) > 0)
@@ -905,8 +905,7 @@ void hill_climbing_ordered(unsigned num_iterations, Deck* d1, Process& proc, std
                         ((from_slot < best_cards.size() && (from_slot == to_slot && card_candidate->m_name == best_cards[to_slot]->m_name)) || // 2 Omega -> 2 Omega
                          !suitable_non_commander(*d1, from_slot, card_candidate))
                         :
-                        (best_cards.size() <= min_deck_len ||
-                         from_slot == best_cards.size())) // void -> void
+                         (from_slot == best_cards.size())) // void -> void
                 { continue; }
                 cards_out.clear();
                 if (from_slot < d1->cards.size())
@@ -914,7 +913,8 @@ void hill_climbing_ordered(unsigned num_iterations, Deck* d1, Process& proc, std
                     cards_out.emplace_back(from_slot, d1->cards[from_slot]);
                     d1->cards.erase(d1->cards.begin() + from_slot);
                 }
-                if (! adjust_deck(d1, from_slot, to_slot, card_candidate, fund, re, deck_cost, cards_out, cards_in))
+                if (! adjust_deck(d1, from_slot, to_slot, card_candidate, fund, re, deck_cost, cards_out, cards_in) ||
+                        d1->cards.size() < min_deck_len)
                 { continue; }
                 auto &&cur_deck = d1->card_ids<std::vector<unsigned>>();
                 if (evaluated_decks.count(cur_deck) > 0)
@@ -1397,6 +1397,7 @@ int main(int argc, char** argv)
         }
         else if(strcmp(argv[argIndex], "reorder") == 0)
         {
+            att_strategy = DeckStrategy::ordered;
             todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), 0u, reorder));
             argIndex += 1;
         }
@@ -1478,7 +1479,6 @@ int main(int argc, char** argv)
                 break;
             }
             case reorder: {
-                att_deck->strategy = DeckStrategy::ordered;
                 min_deck_len = max_deck_len = att_deck->cards.size();
                 use_owned_cards = true;
                 auto_upgrade_cards = false;
