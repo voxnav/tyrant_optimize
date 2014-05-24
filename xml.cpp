@@ -432,6 +432,9 @@ Deck* read_deck(Decks& decks, const Cards& cards, xml_node<>* node, DeckType::De
     }
     xml_node<>* mission_req_node(node->first_node(decktype == DeckType::mission ? "req" : "mission_req"));
     unsigned mission_req(mission_req_node ? atoi(mission_req_node->value()) : 0);
+#if defined(TYRANT_UNLEASHED)
+    if (level < 10) { deck_name += "-" + to_string(level); }
+#endif
     decks.decks.push_back(Deck{decktype, id, deck_name});
     Deck* deck = &decks.decks.back();
     deck->set(commander_card, always_cards, some_cards, reward_cards, mission_req);
@@ -439,6 +442,9 @@ Deck* read_deck(Decks& decks, const Cards& cards, xml_node<>* node, DeckType::De
     decks.by_name[deck_name] = deck;
     std::stringstream alt_name;
     alt_name << decktype_names[decktype] << " #" << id;
+#if defined(TYRANT_UNLEASHED)
+    if (level < 10) { alt_name << "-" << level; }
+#endif
     decks.by_name[alt_name.str()] = deck;
     return deck;
 }
@@ -468,7 +474,7 @@ void read_missions(Decks& decks, const Cards& cards, std::string filename)
         Deck* deck;
 #if defined(TYRANT_UNLEASHED)
         {
-            deck = read_deck(decks, cards, mission_node, DeckType::mission, id, deck_name + "-1", 1);
+            deck = read_deck(decks, cards, mission_node, DeckType::mission, id, deck_name, 1);
         }
 #endif
         deck = read_deck(decks, cards, mission_node, DeckType::mission, id, deck_name, 10);
