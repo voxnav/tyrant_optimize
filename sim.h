@@ -129,12 +129,12 @@ struct CardStatus
     const Card* m_card;
     unsigned m_index;
     unsigned m_player;
-    unsigned m_attack;
     unsigned m_augmented;
     unsigned m_berserk;
     bool m_blitzing;
     bool m_chaosed;
-    unsigned m_corroded;
+    unsigned m_corroded_rate;
+    unsigned m_corroded_weakened;
     unsigned m_delay;
     bool m_diseased;
     unsigned m_evaded;

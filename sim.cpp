@@ -78,12 +78,12 @@ CardStatus::CardStatus(const Card* card) :
     m_card(card),
     m_index(0),
     m_player(0),
-    m_attack(card->m_attack),
     m_augmented(0),
     m_berserk(0),
     m_blitzing(false),
     m_chaosed(false),
-    m_corroded(0),
+    m_corroded_rate(0),
+    m_corroded_weakened(0),
     m_delay(card->m_delay),
     m_diseased(false),
     m_evaded(0),
@@ -126,12 +126,12 @@ inline void CardStatus::set(const Card& card)
     m_card = &card;
     m_index = 0;
     m_player = 0;
-    m_attack = card.m_attack;
     m_augmented = 0;
     m_berserk = 0;
     m_blitzing = false;
     m_chaosed = false;
-    m_corroded = 0;
+    m_corroded_rate = 0;
+    m_corroded_weakened = 0;
     m_delay = card.m_delay;
     m_diseased = false;
     m_evaded = 0;
@@ -159,7 +159,7 @@ inline void CardStatus::set(const Card& card)
 //------------------------------------------------------------------------------
 inline int attack_power(CardStatus* att)
 {
-    return(safe_minus(att->m_attack + att->m_rallied, att->m_weakened));
+    return(safe_minus(att->m_card->m_attack + att->m_berserk + att->m_rallied, att->m_weakened + att->m_corroded_weakened));
 }
 //------------------------------------------------------------------------------
 std::string skill_description(const Cards& cards, const SkillSpec& s)
@@ -286,11 +286,13 @@ std::string CardStatus::description()
     case CardType::action:
         break;
     case CardType::assault:
-        desc += " att:" + to_string(m_attack);
+        desc += " att:" + to_string(m_card->m_attack);
         {
             std::string att_desc;
+            if(m_berserk > 0) { att_desc += "+" + to_string(m_berserk) + "(berserk)"; }
             if(m_rallied > 0) { att_desc += "+" + to_string(m_rallied) + "(rallied)"; }
             if(m_weakened > 0) { att_desc += "-" + to_string(m_weakened) + "(weakened)"; }
+            if(m_corroded_weakened > 0) { att_desc += "-" + to_string(m_corroded_weakened) + "(corroded)"; }
             if(!att_desc.empty()) { desc += att_desc + "=" + to_string(attack_power(this)); }
         }
     case CardType::structure:
@@ -315,8 +317,7 @@ std::string CardStatus::description()
     if(m_sundered) { desc += ", sundered"; }
     if(m_temporary_split) { desc += ", cloning"; }
     if(m_augmented > 0) { desc += ", augmented " + to_string(m_augmented); }
-    if(m_berserk > 0) { desc += ", berserk " + to_string(m_berserk); }
-    if(m_corroded > 0) { desc += ", corroded " + to_string(m_corroded); }
+    if(m_corroded_rate > 0) { desc += ", corroded " + to_string(m_corroded_rate); }
     if(m_enfeebled > 0) { desc += ", enfeebled " + to_string(m_enfeebled); }
     if(m_inhibited > 0) { desc += ", inhibited " + to_string(m_inhibited); }
     if(m_poisoned > 0) { desc += ", poisoned " + to_string(m_poisoned); }
@@ -939,11 +940,11 @@ Results<uint64_t> play(Field* fd)
             {
 #if defined(TYRANT_UNLEASHED)
                 CardStatus* att_status(&fd->tap->assaults[fd->current_ci]);
-                if (att_status->m_corroded > 0)
+                if (att_status->m_corroded_rate > 0)
                 {
-                    att_status->m_corroded = 0;
-                    att_status->m_attack = att_status->m_card->m_attack + att_status->m_berserk;
-                    _DEBUG_MSG(1, "%s lost corroded.\n", status_description(att_status).c_str());
+                    _DEBUG_MSG(1, "%s loses Status corroded.\n", status_description(att_status).c_str());
+                    att_status->m_corroded_rate = 0;
+                    att_status->m_corroded_weakened = 0;
                 }
 #endif
             }
@@ -1239,7 +1240,6 @@ inline void add_hp(Field* fd, CardStatus* target, unsigned v)
     {
         unsigned healed = target->m_hp - old_hp;
         target->m_berserk += healed;
-        target->m_attack += healed;
     }
 }
 void check_regeneration(Field* fd)
@@ -1654,18 +1654,17 @@ struct PerformAttack
                     // perform_skill_berserk
                     unsigned v = att_status->m_card->m_berserk + att_status->enhanced(berserk);
                     att_status->m_berserk += v;
-                    att_status->m_attack += v;
                 }
 #if defined(TYRANT_UNLEASHED)
                 if (def_status->m_card->m_corrosive > 0 && skill_check<corrosive>(fd, def_status, att_status))
                 {
                     // perform_skill_corrosive
                     unsigned v = def_status->m_card->m_corrosive + def_status->enhanced(corrosive);
-                    if (v > att_status->m_corroded)
+                    if (v > att_status->m_corroded_rate)
                     {
                         count_achievement<corrosive>(fd, def_status);
                         _DEBUG_MSG(1, "%s corrodes %s by %u\n", status_description(def_status).c_str(), status_description(att_status).c_str(), v);
-                        att_status->m_corroded = v;
+                        att_status->m_corroded_rate = v;
                     }
                 }
 #endif
@@ -1673,10 +1672,11 @@ struct PerformAttack
             crush_leech<def_cardtype>();
         }
 #if defined(TYRANT_UNLEASHED)
-        if (att_status->m_corroded > 0)
+        if (att_status->m_corroded_rate > 0)
         {
-            _DEBUG_MSG(1, "%s loses Attack %u.\n", status_description(att_status).c_str(), att_status->m_corroded);
-            att_status->m_attack = safe_minus(att_status->m_attack, att_status->m_corroded);
+            unsigned v = std::min(att_status->m_corroded_rate, safe_minus(att_status->m_card->m_attack + att_status->m_berserk, att_status->m_corroded_weakened));
+            _DEBUG_MSG(1, "%s loses Attack by %u.\n", status_description(att_status).c_str(), v);
+            att_status->m_corroded_weakened += v;
         }
 #else
         prepend_on_death(fd);
@@ -1799,7 +1799,6 @@ struct PerformAttack
             count_achievement<berserk>(fd, def_status);
             unsigned v = def_status->m_card->m_berserk_oa + def_status->enhanced(berserk);
             def_status->m_berserk += v;
-            def_status->m_attack += v;
         }
         if(def_status->m_card->m_sunder_oa && skill_check<sunder>(fd, def_status, att_status))
         {
