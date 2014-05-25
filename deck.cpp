@@ -321,6 +321,15 @@ std::string Deck::long_description(const Cards& all_cards)
             ios << "  " << card_description(all_cards, card) << "\n";
         }
     }
+    if (! reward_cards.empty())
+    {
+        ios << "Reward Cards: ";
+        for (const auto & card : reward_cards)
+        {
+            ios << card->m_name << ", ";
+        }
+        ios << "\n";
+    }
     return ios.str();
 }
 
