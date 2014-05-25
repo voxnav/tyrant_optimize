@@ -24,16 +24,38 @@ void load_decks(Decks& decks, Cards& cards)
 std::vector<std::pair<std::string, long double>> parse_deck_list(std::string list_string)
 {
     std::vector<std::pair<std::string, long double>> res;
-    boost::tokenizer<boost::char_delimiters_separator<char>> list_tokens{list_string, boost::char_delimiters_separator<char>{false, ";", ""}};
-    for(auto list_token = list_tokens.begin(); list_token != list_tokens.end(); ++list_token)
+
+    if(list_string.find(".txt") != std::string::npos)
     {
-        boost::tokenizer<boost::char_delimiters_separator<char>> deck_tokens{*list_token, boost::char_delimiters_separator<char>{false, ":", ""}};
-        auto deck_token = deck_tokens.begin();
-        res.push_back(std::make_pair(*deck_token, 1.0d));
-        ++deck_token;
-        if(deck_token != deck_tokens.end())
+        std::ifstream s(list_string);
+        std::string deck;
+        while (std::getline(s, deck))
         {
-            res.back().second = boost::lexical_cast<long double>(*deck_token);
+            deck = deck.substr(0, deck.find(' '));
+            boost::tokenizer<boost::char_delimiters_separator<char>> deck_tokens{deck, boost::char_delimiters_separator<char>{false, ":", ""}};
+            auto deck_token = deck_tokens.begin();
+            res.push_back(std::make_pair(*deck_token, 1.0d));
+            ++deck_token;
+            if(deck_token != deck_tokens.end())
+            {
+                res.back().second = boost::lexical_cast<long double>(*deck_token);
+            }
+            std::cout<<res.back().first<<std::endl;
+        }
+    }
+    else
+    {
+        boost::tokenizer<boost::char_delimiters_separator<char>> list_tokens{list_string, boost::char_delimiters_separator<char>{false, ";", ""}};
+        for(auto list_token = list_tokens.begin(); list_token != list_tokens.end(); ++list_token)
+        {
+            boost::tokenizer<boost::char_delimiters_separator<char>> deck_tokens{*list_token, boost::char_delimiters_separator<char>{false, ":", ""}};
+            auto deck_token = deck_tokens.begin();
+            res.push_back(std::make_pair(*deck_token, 1.0d));
+            ++deck_token;
+            if(deck_token != deck_tokens.end())
+            {
+                res.back().second = boost::lexical_cast<long double>(*deck_token);
+            }
         }
     }
     return(res);
