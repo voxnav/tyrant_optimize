@@ -182,9 +182,9 @@ bool adjust_deck(Deck * deck, const signed from_slot, const signed to_slot, cons
 {
     cards_in.clear();
     if (card == nullptr)
-    {
+    { // change commander or remove card
         if (to_slot < 0)
-        { // commander
+        { // change commander
             cards_in.emplace_back(-1, deck->commander);
         }
         deck_cost = get_deck_cost(deck);
@@ -195,13 +195,38 @@ bool adjust_deck(Deck * deck, const signed from_slot, const signed to_slot, cons
     deck->cards.clear();
     deck->cards.emplace_back(card);
     cards_in.emplace_back(is_random ? -1 : to_slot, card);
-    deck_cost = get_deck_cost(deck);
-    if (deck_cost > fund)
-    { return false; }
+    {
+        // try to add commander into the deck, defuse/downgrade it if necessary
+        std::stack<const Card *> candidate_cards;
+        const Card * old_commander = deck->commander;
+        candidate_cards.emplace(deck->commander);
+        while (! candidate_cards.empty())
+        {
+            const Card* card_in = candidate_cards.top();
+            candidate_cards.pop();
+            deck->commander = card_in;
+            deck_cost = get_deck_cost(deck);
+            if (deck_cost <= fund)
+            { break; }
+            for (auto recipe_it : card_in->m_recipe_cards)
+            { candidate_cards.emplace(recipe_it.first); }
+        }
+        if (deck_cost > fund)
+        {
+            deck->commander = old_commander;
+            return false;
+        }
+        else if (deck->commander != old_commander)
+        {
+            append_unless_remove(cards_out, cards_in, {-1, old_commander});
+            append_unless_remove(cards_in, cards_out, {-1, deck->commander});
+        }
+    }
     if (is_random)
     { std::shuffle(cards.begin(), cards.end(), re); }
     for (signed i = 0; i < (signed)cards.size(); ++ i)
     {
+        // try to add cards[i] into the deck, defuse/downgrade it if necessary
         auto saved_cards = deck->cards;
         auto in_it = deck->cards.end() - (i < to_slot);
         in_it = deck->cards.insert(in_it, nullptr);
@@ -771,6 +796,7 @@ void hill_climbing(unsigned num_iterations, Deck* d1, Process& proc, std::map<si
         std::shuffle(non_commander_cards.begin(), non_commander_cards.end(), re);
         for(const Card* card_candidate: non_commander_cards)
         {
+            d1->commander = best_commander;
             d1->cards = best_cards;
             if (card_candidate ?
                     ((slot_i < best_cards.size() && card_candidate->m_name == best_cards[slot_i]->m_name) || // Omega -> Omega
@@ -803,6 +829,7 @@ void hill_climbing(unsigned num_iterations, Deck* d1, Process& proc, std::map<si
                 std::cout << "Deck improved: " << d1->hash() << ": " << card_slot_id_names(cards_out) << " -> " << card_slot_id_names(cards_in) << ": ";
                 // Then update best score/slot, print stuff
                 best_score = current_score;
+                best_commander = d1->commander;
                 best_cards = d1->cards;
                 deck_has_been_improved = true;
                 print_score_info(compare_results, proc.factors);
@@ -811,6 +838,7 @@ void hill_climbing(unsigned num_iterations, Deck* d1, Process& proc, std::map<si
             if(best_score.points - target_score > -1e-9)
             { break; }
         }
+        d1->commander = best_commander;
         d1->cards = best_cards;
     }
     unsigned simulations = 0;
@@ -900,6 +928,7 @@ void hill_climbing_ordered(unsigned num_iterations, Deck* d1, Process& proc, std
             assert(!card_candidate || card_candidate->m_type != CardType::commander);
             for(unsigned to_slot(card_candidate ? 0 : best_cards.size() - 1); to_slot < best_cards.size() + (from_slot < best_cards.size() ? 0 : 1); ++to_slot)
             {
+                d1->commander = best_commander;
                 d1->cards = best_cards;
                 if (card_candidate ?
                         ((from_slot < best_cards.size() && (from_slot == to_slot && card_candidate->m_name == best_cards[to_slot]->m_name)) || // 2 Omega -> 2 Omega
@@ -932,6 +961,7 @@ void hill_climbing_ordered(unsigned num_iterations, Deck* d1, Process& proc, std
                     // Then update best score/slot, print stuff
                     std::cout << "Deck improved: " << d1->hash() << ": " << card_slot_id_names(cards_out) << " -> " << card_slot_id_names(cards_in) << ": ";
                     best_score = current_score;
+                    best_commander = d1->commander;
                     best_cards = d1->cards;
                     deck_has_been_improved = true;
                     print_score_info(compare_results, proc.factors);
@@ -941,6 +971,7 @@ void hill_climbing_ordered(unsigned num_iterations, Deck* d1, Process& proc, std
             if(best_score.points - target_score > -1e-9)
             { break; }
         }
+        d1->commander = best_commander;
         d1->cards = best_cards;
     }
     unsigned simulations = 0;
