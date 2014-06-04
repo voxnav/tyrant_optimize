@@ -33,11 +33,11 @@ std::string skill_names[Skill::num_skills] =
     /* "Blizzard", "Mist", */
 };
 
-std::set<Skill> helpful_skills{
+std::unordered_set<Skill, std::hash<unsigned>> helpful_skills{
     augment, cleanse, enhance, heal, protect, rally, repair, rush, supply,
 };
 
-std::set<Skill> defensive_skills{
+std::unordered_set<Skill, std::hash<unsigned>> defensive_skills{
     armored, counter, emulate, evade, flying, intercept, payback, refresh, regenerate, stun, tribute, wall,
 };
 

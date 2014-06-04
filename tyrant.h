@@ -1,11 +1,11 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "1.2.6"
+#define TYRANT_OPTIMIZER_VERSION "1.2.7"
 
 #include <string>
 #include <sstream>
-#include <set>
+#include <unordered_set>
 #include <tuple>
 
 enum Faction
@@ -48,8 +48,8 @@ enum Skill
     num_skills
 };
 extern std::string skill_names[num_skills];
-extern std::set<Skill> helpful_skills;
-extern std::set<Skill> defensive_skills;
+extern std::unordered_set<Skill, std::hash<unsigned>> helpful_skills;
+extern std::unordered_set<Skill, std::hash<unsigned>> defensive_skills;
 
 namespace SkillMod {
 enum SkillMod

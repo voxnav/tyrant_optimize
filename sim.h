@@ -157,18 +157,18 @@ struct CardStatus
     bool m_is_summoned; // is this card summoned (or split)?
     CardStep m_step;
 // begin for TYRANT_UNLEASHED
-    // indexed by m_card->m_skill_pos[skill_id], [0] as fallback
-    unsigned m_enhanced_value[5]; // XXX
-    unsigned m_skill_cd[5]; // XXX
+    unsigned m_enhanced_value[num_skills];
+    unsigned m_skill_cd[num_skills];
 // end
 
     CardStatus() {}
-    CardStatus(const Card* card);
 
     void set(const Card* card);
     void set(const Card& card);
     std::string description();
-    unsigned enhanced(Skill skill);
+    bool has(Skill skill, SkillMod::SkillMod mod=SkillMod::on_activate) const;
+    unsigned x(Skill skill, SkillMod::SkillMod mod=SkillMod::on_activate) const;
+    unsigned enhanced(Skill skill) const;
 };
 //------------------------------------------------------------------------------
 // Represents a particular draw from a deck.
