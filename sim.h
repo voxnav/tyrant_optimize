@@ -166,8 +166,8 @@ struct CardStatus
     void set(const Card* card);
     void set(const Card& card);
     std::string description();
-    bool has(Skill skill, SkillMod::SkillMod mod=SkillMod::on_activate) const;
-    unsigned x(Skill skill, SkillMod::SkillMod mod=SkillMod::on_activate) const;
+    bool has_skill(Skill skill, SkillMod::SkillMod mod=SkillMod::on_activate) const;
+    unsigned skill(Skill skill, SkillMod::SkillMod mod=SkillMod::on_activate) const;
     unsigned enhanced(Skill skill) const;
 };
 //------------------------------------------------------------------------------

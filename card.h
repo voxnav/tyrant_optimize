@@ -27,7 +27,7 @@ public:
     unsigned m_set;
     bool m_unique;
     std::vector<SkillSpec> m_skills[SkillMod::num_skill_activation_modifiers];
-    unsigned m_x[SkillMod::num_skill_activation_modifiers][num_skills];
+    unsigned m_skill_value[SkillMod::num_skill_activation_modifiers][num_skills];
     CardType::CardType m_type;
     unsigned m_recipe_cost;
     std::map<const Card*, unsigned> m_recipe_cards;
@@ -57,7 +57,7 @@ public:
         m_recipe_cards(),
         m_used_for_cards()
     {
-        std::memset(m_x, 0, sizeof m_x);
+        std::memset(m_skill_value, 0, sizeof m_skill_value);
     }
 
     void add_skill(Skill id, unsigned x, Faction y, unsigned c, Skill s, bool all, SkillMod::SkillMod mod=SkillMod::on_activate);

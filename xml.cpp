@@ -218,6 +218,7 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
         {
             card->m_skills[mod].clear();
         }
+        memset(card->m_skill_value, 0, sizeof card->m_skill_value);
     }
     for(xml_node<>* skill_node = card_node->first_node("skill");
             skill_node;

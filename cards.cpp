@@ -170,6 +170,6 @@ void Card::add_skill(Skill id, unsigned x, Faction y, unsigned c, Skill s, bool 
         }
     }
     m_skills[mod].push_back({id, x, y, c, s, all, mod});
-    m_x[mod][id] = std::max(1u, x);
+    m_skill_value[mod][id] = std::max(1u, x);
 }
 
