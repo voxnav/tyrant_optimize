@@ -1149,8 +1149,30 @@ int main(int argc, char** argv)
         print_available_decks(decks, true);
         return(4);
     }
-    std::string att_deck_name{argv[1]};
-    auto && deck_list_parsed = parse_deck_list(argv[2], decks);
+
+    int argIndex(1);
+    if (strcmp(argv[argIndex], "ext_b64") == 0)
+    {
+        hash_to_ids = hash_to_ids_ext_b64;
+        encode_deck = encode_deck_ext_b64;
+        argIndex += 1;
+    }
+    else if (strcmp(argv[argIndex], "wmt_b64") == 0)
+    {
+        hash_to_ids = hash_to_ids_wmt_b64;
+        encode_deck = encode_deck_wmt_b64;
+        argIndex += 1;
+    }
+    else if (strcmp(argv[argIndex], "ddd_b64") == 0)
+    {
+        hash_to_ids = hash_to_ids_ddd_b64;
+        encode_deck = encode_deck_ddd_b64;
+        argIndex += 1;
+    }
+
+    std::string att_deck_name{argv[argIndex]};
+    auto && deck_list_parsed = parse_deck_list(argv[argIndex + 1], decks);
+    argIndex += 2;
 
     Deck* att_deck{nullptr};
     std::vector<Deck*> def_decks;
@@ -1223,7 +1245,7 @@ int main(int argc, char** argv)
         effect_map[ss.str()] = static_cast<enum Effect>(i);
     }
 
-    for(int argIndex(3); argIndex < argc; ++argIndex)
+    for(; argIndex < argc; ++argIndex)
     {
         if(strcmp(argv[argIndex], "win") == 0)
         {

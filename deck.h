@@ -25,6 +25,17 @@ enum DeckStrategy
     num_deckstrategies
 };
 }
+typedef void (*DeckDecoder)(const char* hash, std::vector<unsigned>& ids);
+typedef void (*DeckEncoder)(std::stringstream &ios, const Card* commander, std::vector<const Card*> cards);
+void hash_to_ids_wmt_b64(const char* hash, std::vector<unsigned>& ids);
+void encode_deck_wmt_b64(std::stringstream &ios, const Card* commander, std::vector<const Card*> cards);
+void hash_to_ids_ext_b64(const char* hash, std::vector<unsigned>& ids);
+void encode_deck_ext_b64(std::stringstream &ios, const Card* commander, std::vector<const Card*> cards);
+void hash_to_ids_ddd_b64(const char* hash, std::vector<unsigned>& ids);
+void encode_deck_ddd_b64(std::stringstream &ios, const Card* commander, std::vector<const Card*> cards);
+extern DeckDecoder hash_to_ids;
+extern DeckEncoder encode_deck;
+
 //------------------------------------------------------------------------------
 // No support for ordered raid decks
 struct Deck
@@ -100,10 +111,10 @@ struct Deck
     }
 
     Deck* clone() const;
-    std::string hash();
-    std::string short_description();
-    std::string medium_description();
-    std::string long_description(const Cards& all_cards);
+    std::string hash() const;
+    std::string short_description() const;
+    std::string medium_description() const;
+    std::string long_description(const Cards& all_cards) const;
     const Card* get_commander();
     const Card* next();
     void shuffle(std::mt19937& re);

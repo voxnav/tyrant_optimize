@@ -158,12 +158,8 @@ void parse_file(const char* filename, std::vector<char>& buffer, xml_document<>&
 void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
 {
     xml_node<>* id_node(card_node->first_node("id"));
-    if(!id_node)
-    {
-        id_node = card_node->first_node("card_id");
-    }
-    assert(id_node);
-    unsigned id(id_node ? atoi(id_node->value()) : 0);
+    xml_node<>* card_id_node = card_node->first_node("card_id");
+    assert(id_node || card_id_node);
     xml_node<>* name_node(card_node->first_node("name"));
     xml_node<>* hidden_node(card_node->first_node("hidden"));
     xml_node<>* replace_node(card_node->first_node("replace"));
@@ -185,20 +181,23 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
         sets_counts[set]++;
     }
 #endif
-    card->m_id = id;
-    if(name_node) { card->m_name = name_node->value(); }
-    if(level_node) { card->m_level = atoi(level_node->value()); }
-    // So far, commanders have attack_node (value == 0)
-    if(id < 1000)
-    { card->m_type = CardType::assault; }
-    else if(id < 2000)
-    { card->m_type = CardType::commander; }
-    else if(id < 3000)
-    { card->m_type = CardType::structure; }
-    else if(id < 4000)
-    { card->m_type = CardType::action; }
-    else
-    { card->m_type = CardType::assault; }
+    if (id_node) { card->m_id = atoi(id_node->value()); }
+    else if (card_id_node) { card->m_id = atoi(card_id_node->value()); }
+    if (name_node) { card->m_name = name_node->value(); }
+    if (level_node) { card->m_level = atoi(level_node->value()); }
+    if (id_node)
+    {
+        if (card->m_id < 1000)
+        { card->m_type = CardType::assault; }
+        else if (card->m_id < 2000)
+        { card->m_type = CardType::commander; }
+        else if (card->m_id < 3000)
+        { card->m_type = CardType::structure; }
+        else if (card->m_id < 4000)
+        { card->m_type = CardType::action; }
+        else
+        { card->m_type = cost_node ? (attack_node ? CardType::assault : CardType::structure) : (health_node ? CardType::commander : CardType::action); }
+    }
     if(hidden_node) { card->m_hidden = atoi(hidden_node->value()); }
     if(replace_node) { card->m_replace = atoi(replace_node->value()); }
     if(attack_node) { card->m_attack = atoi(attack_node->value()); }
@@ -509,7 +508,6 @@ void load_recipes_xml(Cards& cards)
 }
 
 //------------------------------------------------------------------------------
-extern unsigned turn_limit;
 Comparator get_comparator(xml_node<>* node, Comparator default_comparator)
 {
     xml_attribute<>* compare(node->first_attribute("compare"));
