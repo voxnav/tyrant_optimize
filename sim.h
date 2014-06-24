@@ -17,10 +17,6 @@ class Deck;
 class Field;
 class Achievement;
 
-extern unsigned debug_print;
-extern unsigned debug_cached;
-extern bool debug_line;
-extern std::string debug_str;
 extern unsigned turn_limit;
 
 inline unsigned safe_minus(unsigned x, unsigned y)
@@ -144,7 +140,7 @@ struct CardStatus
     unsigned m_hp;
     bool m_immobilized;
     bool m_infused;
-    int m_inhibited;
+    unsigned m_inhibited;
     bool m_jammed;
     bool m_phased;
     unsigned m_poisoned;

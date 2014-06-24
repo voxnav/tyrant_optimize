@@ -13,38 +13,6 @@
 #include "deck.h"
 #include "achievement.h"
 
-//---------------------- Debugging stuff ---------------------------------------
-unsigned debug_print(0);
-unsigned debug_cached(0);
-bool debug_line(false);
-std::string debug_str;
-#ifndef NDEBUG
-#define _DEBUG_MSG(v, format, args...)                                  \
-    {                                                                   \
-        if(__builtin_expect(debug_print >= v, false))                   \
-        {                                                               \
-            if(debug_line) { printf("%i - " format, __LINE__ , ##args); }      \
-            else if(debug_cached) {                                     \
-                char buf[4096];                                         \
-                snprintf(buf, sizeof(buf), format, ##args);             \
-                debug_str += buf;                                       \
-            }                                                           \
-            else { printf(format, ##args); }                            \
-            std::cout << std::flush;                                    \
-        }                                                               \
-    }
-#define _DEBUG_SELECTION(format, args...)                               \
-    {                                                                   \
-        if(__builtin_expect(debug_print >= 2, 0))                       \
-        {                                                               \
-            _DEBUG_MSG(2, "Possible targets of " format ":\n", ##args); \
-            fd->print_selection_array();                                \
-        }                                                               \
-    }
-#else
-#define _DEBUG_MSG(v, format, args...)
-#define _DEBUG_SELECTION(format, args...)
-#endif
 //------------------------------------------------------------------------------
 inline std::string status_description(CardStatus* status)
 {
@@ -307,7 +275,7 @@ void Hand::reset(std::mt19937& re)
 {
     assaults.reset();
     structures.reset();
-    commander.set(deck->get_commander());
+    commander.set(deck->get_commander(re));
     deck->shuffle(re);
 }
 //---------------------- $40 Game rules implementation -------------------------
@@ -568,7 +536,6 @@ void evaluate_skills(Field* fd, CardStatus* status, const std::vector<SkillSpec>
         auto& battleground_s = need_add_skill ? apply_battleground_effect(fd, status, ss, mod, need_add_skill) : ss;
         if (status->m_skill_cd[ss.id] > 0)
         {
-            _DEBUG_MSG(2, "Cooling down (%u) %s skill %s\n", status->m_skill_cd[ss.id], status_description(status).c_str(), skill_description(fd->cards, battleground_s).c_str());
             continue;
         }
         _DEBUG_MSG(2, "Evaluating %s skill %s\n", status_description(status).c_str(), skill_description(fd->cards, battleground_s).c_str());
@@ -719,6 +686,8 @@ void turn_start_phase(Field* fd);
 void turn_end_phase(Field* fd);
 void evaluate_legion(Field* fd);
 bool check_and_perform_refresh(Field* fd, CardStatus* src_status);
+template<Skill skill_id>
+inline bool count_achievement(Field* fd, const CardStatus* c);
 // return value : (raid points) -> attacker wins, 0 -> defender wins
 Results<uint64_t> play(Field* fd)
 {
@@ -853,39 +822,67 @@ Results<uint64_t> play(Field* fd)
         for(fd->current_ci = 0; !fd->end && fd->current_ci < fd->tap->assaults.size(); ++fd->current_ci)
         {
             // ca: current assault
-            CardStatus& current_status(fd->tap->assaults[fd->current_ci]);
+            CardStatus* current_status(&fd->tap->assaults[fd->current_ci]);
             bool attacked = false;
-            if(!is_active(&current_status) || !can_act(&current_status))
+            if(!is_active(current_status) || !can_act(current_status))
             {
-                _DEBUG_MSG(2, "Assault %s cannot take action.\n", status_description(&current_status).c_str());
+                _DEBUG_MSG(2, "Assault %s cannot take action.\n", status_description(current_status).c_str());
             }
             else
             {
-                current_status.m_blitzing = false;
-                // Evaluate skills
-                evaluate_skills(fd, &current_status, current_status.m_card->m_skills[SkillMod::on_activate], SkillMod::on_activate);
-                if(__builtin_expect(fd->end, false)) { break; }
-
-                // Attack
-                if(can_attack(&current_status))
+                current_status->m_blitzing = false;  // XXX: assaults cannot be buffed in its blitzing turn?
+                unsigned num_actions(1);
+                for(unsigned action_index(0); action_index < num_actions; ++action_index)
                 {
-                    current_status.m_step = CardStep::attacking;
-                    attacked = attack_phase(fd);
-                }
-            }
-            if (!attacked)
-            {
+                    // Evaluate skills
+                    evaluate_skills(fd, current_status, current_status->m_card->m_skills[SkillMod::on_activate], SkillMod::on_activate);
+                    if(__builtin_expect(fd->end, false)) { break; }
+                    // Attack
+                    if(can_attack(current_status))
+                    {
+                        current_status->m_step = CardStep::attacking;
+                        attacked = attack_phase(fd) || attacked;
+                    }
+                    else
+                    {
+                        _DEBUG_MSG(2, "Assault %s cannot take attack.\n", status_description(current_status).c_str());
+                    }
 #if defined(TYRANT_UNLEASHED)
-                CardStatus* att_status(&fd->tap->assaults[fd->current_ci]);
-                if (att_status->m_corroded_rate > 0)
-                {
-                    _DEBUG_MSG(1, "%s loses Status corroded.\n", status_description(att_status).c_str());
-                    att_status->m_corroded_rate = 0;
-                    att_status->m_corroded_weakened = 0;
-                }
+                    // [TU] Flurry
+                    if (can_act(current_status) && fd->tip->commander.m_hp > 0 && current_status->has_skill(flurry) && current_status->m_skill_cd[flurry] == 0)
+                    {
+                        count_achievement<flurry>(fd, current_status);
+                        _DEBUG_MSG(1, "%s activates Flurry\n", status_description(current_status).c_str());
+                        num_actions = 2;
+                        for (const auto & ss : current_status->m_card->m_skills[SkillMod::on_activate])
+                        {
+                            if (ss.id == flurry)
+                            {
+                                current_status->m_skill_cd[flurry] = ss.c;
+                            }
+                        }
+                    }
 #endif
+                }
             }
-            current_status.m_step = CardStep::attacked;
+#if defined(TYRANT_UNLEASHED)
+            if (current_status->m_corroded_rate > 0)
+            {
+                if (attacked)
+                {
+                    unsigned v = std::min(current_status->m_corroded_rate, safe_minus(current_status->m_card->m_attack + current_status->m_berserk, current_status->m_corroded_weakened));
+                    _DEBUG_MSG(1, "%s loses Attack by %u.\n", status_description(current_status).c_str(), v);
+                    current_status->m_corroded_weakened += v;
+                }
+                else
+                {
+                    _DEBUG_MSG(1, "%s loses Status corroded.\n", status_description(current_status).c_str());
+                    current_status->m_corroded_rate = 0;
+                    current_status->m_corroded_weakened = 0;
+                }
+            }
+#endif
+            current_status->m_step = CardStep::attacked;
         }
         fd->current_phase = Field::end_phase;
         turn_end_phase(fd);
@@ -1103,6 +1100,7 @@ inline bool skill_check<valor>(Field* fd, CardStatus* c, CardStatus* ref)
 template<Skill skill_id>
 inline bool count_achievement(Field* fd, const CardStatus* c)
 {
+#if not defined(TYRANT_UNLEASHED)
     if(c->m_player == 0)
     {
         fd->inc_counter(fd->achievement.skill_used, skill_id);
@@ -1111,6 +1109,7 @@ inline bool count_achievement(Field* fd, const CardStatus* c)
             fd->inc_counter(fd->achievement.misc_req, AchievementMiscReq::skill_activated);
         }
     }
+#endif
     return(true);
 }
 
@@ -1201,7 +1200,11 @@ void cooldown_skills(CardStatus & status)
 {
     for (const auto & ss : status.m_card->m_skills[SkillMod::on_activate])
     {
-        if (status.m_skill_cd[ss.id] > 0) { -- status.m_skill_cd[ss.id]; }
+        if (status.m_skill_cd[ss.id] > 0)
+        {
+            _DEBUG_MSG(2, "%s reduces timer (%u) of skill %s\n", status_description(&status).c_str(), status.m_skill_cd[ss.id], skill_names[ss.id].c_str());
+            -- status.m_skill_cd[ss.id];
+        }
     }
 }
 void turn_start_phase(Field* fd)
@@ -1603,14 +1606,7 @@ struct PerformAttack
             }
             crush_leech<def_cardtype>();
         }
-#if defined(TYRANT_UNLEASHED)
-        if (att_status->m_corroded_rate > 0)
-        {
-            unsigned v = std::min(att_status->m_corroded_rate, safe_minus(att_status->m_card->m_attack + att_status->m_berserk, att_status->m_corroded_weakened));
-            _DEBUG_MSG(1, "%s loses Attack by %u.\n", status_description(att_status).c_str(), v);
-            att_status->m_corroded_weakened += v;
-        }
-#else
+#if not defined(TYRANT_UNLEASHED)
         prepend_on_death(fd);
         resolve_skill(fd);
         check_regeneration(fd);
@@ -1783,7 +1779,16 @@ void PerformAttack::damage_dependant_pre_oa<CardType::assault>()
         _DEBUG_MSG(1, "%s poisons %s by %u\n", status_description(att_status).c_str(), status_description(def_status).c_str(), poison_value);
         def_status->m_poisoned = poison_value;
     }
-#if not defined(TYRANT_UNLEASHED)
+#if defined(TYRANT_UNLEASHED)
+    unsigned inhibit_value = att_status->skill(inhibit);
+    if (inhibit_value > def_status->m_inhibited && skill_check<inhibit>(fd, att_status, def_status))
+    {
+        count_achievement<inhibit>(fd, att_status);
+        // perform_skill_inhibit
+        _DEBUG_MSG(1, "%s inhibits %s by %u\n", status_description(att_status).c_str(), status_description(def_status).c_str(), inhibit_value);
+        def_status->m_inhibited = inhibit_value;
+    }
+#else
     if(att_status->has_skill(disease) && skill_check<disease>(fd, att_status, def_status))
     {
         count_achievement<disease>(fd, att_status);
@@ -1804,17 +1809,6 @@ void PerformAttack::damage_dependant_pre_oa<CardType::assault>()
         // perform_skill_phase
         _DEBUG_MSG(1, "%s phases %s\n", status_description(att_status).c_str(), status_description(def_status).c_str());
         def_status->m_phased = true;
-    }
-#endif
-#if defined(TYRANT_UNLEASHED)
-    // XXX Assume inhibit stacks, if happened in future
-    unsigned inhibit_value = att_status->skill(inhibit);
-    if (inhibit_value > 0 && skill_check<inhibit>(fd, att_status, def_status))
-    {
-        count_achievement<inhibit>(fd, att_status);
-        // perform_skill_inhibit
-        _DEBUG_MSG(1, "%s inhibits %s by %u\n", status_description(att_status).c_str(), status_description(def_status).c_str(), inhibit_value);
-        def_status->m_inhibited += inhibit_value;
     }
 #endif
 }
@@ -1880,6 +1874,7 @@ bool attack_phase(Field* fd)
         return false; 
     }
     unsigned num_attacks(1);
+#if not defined(TYRANT_UNLEASHED)
     unsigned flurry_value = att_status->skill(flurry);
     if(flurry_value > 0 && fd->flip() && skill_check<flurry>(fd, att_status, nullptr))
     {
@@ -1887,6 +1882,7 @@ bool attack_phase(Field* fd)
         _DEBUG_MSG(1, "%s activates Flurry %u\n", status_description(att_status).c_str(), flurry_value);
         num_attacks += flurry_value;
     }
+#endif
     for(unsigned attack_index(0); attack_index < num_attacks && can_attack(att_status) && fd->tip->commander.m_hp > 0; ++attack_index)
     {
         // 3 possibilities:
