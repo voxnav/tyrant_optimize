@@ -193,4 +193,37 @@ std::string to_string(const T val)
     return s.str();
 }
 
+//---------------------- Debugging stuff ---------------------------------------
+extern unsigned debug_print;
+extern unsigned debug_cached;
+extern bool debug_line;
+extern std::string debug_str;
+#ifndef NDEBUG
+#define _DEBUG_MSG(v, format, args...)                                  \
+    {                                                                   \
+        if(__builtin_expect(debug_print >= v, false))                   \
+        {                                                               \
+            if(debug_line) { printf("%i - " format, __LINE__ , ##args); }      \
+            else if(debug_cached) {                                     \
+                char buf[4096];                                         \
+                snprintf(buf, sizeof(buf), format, ##args);             \
+                debug_str += buf;                                       \
+            }                                                           \
+            else { printf(format, ##args); }                            \
+            std::cout << std::flush;                                    \
+        }                                                               \
+    }
+#define _DEBUG_SELECTION(format, args...)                               \
+    {                                                                   \
+        if(__builtin_expect(debug_print >= 2, 0))                       \
+        {                                                               \
+            _DEBUG_MSG(2, "Possible targets of " format ":\n", ##args); \
+            fd->print_selection_array();                                \
+        }                                                               \
+    }
+#else
+#define _DEBUG_MSG(v, format, args...)
+#define _DEBUG_SELECTION(format, args...)
+#endif
+
 #endif

@@ -89,18 +89,18 @@ std::string card_slot_id_names(const std::vector<std::pair<signed, const Card *>
     return ios.str();
 }
 //------------------------------------------------------------------------------
-Deck* find_deck(Decks& decks, const Cards& cards, std::string deck_name)
+Deck* find_deck(Decks& decks, const Cards& all_cards, std::string deck_name)
 {
     auto it = decks.by_name.find(deck_name);
     if(it != decks.by_name.end())
     {
-        it->second->resolve(cards);
+        it->second->resolve();
         return(it->second);
     }
-    decks.decks.push_back(Deck{});
+    decks.decks.push_back(Deck{all_cards});
     Deck* deck = &decks.decks.back();
-    deck->set(cards, deck_name);
-    deck->resolve(cards);
+    deck->set(deck_name);
+    deck->resolve();
     return(deck);
 }
 //---------------------- $80 deck optimization ---------------------------------
@@ -124,11 +124,11 @@ unsigned get_required_cards_before_upgrade(const std::vector<const Card *> & car
             num_cards[card] = owned_cards[card->m_id];
 //            std::cout << "-" << num_under << " " << card->m_name << "\n"; // XXX
             deck_cost += num_under * card->m_recipe_cost;
-            for (auto material_it : card->m_recipe_cards)
+            for (auto recipe_it : card->m_recipe_cards)
             {
-                num_cards[material_it.first] += num_under * material_it.second;
-//                std::cout << "+" << num_under * material_it.second << " " << material_it.first->m_name << "\n"; // XXX
-                unresolved_cards.insert(material_it.first);
+                num_cards[recipe_it.first] += num_under * recipe_it.second;
+//                std::cout << "+" << num_under * recipe_it.second << " " << recipe_it.first->m_name << "\n"; // XXX
+                unresolved_cards.insert(recipe_it.first);
             }
         }
     }
@@ -272,7 +272,7 @@ void claim_cards(const std::vector<const Card*> & card_list, bool claim_all, boo
             unsigned num_to_claim = safe_minus(it.second, owned_cards[card->m_id]);
             if (is_reward)
             {
-                for (const auto & it : card->m_used_for_cards)
+                for (const auto & it : card->m_used_for_cards)  // low-priority FIXME: upgraded several times
                 {
                     num_to_claim = safe_minus(num_to_claim, owned_cards[it.first->m_id] * it.second);
                 }
@@ -1132,15 +1132,15 @@ int main(int argc, char** argv)
     unsigned num_threads = 4;
     DeckStrategy::DeckStrategy att_strategy(DeckStrategy::random);
     DeckStrategy::DeckStrategy def_strategy(DeckStrategy::random);
-    Cards cards;
-    read_cards(cards);
-    read_card_abbrs(cards, "cardabbrs.txt");
+    Cards all_cards;
+    read_cards(all_cards);
+    read_card_abbrs(all_cards, "cardabbrs.txt");
     Decks decks;
     Achievement achievement;
-    load_decks_xml(decks, cards);
-    load_decks(decks, cards);
+    load_decks_xml(decks, all_cards);
+    load_decks(decks, all_cards);
 #if defined(TYRANT_UNLEASHED)
-    load_recipes_xml(cards);
+    load_recipes_xml(all_cards);
 #endif
     fill_skill_table();
 
@@ -1186,7 +1186,7 @@ int main(int argc, char** argv)
 
     try
     {
-        att_deck = find_deck(decks, cards, att_deck_name);
+        att_deck = find_deck(decks, all_cards, att_deck_name);
     }
     catch(const std::runtime_error& e)
     {
@@ -1213,7 +1213,7 @@ int main(int argc, char** argv)
         Deck* def_deck{nullptr};
         try
         {
-            def_deck = find_deck(decks, cards, deck_parsed.first);
+            def_deck = find_deck(decks, all_cards, deck_parsed.first);
         }
         catch(const std::runtime_error& e)
         {
@@ -1265,7 +1265,7 @@ int main(int argc, char** argv)
         {
             try
             {
-                read_achievement(decks, cards, achievement, argv[argIndex + 1]);
+                read_achievement(decks, all_cards, achievement, argv[argIndex + 1]);
                 optimization_mode = OptimizationMode::achievement;
             }
             catch(const std::runtime_error& e)
@@ -1329,12 +1329,12 @@ int main(int argc, char** argv)
         }
         else if(strcmp(argv[argIndex], "-o") == 0)
         {
-            read_owned_cards(cards, owned_cards, buyable_cards, "ownedcards.txt");
+            read_owned_cards(all_cards, owned_cards, buyable_cards, "ownedcards.txt");
             use_owned_cards = true;
         }
         else if(strncmp(argv[argIndex], "-o=", 3) == 0)
         {
-            read_owned_cards(cards, owned_cards, buyable_cards, argv[argIndex] + 3);
+            read_owned_cards(all_cards, owned_cards, buyable_cards, argv[argIndex] + 3);
             use_owned_cards = true;
         }
         else if(strncmp(argv[argIndex], "-o+", 3) == 0)
@@ -1414,27 +1414,27 @@ int main(int argc, char** argv)
         }
         else if(strcmp(argv[argIndex], "hand") == 0)  // set initial hand for test
         {
-            att_deck->set_given_hand(cards, argv[argIndex + 1]);
+            att_deck->set_given_hand(argv[argIndex + 1]);
             argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "defender:hand") == 0)  // set enemies' initial hand for test
         {
             for(auto def_deck: def_decks)
             {
-                def_deck->set_given_hand(cards, argv[argIndex + 1]);
+                def_deck->set_given_hand(argv[argIndex + 1]);
             }
             argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "forts") == 0)  // set forts
         {
-            att_deck->set_forts(cards, argv[argIndex + 1]);
+            att_deck->set_forts(argv[argIndex + 1]);
             argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "defender:forts") == 0)  // set enemies' forts
         {
             for(auto def_deck: def_decks)
             {
-                def_deck->set_forts(cards, argv[argIndex + 1]);
+                def_deck->set_forts(argv[argIndex + 1]);
             }
             argIndex += 1;
         }
@@ -1494,17 +1494,17 @@ int main(int argc, char** argv)
         min_deck_len = max_deck_len = att_deck->cards.size();
     }
 
-    std::cout << "Your Deck: " << (debug_print ? att_deck->long_description(cards) : att_deck->medium_description()) << std::endl;
+    std::cout << "Your Deck: " << (debug_print ? att_deck->long_description() : att_deck->medium_description()) << std::endl;
     for (unsigned i(0); i < def_decks.size(); ++i)
     {
-        std::cout << "Enemy's Deck:" << def_decks_factors[i] << ": " << (debug_print ? def_decks[i]->long_description(cards) : def_decks[i]->medium_description()) << std::endl;
+        std::cout << "Enemy's Deck:" << def_decks_factors[i] << ": " << (debug_print ? def_decks[i]->long_description() : def_decks[i]->medium_description()) << std::endl;
     }
     if(effect != Effect::none)
     {
         std::cout << "Effect: " << effect_names[effect] << std::endl;
     }
 
-    Process p(num_threads, cards, decks, att_deck, def_decks, def_decks_factors, gamemode, effect, bg_enhanced_skill, bg_enhanced_value, achievement);
+    Process p(num_threads, all_cards, decks, att_deck, def_decks, def_decks_factors, gamemode, effect, bg_enhanced_skill, bg_enhanced_value, achievement);
 
     {
         //ScopeClock timer;

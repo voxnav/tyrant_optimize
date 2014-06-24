@@ -40,11 +40,13 @@ extern DeckEncoder encode_deck;
 // No support for ordered raid decks
 struct Deck
 {
+    const Cards& all_cards;
     DeckType::DeckType decktype;
     unsigned id;
     std::string name;
-    DeckStrategy::DeckStrategy strategy;
     Effect effect; // for quests
+    unsigned upgrade_chance; // n/9 chance to upgrade; = level - 1 for level 1 to 9 and 0 for level 10
+    DeckStrategy::DeckStrategy strategy;
 
     const Card* commander;
     std::vector<const Card*> cards;
@@ -62,15 +64,20 @@ struct Deck
     std::vector<const Card*> fort_cards;
 
     Deck(
+        const Cards& all_cards_,
         DeckType::DeckType decktype_ = DeckType::deck,
         unsigned id_ = 0,
         std::string name_ = "",
+        Effect effect_ = Effect::none,
+        unsigned upgrade_chance_ = 0,
         DeckStrategy::DeckStrategy strategy_ = DeckStrategy::random) :
+        all_cards(all_cards_),
         decktype(decktype_),
         id(id_),
         name(name_),
-        strategy(strategy_),
         effect(Effect::none),
+        upgrade_chance(upgrade_chance_),
+        strategy(strategy_),
         commander(nullptr),
         mission_req(0)
     {
@@ -92,11 +99,11 @@ struct Deck
         mission_req = mission_req_;
     }
 
-    void set(const Cards& all_cards, const std::vector<unsigned>& ids, const std::map<signed, char> marks = {});
-    void set(const Cards& all_cards, const std::string& deck_string_);
-    void resolve(const Cards& all_cards);
-    void set_given_hand(const Cards& all_cards, const std::string& deck_string_);
-    void set_forts(const Cards& all_cards, const std::string& deck_string_);
+    void set(const std::vector<unsigned>& ids, const std::map<signed, char> marks = {});
+    void set(const std::string& deck_string_);
+    void resolve();
+    void set_given_hand(const std::string& deck_string_);
+    void set_forts(const std::string& deck_string_);
 
     template<class Container>
     Container card_ids() const
@@ -114,9 +121,10 @@ struct Deck
     std::string hash() const;
     std::string short_description() const;
     std::string medium_description() const;
-    std::string long_description(const Cards& all_cards) const;
-    const Card* get_commander();
+    std::string long_description() const;
     const Card* next();
+    const Card* upgrade_card(const Card* card, std::mt19937& re);
+    const Card* get_commander(std::mt19937& re);
     void shuffle(std::mt19937& re);
     void place_at_bottom(const Card* card);
 };

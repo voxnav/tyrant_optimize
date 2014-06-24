@@ -26,7 +26,7 @@ std::string simplify_name(const std::string& card_name)
 std::list<std::string> get_abbreviations(const std::string& name)
 {
     std::list<std::string> abbr_list;
-    boost::tokenizer<boost::char_delimiters_separator<char>> word_token{name, boost::char_delimiters_separator<char>{false, " ", ""}};
+    boost::tokenizer<boost::char_delimiters_separator<char>> word_token{name, boost::char_delimiters_separator<char>{false, " -", ""}};
     std::string initial;
     auto token_iter = word_token.begin();
     for(; token_iter != word_token.end(); ++token_iter)
@@ -66,9 +66,14 @@ void Cards::organize()
     player_assaults.clear();
     player_structures.clear();
     player_actions.clear();
+    // Round 1: set cards_by_id
     for(Card* card: cards)
     {
-//        std::cout << "C:" << card->m_id << "\n";
+        cards_by_id[card->m_id] = card;
+    }
+    // Round 2: depend on cards_by_id / by_id(); update m_name, [TU] m_top_level_card etc.; set player_cards_by_name; 
+    for(Card* card: cards)
+    {
         // Remove delimiters from card names
         size_t pos;
         while((pos = card->m_name.find_first_of(";:,")) != std::string::npos)
@@ -76,7 +81,10 @@ void Cards::organize()
             card->m_name.erase(pos, 1);
         }
 #if defined(TYRANT_UNLEASHED)
-        if (card->m_level > 1 && card->m_id == by_id(card->m_base_id)->m_final_id)
+        // set m_top_level_card for non base cards
+        card->m_top_level_card = by_id(card->m_base_id)->m_top_level_card;
+        // add a suffix of level to the name of cards; register as alias for the full-level cards (the formal name is without suffix)
+        if (card == card->m_top_level_card)
         {
             player_cards_by_name[{simplify_name(card->m_name + "-" + to_string(card->m_level)), card->m_hidden}] = card;
         }
@@ -90,7 +98,6 @@ void Cards::organize()
             card->m_name += '*';
         }
 #endif
-        cards_by_id[card->m_id] = card;
         // Card available to players
         if(card->m_set != 0)
         {
@@ -126,6 +133,7 @@ void Cards::organize()
             }
         }
     }
+    // Round 3: depend on player_cards_by_name; set abbreviations and [WMT] recipes
     for(Card* card: cards)
     {
         // generate abbreviations
@@ -139,7 +147,6 @@ void Cards::organize()
                 }
             }
         }
-
 #if not defined(TYRANT_UNLEASHED)
         // update recipes
         if(card->m_set == 5002)

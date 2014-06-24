@@ -93,11 +93,11 @@ Skill skill_target_skill(xml_node<>* skill)
 }
 
 //------------------------------------------------------------------------------
-void load_decks_xml(Decks& decks, const Cards& cards)
+void load_decks_xml(Decks& decks, const Cards& all_cards)
 {
     try
     {
-        read_missions(decks, cards, "missions.xml");
+        read_missions(decks, all_cards, "missions.xml");
     }
     catch(const rapidxml::parse_error& e)
     {
@@ -106,7 +106,7 @@ void load_decks_xml(Decks& decks, const Cards& cards)
 #if not defined(TYRANT_UNLEASHED)
     try
     {
-        read_raids(decks, cards, "raids.xml");
+        read_raids(decks, all_cards, "raids.xml");
     }
     catch(const rapidxml::parse_error& e)
     {
@@ -114,7 +114,7 @@ void load_decks_xml(Decks& decks, const Cards& cards)
     }
     try
     {
-        read_quests(decks, cards, "quests.xml");
+        read_quests(decks, all_cards, "quests.xml");
     }
     catch(const rapidxml::parse_error& e)
     {
@@ -155,7 +155,7 @@ void parse_file(const char* filename, std::vector<char>& buffer, xml_document<>&
     }
 }
 //------------------------------------------------------------------------------
-void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
+void parse_card_node(Cards& all_cards, Card* card, xml_node<>* card_node)
 {
     xml_node<>* id_node(card_node->first_node("id"));
     xml_node<>* card_id_node = card_node->first_node("card_id");
@@ -181,7 +181,7 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
         sets_counts[set]++;
     }
 #endif
-    if (id_node) { card->m_id = atoi(id_node->value()); }
+    if (id_node) { card->m_base_id = card->m_id = atoi(id_node->value()); }
     else if (card_id_node) { card->m_id = atoi(card_id_node->value()); }
     if (name_node) { card->m_name = name_node->value(); }
     if (level_node) { card->m_level = atoi(level_node->value()); }
@@ -206,7 +206,6 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
     if(unique_node) { card->m_unique = true; }
     if(reserve_node) { card->m_reserve = atoi(reserve_node->value()); }
     if(base_card_node) { card->m_base_id = atoi(base_card_node->value()); }
-    else if(card->m_base_id == 0) { card->m_base_id = card->m_id; }
     if(rarity_node) { card->m_rarity = atoi(rarity_node->value()); }
     if(type_node) { card->m_faction = map_to_faction(atoi(type_node->value())); }
     card->m_set = set;
@@ -244,7 +243,7 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
         if (died)     { card->add_skill(skill_id, x, y, c, s, all, SkillMod::on_death); }
         if (normal)   { card->add_skill(skill_id, x, y, c, s, all); }
     }
-    cards.cards.push_back(card);
+    all_cards.cards.push_back(card);
 #if defined(TYRANT_UNLEASHED)
     Card * top_card = card;
     for(xml_node<>* upgrade_node = card_node->first_node("upgrade");
@@ -253,7 +252,7 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
     {
         Card * pre_upgraded_card = top_card;
         top_card = new Card(*top_card);
-        parse_card_node(cards, top_card, upgrade_node);
+        parse_card_node(all_cards, top_card, upgrade_node);
         if (top_card->m_type == CardType::commander)
         {
             // Commanders cost twice and cannot be salvaged.
@@ -268,11 +267,11 @@ void parse_card_node(Cards& cards, Card* card, xml_node<>* card_node)
         top_card->m_recipe_cards[pre_upgraded_card] = 1;
         pre_upgraded_card->m_used_for_cards[top_card] = 1;
     }
-    card->m_final_id = top_card->m_id;
+    card->m_top_level_card = top_card;
 #endif
 }
 
-void read_cards(Cards& cards)
+void read_cards(Cards& all_cards)
 {
     std::vector<char> buffer;
     xml_document<> doc;
@@ -292,9 +291,9 @@ void read_cards(Cards& cards)
         card_node = card_node->next_sibling("unit"))
     {
         auto card = new Card();
-        parse_card_node(cards, card, card_node);
+        parse_card_node(all_cards, card, card_node);
     }
-    cards.organize();
+    all_cards.organize();
 #if 0
     std::cout << "nb cards: " << nb_cards << "\n";
     for(auto counts: sets_counts)
@@ -304,14 +303,11 @@ void read_cards(Cards& cards)
 #endif
 }
 //------------------------------------------------------------------------------
-Deck* read_deck(Decks& decks, const Cards& cards, xml_node<>* node, DeckType::DeckType decktype, unsigned id, std::string deck_name, unsigned level=1)
+Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, const char* effect_node_name, DeckType::DeckType decktype, unsigned id, std::string base_deck_name, bool has_levels=false)
 {
     xml_node<>* commander_node(node->first_node("commander"));
     unsigned card_id = atoi(commander_node->value());
-#if defined(TYRANT_UNLEASHED)
-    if(level == 10) { card_id = cards.by_id(cards.by_id(card_id)->m_base_id)->m_final_id; }
-#endif
-    const Card* commander_card{cards.by_id(card_id)};
+    const Card* commander_card{all_cards.by_id(card_id)};
     std::vector<const Card*> always_cards;
     std::vector<std::pair<unsigned, std::vector<const Card*>>> some_cards;
     std::vector<const Card*> reward_cards;
@@ -322,10 +318,7 @@ Deck* read_deck(Decks& decks, const Cards& cards, xml_node<>* node, DeckType::De
             card_node = card_node->next_sibling("card"))
     {
         card_id = atoi(card_node->value());
-#if defined(TYRANT_UNLEASHED)
-        if(level == 10) { card_id = cards.by_id(cards.by_id(card_id)->m_base_id)->m_final_id; }
-#endif
-        always_cards.push_back(cards.by_id(card_id));
+        always_cards.push_back(all_cards.by_id(card_id));
     }
     for(xml_node<>* pool_node = deck_node->first_node("card_pool");
             pool_node;
@@ -339,7 +332,7 @@ Deck* read_deck(Decks& decks, const Cards& cards, xml_node<>* node, DeckType::De
                 card_node = card_node->next_sibling("card"))
         {
             unsigned card_id(atoi(card_node->value()));
-            cards_from_pool.push_back(cards.by_id(card_id));
+            cards_from_pool.push_back(all_cards.by_id(card_id));
         }
         some_cards.push_back(std::make_pair(num_cards_from_pool, cards_from_pool));
     }
@@ -351,29 +344,52 @@ Deck* read_deck(Decks& decks, const Cards& cards, xml_node<>* node, DeckType::De
                 card_node = card_node->next_sibling("card"))
         {
             unsigned card_id(atoi(card_node->value()));
-            reward_cards.push_back(cards.by_id(card_id));
+            reward_cards.push_back(all_cards.by_id(card_id));
         }
     }
     xml_node<>* mission_req_node(node->first_node(decktype == DeckType::mission ? "req" : "mission_req"));
     unsigned mission_req(mission_req_node ? atoi(mission_req_node->value()) : 0);
+    xml_node<>* effect_id_node(node->first_node(effect_node_name));
+    Effect effect = effect_id_node ? static_cast<enum Effect>(atoi(effect_id_node->value())) : Effect::none;
 #if defined(TYRANT_UNLEASHED)
-    if (level < 10) { deck_name += "-" + to_string(level); }
+    if (has_levels)
+    {
+        for (unsigned level = 1; level <= 9; ++ level)
+        {
+            std::string deck_name = base_deck_name + "-" + to_string(level);
+            decks.decks.push_back(Deck{all_cards, decktype, id, deck_name, effect, level - 1});
+            Deck* deck = &decks.decks.back();
+            deck->set(commander_card, always_cards, some_cards, reward_cards, mission_req);
+            std::string alt_name = decktype_names[decktype] + " #" + to_string(id) + "-" + to_string(level);
+            decks.by_name[deck_name] = deck;
+            decks.by_name[alt_name] = deck;
+        }
+    }
 #endif
-    decks.decks.push_back(Deck{decktype, id, deck_name});
+    decks.decks.push_back(Deck{all_cards, decktype, id, base_deck_name, effect});
     Deck* deck = &decks.decks.back();
     deck->set(commander_card, always_cards, some_cards, reward_cards, mission_req);
-    decks.by_type_id[{decktype, id}] = deck;
-    decks.by_name[deck_name] = deck;
-    std::stringstream alt_name;
-    alt_name << decktype_names[decktype] << " #" << id;
 #if defined(TYRANT_UNLEASHED)
-    if (level < 10) { alt_name << "-" << level; }
+    if (has_levels)
+    { // upgrade cards in deck
+        deck->commander = deck->commander->m_top_level_card;
+        for (auto && card: deck->cards)
+        { card = card->m_top_level_card; }
+        for (auto && pool: deck->raid_cards)
+        {
+            for (auto && card: pool.second)
+            { card = card->m_top_level_card; }
+        }
+    }
 #endif
-    decks.by_name[alt_name.str()] = deck;
+    std::string alt_name = decktype_names[decktype] + " #" + to_string(id);
+    decks.by_name[base_deck_name] = deck;
+    decks.by_name[alt_name] = deck;
+    decks.by_type_id[{decktype, id}] = deck;
     return deck;
 }
 //------------------------------------------------------------------------------
-void read_missions(Decks& decks, const Cards& cards, std::string filename)
+void read_missions(Decks& decks, const Cards& all_cards, std::string filename)
 {
     std::vector<char> buffer;
     xml_document<> doc;
@@ -395,23 +411,11 @@ void read_missions(Decks& decks, const Cards& cards, std::string filename)
         unsigned id(id_node ? atoi(id_node->value()) : 0);
         xml_node<>* name_node(mission_node->first_node("name"));
         std::string deck_name{name_node->value()};
-        Deck* deck;
-#if defined(TYRANT_UNLEASHED)
-        {
-            deck = read_deck(decks, cards, mission_node, DeckType::mission, id, deck_name, 1);
-        }
-#endif
-        deck = read_deck(decks, cards, mission_node, DeckType::mission, id, deck_name, 10);
-        xml_node<>* effect_id_node(mission_node->first_node("effect"));
-        if(effect_id_node)
-        {
-            int effect_id(effect_id_node ? atoi(effect_id_node->value()) : 0);
-            deck->effect = static_cast<enum Effect>(effect_id);
-        }
+        read_deck(decks, all_cards, mission_node, "effect", DeckType::mission, id, deck_name, true);
     }
 }
 //------------------------------------------------------------------------------
-void read_raids(Decks& decks, const Cards& cards, std::string filename)
+void read_raids(Decks& decks, const Cards& all_cards, std::string filename)
 {
     std::vector<char> buffer;
     xml_document<> doc;
@@ -432,17 +436,11 @@ void read_raids(Decks& decks, const Cards& cards, std::string filename)
         unsigned id(id_node ? atoi(id_node->value()) : 0);
         xml_node<>* name_node(raid_node->first_node("name"));
         std::string deck_name{name_node->value()};
-        Deck* deck = read_deck(decks, cards, raid_node, DeckType::raid, id, deck_name);
-        xml_node<>* effect_id_node(raid_node->first_node("effect"));
-        if(effect_id_node)
-        {
-            int effect_id(effect_id_node ? atoi(effect_id_node->value()) : 0);
-            deck->effect = static_cast<enum Effect>(effect_id);
-        }
+        read_deck(decks, all_cards, raid_node, "effect", DeckType::raid, id, deck_name);
     }
 }
 //------------------------------------------------------------------------------
-void read_quests(Decks& decks, const Cards& cards, std::string filename)
+void read_quests(Decks& decks, const Cards& all_cards, std::string filename)
 {
     std::vector<char> buffer;
     xml_document<> doc;
@@ -465,15 +463,12 @@ void read_quests(Decks& decks, const Cards& cards, std::string filename)
         assert(id_node);
         unsigned id(id_node ? atoi(id_node->value()) : 0);
         std::string deck_name{"Step " + std::string{id_node->value()}};
-        Deck* deck = read_deck(decks, cards, quest_node, DeckType::quest, id, deck_name);
-        xml_node<>* effect_id_node(quest_node->first_node("battleground_id"));
-        int effect_id(effect_id_node ? atoi(effect_id_node->value()) : 0);
-        deck->effect = static_cast<enum Effect>(effect_id);
+        read_deck(decks, all_cards, quest_node, "battleground_id", DeckType::quest, id, deck_name);
     }
 }
 
 //------------------------------------------------------------------------------
-void load_recipes_xml(Cards& cards)
+void load_recipes_xml(Cards& all_cards)
 {
     std::vector<char> buffer;
     xml_document<> doc;
@@ -492,7 +487,7 @@ void load_recipes_xml(Cards& cards)
         xml_node<>* card_id_node(recipe_node->first_node("card_id"));
         if (!card_id_node) { continue; }
         unsigned card_id(atoi(card_id_node->value()));
-        Card * card = cards.cards_by_id[card_id];
+        Card * card = all_cards.cards_by_id[card_id];
         for(xml_node<>* resource_node = recipe_node->first_node("resource");
                 resource_node;
                 resource_node = resource_node->next_sibling("resource"))
@@ -500,7 +495,7 @@ void load_recipes_xml(Cards& cards)
             unsigned card_id(node_value(resource_node, "card_id"));
             unsigned number(node_value(resource_node, "number"));
             if (card_id == 0 || number == 0) { continue; }
-            Card * material_card = cards.cards_by_id[card_id];
+            Card * material_card = all_cards.cards_by_id[card_id];
             card->m_recipe_cards[material_card] += number;
             material_card->m_used_for_cards[card] += number;
         }
@@ -518,7 +513,7 @@ Comparator get_comparator(xml_node<>* node, Comparator default_comparator)
     else { throw std::runtime_error(std::string("Not implemented: compare=\"") + compare->value() + "\""); }
 }
 
-void read_achievement(Decks& decks, const Cards& cards, Achievement& achievement, const char* achievement_id_name, std::string filename/* = "achievements.xml"*/)
+void read_achievement(Decks& decks, const Cards& all_cards, Achievement& achievement, const char* achievement_id_name, std::string filename/* = "achievements.xml"*/)
 {
     std::vector<char> buffer;
     xml_document<> doc;
@@ -585,7 +580,7 @@ void read_achievement(Decks& decks, const Cards& cards, Achievement& achievement
             {
                 achievement.unit_played[atoi(unit_id->value())] = achievement.req_counter.size();
                 achievement.req_counter.emplace_back(atoi(num_played->value()), comparator);
-                std::cout << "  Play units: " << cards.by_id(atoi(unit_id->value()))->m_name << achievement.req_counter.back().str() << std::endl;
+                std::cout << "  Play units: " << all_cards.by_id(atoi(unit_id->value()))->m_name << achievement.req_counter.back().str() << std::endl;
             }
             else if(unit_type && num_played)
             {

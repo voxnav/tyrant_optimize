@@ -16,11 +16,11 @@
 #include "cards.h"
 #include "deck.h"
 
-void load_decks(Decks& decks, Cards& cards)
+void load_decks(Decks& decks, Cards& all_cards)
 {
     if(boost::filesystem::exists("Custom.txt"))
     {
-        read_custom_decks(decks, cards, "Custom.txt");
+        read_custom_decks(decks, all_cards, "Custom.txt");
     }
 }
 
@@ -161,7 +161,7 @@ DeckList parse_deck_list(std::string list_string, const Decks& decks)
     return res;
 }
 
-void parse_card_spec(const Cards& cards, std::string& card_spec, unsigned& card_id, unsigned& card_num, char& num_sign, char& mark)
+void parse_card_spec(const Cards& all_cards, std::string& card_spec, unsigned& card_id, unsigned& card_num, char& num_sign, char& mark)
 {
 //    static std::set<std::string> recognized_abbr;
     auto card_spec_iter = card_spec.begin();
@@ -182,8 +182,8 @@ void parse_card_spec(const Cards& cards, std::string& card_spec, unsigned& card_
     }
     // If card name is not found, try find card id quoted in '[]' in name, ignoring other characters.
     std::string simple_name{simplify_name(card_name)};
-    const auto && abbr_it = cards.player_cards_abbr.find(simple_name);
-    if(abbr_it != cards.player_cards_abbr.end())
+    const auto && abbr_it = all_cards.player_cards_abbr.find(simple_name);
+    if(abbr_it != all_cards.player_cards_abbr.end())
     {
 //        if(recognized_abbr.count(card_name) == 0)
 //        {
@@ -192,10 +192,10 @@ void parse_card_spec(const Cards& cards, std::string& card_spec, unsigned& card_
 //        }
         simple_name = simplify_name(abbr_it->second);
     }
-    auto card_it = cards.player_cards_by_name.find({simple_name, 0});
-    if (card_it == cards.player_cards_by_name.end()) { card_it = cards.player_cards_by_name.find({simple_name, 1}); }
+    auto card_it = all_cards.player_cards_by_name.find({simple_name, 0});
+    if (card_it == all_cards.player_cards_by_name.end()) { card_it = all_cards.player_cards_by_name.find({simple_name, 1}); }
     auto card_id_iter = advance_until(simple_name.begin(), simple_name.end(), [](char c){return(c=='[');});
-    if(card_it != cards.player_cards_by_name.end())
+    if(card_it != all_cards.player_cards_by_name.end())
     {
         card_id = card_it->second->m_id;
     }
@@ -223,7 +223,7 @@ void parse_card_spec(const Cards& cards, std::string& card_spec, unsigned& card_
     }
 }
 
-unsigned read_card_abbrs(Cards& cards, const std::string& filename)
+unsigned read_card_abbrs(Cards& all_cards, const std::string& filename)
 {
     if(!boost::filesystem::exists(filename))
     {
@@ -256,13 +256,13 @@ unsigned read_card_abbrs(Cards& cards, const std::string& filename)
                 continue;
             }
             abbr_string_iter = advance_until(abbr_string_iter + 1, abbr_string.end(), [](const char& c){return(c != ' ');});
-            if(cards.player_cards_by_name.find({abbr_name, 0}) != cards.player_cards_by_name.end())
+            if(all_cards.player_cards_by_name.find({abbr_name, 0}) != all_cards.player_cards_by_name.end())
             {
                 std::cerr << "Warning in card abbreviation file " << filename << " at line " << num_line << ": ignored because the name has been used by an existing card." << std::endl;
             }
             else
             {
-                cards.player_cards_abbr[abbr_name] = std::string{abbr_string_iter, abbr_string.end()};
+                all_cards.player_cards_abbr[abbr_name] = std::string{abbr_string_iter, abbr_string.end()};
             }
         }
     }
@@ -283,7 +283,7 @@ unsigned read_card_abbrs(Cards& cards, const std::string& filename)
 // Error codes:
 // 2 -> file not readable
 // 3 -> error while parsing file
-unsigned read_custom_decks(Decks& decks, Cards& cards, std::string filename)
+unsigned read_custom_decks(Decks& decks, Cards& all_cards, std::string filename)
 {
     std::ifstream decks_file(filename);
     if(!decks_file.is_open())
@@ -317,9 +317,9 @@ unsigned read_custom_decks(Decks& decks, Cards& cards, std::string filename)
             {
                 std::cerr << "Warning in custom deck file " << filename << " at line " << num_line << ", name conflicts, overrides " << deck_iter->second->short_description() << std::endl;
             }
-            decks.decks.push_back(Deck{DeckType::custom_deck, num_line, deck_name});
+            decks.decks.push_back(Deck{all_cards, DeckType::custom_deck, num_line, deck_name});
             Deck* deck = &decks.decks.back();
-            deck->set(cards, std::string{deck_string_iter, deck_string.end()});
+            deck->set(std::string{deck_string_iter, deck_string.end()});
             decks.by_name[deck_name] = deck;
             std::stringstream alt_name;
             alt_name << decktype_names[deck->decktype] << " #" << deck->id;
@@ -339,7 +339,7 @@ unsigned read_custom_decks(Decks& decks, Cards& cards, std::string filename)
     return(0);
 }
 
-void read_owned_cards(Cards& cards, std::map<unsigned, unsigned>& owned_cards, std::map<unsigned, unsigned>& buyable_cards, const char *filename)
+void read_owned_cards(Cards& all_cards, std::map<unsigned, unsigned>& owned_cards, std::map<unsigned, unsigned>& buyable_cards, const char *filename)
 {
     std::ifstream owned_file{filename};
     if(!owned_file.good())
@@ -363,7 +363,7 @@ void read_owned_cards(Cards& cards, std::map<unsigned, unsigned>& owned_cards, s
             unsigned card_num{1};
             char num_sign{0};
             char mark{0};
-            parse_card_spec(cards, card_spec, card_id, card_num, num_sign, mark);
+            parse_card_spec(all_cards, card_spec, card_id, card_num, num_sign, mark);
             assert(mark == 0);
             if(num_sign == 0)
             {

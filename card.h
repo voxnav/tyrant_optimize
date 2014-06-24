@@ -14,7 +14,6 @@ public:
     unsigned m_delay;
     bool m_disease_oa;
     Faction m_faction;
-    unsigned m_final_id; // The id of fully upgraded card
     unsigned m_health;
     unsigned m_hidden;
     unsigned m_id;
@@ -29,6 +28,7 @@ public:
     std::vector<SkillSpec> m_skills[SkillMod::num_skill_activation_modifiers];
     unsigned m_skill_value[SkillMod::num_skill_activation_modifiers][num_skills];
     CardType::CardType m_type;
+    const Card* m_top_level_card; // [TU] corresponding full-level card
     unsigned m_recipe_cost;
     std::map<const Card*, unsigned> m_recipe_cards;
     std::map<const Card*, unsigned> m_used_for_cards;
@@ -40,7 +40,6 @@ public:
         m_delay(0),
         m_disease_oa(false),
         m_faction(imperial),
-        m_final_id(0),
         m_health(0),
         m_hidden(0),
         m_id(0),
@@ -53,6 +52,7 @@ public:
         m_unique(false),
         m_skills(),
         m_type(CardType::assault),
+        m_top_level_card(this),
         m_recipe_cost(0),
         m_recipe_cards(),
         m_used_for_cards()
@@ -61,6 +61,7 @@ public:
     }
 
     void add_skill(Skill id, unsigned x, Faction y, unsigned c, Skill s, bool all, SkillMod::SkillMod mod=SkillMod::on_activate);
+    const Card* upgraded() const { return this == m_top_level_card ? this : m_used_for_cards.begin()->first; }
 };
 
 #endif

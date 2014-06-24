@@ -89,3 +89,8 @@ std::string achievement_misc_req_names[AchievementMiscReq::num_achievement_misc_
     "Damage",
     "Total damage to the enemy Commander"
 };
+
+unsigned debug_print(0);
+unsigned debug_cached(0);
+bool debug_line(false);
+std::string debug_str("");

@@ -219,11 +219,11 @@ void encode_deck_ddd_b64(std::stringstream &ios, const Card* commander, std::vec
 }
 
 #if defined(TYRANT_UNLEASHED)
-DeckDecoder hash_to_ids = hash_to_ids_wmt_b64;
-DeckEncoder encode_deck = encode_deck_wmt_b64;
-#else
 DeckDecoder hash_to_ids = hash_to_ids_ext_b64;
 DeckEncoder encode_deck = encode_deck_ext_b64;
+#else
+DeckDecoder hash_to_ids = hash_to_ids_wmt_b64;
+DeckEncoder encode_deck = encode_deck_wmt_b64;
 #endif
 
 const std::pair<std::vector<unsigned>, std::map<signed, char>> string_to_ids(const Cards& all_cards, const std::string& deck_string, const std::string & description)
@@ -277,7 +277,7 @@ const std::pair<std::vector<unsigned>, std::map<signed, char>> string_to_ids(con
 
 namespace range = boost::range;
 
-void Deck::set(const Cards& all_cards, const std::vector<unsigned>& ids, const std::map<signed, char> marks)
+void Deck::set(const std::vector<unsigned>& ids, const std::map<signed, char> marks)
 {
     commander = nullptr;
     strategy = DeckStrategy::random;
@@ -307,29 +307,29 @@ void Deck::set(const Cards& all_cards, const std::vector<unsigned>& ids, const s
     card_marks = marks;
 }
 
-void Deck::set(const Cards& all_cards, const std::string& deck_string_)
+void Deck::set(const std::string& deck_string_)
 {
     deck_string = deck_string_;
 }
 
-void Deck::resolve(const Cards& all_cards)
+void Deck::resolve()
 {
     if(commander != nullptr)
     {
         return;
     }
     auto && id_marks = string_to_ids(all_cards, deck_string, short_description());
-    set(all_cards, id_marks.first, id_marks.second);
+    set(id_marks.first, id_marks.second);
     deck_string.clear();
 }
 
-void Deck::set_given_hand(const Cards& all_cards, const std::string& deck_string)
+void Deck::set_given_hand(const std::string& deck_string)
 {
     auto && id_marks = string_to_ids(all_cards, deck_string, "hand");
     given_hand = id_marks.first;
 }
 
-void Deck::set_forts(const Cards& all_cards, const std::string& deck_string)
+void Deck::set_forts(const std::string& deck_string)
 {
     auto && id_marks = string_to_ids(all_cards, deck_string, "fort_cards");
     fort_cards.clear();
@@ -379,6 +379,10 @@ std::string Deck::medium_description() const
     if(commander)
     {
         ios << commander->m_name;
+        if (upgrade_chance > 0 && commander != commander->m_top_level_card)
+        {
+           ios << "+";
+        }
     }
     else
     {
@@ -387,6 +391,10 @@ std::string Deck::medium_description() const
     for(const Card * card: cards)
     {
         ios << ", " << card->m_name;
+        if (upgrade_chance > 0 && card != card->m_top_level_card)
+        {
+           ios << "+";
+        }
     }
     unsigned num_pool_cards = 0;
     for(auto& pool: raid_cards)
@@ -400,9 +408,9 @@ std::string Deck::medium_description() const
     return ios.str();
 }
 
-extern std::string card_description(const Cards& cards, const Card* c);
+extern std::string card_description(const Cards& all_cards, const Card* c);
 
-std::string Deck::long_description(const Cards& all_cards) const
+std::string Deck::long_description() const
 {
     std::stringstream ios;
     ios << medium_description() << "\n";
@@ -413,6 +421,10 @@ std::string Deck::long_description(const Cards& all_cards) const
     if(commander)
     {
         ios << card_description(all_cards, commander) << "\n";
+        if (upgrade_chance > 0 && commander != commander->m_top_level_card)
+        {
+            ios << "->" << card_description(all_cards, commander->m_top_level_card) << "\n";
+        }
     }
     else
     {
@@ -421,6 +433,10 @@ std::string Deck::long_description(const Cards& all_cards) const
     for(const Card* card: cards)
     {
         ios << "  " << card_description(all_cards, card) << "\n";
+        if (upgrade_chance > 0 && card != card->m_top_level_card)
+        {
+            ios << "  ->" << card_description(all_cards, card->m_top_level_card) << "\n";
+        }
     }
     for(auto& pool: raid_cards)
     {
@@ -428,6 +444,10 @@ std::string Deck::long_description(const Cards& all_cards) const
         for(auto& card: pool.second)
         {
             ios << "  " << card_description(all_cards, card) << "\n";
+            if (upgrade_chance > 0 && card != card->m_top_level_card)
+            {
+                ios << "  ->" << card_description(all_cards, card->m_top_level_card) << "\n";
+            }
         }
     }
     if (! reward_cards.empty())
@@ -445,12 +465,6 @@ std::string Deck::long_description(const Cards& all_cards) const
 Deck* Deck::clone() const
 {
     return(new Deck(*this));
-}
-
-
-const Card* Deck::get_commander()
-{
-    return(commander);
 }
 
 const Card* Deck::next()
@@ -499,10 +513,45 @@ const Card* Deck::next()
     throw std::runtime_error("Unknown strategy for deck.");
 }
 
+const Card* Deck::upgrade_card(const Card* card, std::mt19937& re)
+{
+    unsigned ups = card->m_top_level_card->m_level - card->m_level;
+    if (upgrade_chance > 0 && ups > 0)
+    {
+        for (std::mt19937::result_type rnd = re(); ups > 0; -- ups, rnd /= 9)
+        {
+            if (rnd % 9 < upgrade_chance)
+            {
+                card = card->upgraded();
+            }
+        }
+    }
+    return card;
+}
+
+const Card* Deck::get_commander(std::mt19937& re)
+{
+    if (upgrade_chance == 0)
+    {
+        return(commander);
+    }
+    else
+    {
+        return(upgrade_card(commander, re));
+    }
+}
+
 void Deck::shuffle(std::mt19937& re)
 {
     shuffled_cards.clear();
     boost::insert(shuffled_cards, shuffled_cards.end(), cards);
+    if (upgrade_chance > 0)
+    {
+        for (auto && card: shuffled_cards)
+        {
+            card = upgrade_card(card, re);
+        }
+    }
     if(!raid_cards.empty())
     {
         if(strategy != DeckStrategy::random)
