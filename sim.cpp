@@ -835,6 +835,7 @@ Results<uint64_t> play(Field* fd)
                 for(unsigned action_index(0); action_index < num_actions; ++action_index)
                 {
                     // Evaluate skills
+                    current_status->m_step = CardStep::none;
                     evaluate_skills(fd, current_status, current_status->m_card->m_skills[SkillMod::on_activate], SkillMod::on_activate);
                     if(__builtin_expect(fd->end, false)) { break; }
                     // Attack
@@ -2051,11 +2052,15 @@ inline bool skill_predicate<infuse>(Field* fd, CardStatus* src, CardStatus* c, c
 template<>
 inline bool skill_predicate<jam>(Field* fd, CardStatus* src, CardStatus* c, const SkillSpec& s)
 {
+#if defined(TYRANT_UNLEASHED)
+    return can_act(c) && is_active_next_turn(c);
+#else
     const auto& mod = s.mod;
-    return(can_act(c) &&  // (fd->tapi == c->m_player ? is_active(c) && !is_attacking_or_has_attacked(c) : is_active_next_turn(c)));
+    return can_act(c) &&  // (fd->tapi == c->m_player ? is_active(c) && !is_attacking_or_has_attacked(c) : is_active_next_turn(c));
             (mod == SkillMod::on_attacked ? is_active(c) && c->m_index > fd->current_ci :
              mod == SkillMod::on_death ? c->m_index >= src->m_index && (fd->tapi != src->m_player ? is_active(c) : is_active_next_turn(c)) :
-             is_active(c) || is_active_next_turn(c)));
+             is_active(c) || is_active_next_turn(c));
+#endif
 }
 
 template<>
@@ -2069,11 +2074,15 @@ inline bool skill_predicate<protect>(Field* fd, CardStatus* src, CardStatus* c, 
 template<>
 inline bool skill_predicate<rally>(Field* fd, CardStatus* src, CardStatus* c, const SkillSpec& s)
 {
+#if defined(TYRANT_UNLEASHED)
+    return can_attack(c) && is_active(c) && !is_attacking_or_has_attacked(c);
+#else
     const auto& mod = s.mod;
-    return(can_attack(c) && !c->m_sundered &&  // (fd->tapi == c->m_player ? is_active(c) && !is_attacking_or_has_attacked(c) : is_active_next_turn(c)));
+    return can_attack(c) && !c->m_sundered &&  // (fd->tapi == c->m_player ? is_active(c) && !is_attacking_or_has_attacked(c) : is_active_next_turn(c));
         (src->m_player != c->m_player || mod == SkillMod::on_death ? (fd->tapi == c->m_player ? is_active(c) && !is_attacking_or_has_attacked(c) : is_active_next_turn(c)) :
          mod == SkillMod::on_attacked ? is_active_next_turn(c) :
-         is_active(c) && !is_attacking_or_has_attacked(c)));
+         is_active(c) && !is_attacking_or_has_attacked(c));
+#endif
 }
 
 template<>
@@ -2099,11 +2108,15 @@ inline bool skill_predicate<supply>(Field* fd, CardStatus* src, CardStatus* c, c
 template<>
 inline bool skill_predicate<weaken>(Field* fd, CardStatus* src, CardStatus* c, const SkillSpec& s)
 {
+#if defined(TYRANT_UNLEASHED)
+    return can_attack(c) && attack_power(c) > 0 && is_active_next_turn(c);
+#else
     const auto& mod = s.mod;
-    return(can_attack(c) && attack_power(c) > 0 &&  // (fd->tapi == c->m_player ? is_active(c) && !is_attacking_or_has_attacked(c) : is_active_next_turn(c)));
+    return can_attack(c) && attack_power(c) > 0 &&  // (fd->tapi == c->m_player ? is_active(c) && !is_attacking_or_has_attacked(c) : is_active_next_turn(c));
             (mod == SkillMod::on_attacked ? is_active(c) && c->m_index > fd->current_ci :
              mod == SkillMod::on_death ? c->m_index >= src->m_index && (fd->tapi != src->m_player ? is_active(c) : is_active_next_turn(c)) :
-             is_active(c) || is_active_next_turn(c)));
+             is_active(c) || is_active_next_turn(c));
+#endif
 }
 
 template<unsigned skill_id>

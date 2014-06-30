@@ -1,0 +1,18 @@
+MAIN := tyrant_optimize
+SRCS := $(wildcard *.cpp)
+OBJS := $(patsubst %.cpp,obj-wmt/%.o,$(SRCS))
+INCS := $(wildcard *.h)
+
+CPPFLAGS := -Wall -Werror -Wno-unused-but-set-variable -std=gnu++11 -O3 -DNDEBUG
+LDFLAGS := -lboost_system -lboost_thread -lboost_filesystem -lboost_regex
+
+all: $(MAIN)
+
+obj-wmt/%.o: %.cpp $(INCS)
+	$(CXX) $(CPPFLAGS) -o $@ -c $<
+
+$(MAIN): $(OBJS)
+	$(CXX) -o $@ $(OBJS) $(LDFLAGS)
+
+clean:
+	del /q $(MAIN).exe obj-wmt\*.o
