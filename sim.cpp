@@ -750,8 +750,8 @@ Results<uint64_t> play(Field* fd)
 #endif
     unsigned p0_size = fd->players[0]->deck->cards.size();
     unsigned p1_size = fd->players[1]->deck->cards.size();
-    fd->players[0]->available_summons = 29 + p0_size;
-    fd->players[1]->available_summons = 29 + p1_size;
+    fd->players[0]->available_summons = 30;
+    fd->players[1]->available_summons = 30;
     fd->last_decision_turn = p0_size == 1 ? 0 : p0_size * 2 - (fd->gamemode == surge ? 2 : 3);
 
     // Count commander as played for achievements (not count in type / faction / rarity requirements)
@@ -2382,18 +2382,14 @@ void perform_summon(Field* fd, CardStatus* src_status, const SkillSpec& s)
 {
     unsigned player = src_status->m_player;
     const auto& mod = std::get<4>(s);
-    // Split and Summon on Play are not counted towards the Summon Limit.
-    if(skill_id == summon && mod != SkillMod::on_play)
+    if(fd->players[player]->available_summons == 0)
     {
-        if(fd->players[player]->available_summons == 0)
-        {
-            return;
-        }
-        -- fd->players[player]->available_summons;
-        if(fd->players[player]->available_summons == 0)
-        {
-            _DEBUG_MSG(1, "** Reaching summon limit, this is the last summon.\n");
-        }
+	return;
+    }
+    -- fd->players[player]->available_summons;
+    if(fd->players[player]->available_summons == 0)
+    {
+	_DEBUG_MSG(1, "** Reaching summon limit, this is the last summon.\n");
     }
     unsigned summoned_id = std::get<1>(s);
     const Card* summoned = 0;
