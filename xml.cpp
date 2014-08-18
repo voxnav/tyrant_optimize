@@ -6,11 +6,11 @@
 #include <map>
 #include <stdexcept>
 #include <algorithm>
+#include <boost/algorithm/string.hpp>
 #include "rapidxml.hpp"
 #include "card.h"
 #include "cards.h"
 #include "deck.h"
-#include "achievement.h"
 #include "tyrant.h"
 //---------------------- $20 cards.xml parsing ---------------------------------
 // Sets: 1 enclave; 2 nexus; 3 blight; 4 purity; 5 homeworld;
@@ -21,7 +21,6 @@ using namespace rapidxml;
 
 Faction map_to_faction(unsigned i)
 {
-#if defined(TYRANT_UNLEASHED)
     return(i == 1 ? imperial :
            i == 2 ? raider :
            i == 3 ? bloodthirsty :
@@ -29,14 +28,6 @@ Faction map_to_faction(unsigned i)
            i == 5 ? righteous :
            i == 6 ? progenitor :
            allfactions);
-#else
-    return(i == 1 ? imperial :
-           i == 9 ? raider :
-           i == 3 ? bloodthirsty :
-           i == 4 ? xeno :
-           i == 8 ? righteous :
-           allfactions);
-#endif
 }
 
 CardType::CardType map_to_type(unsigned i)
@@ -44,23 +35,21 @@ CardType::CardType map_to_type(unsigned i)
     return(i == 1 ? CardType::commander :
            i == 2 ? CardType::assault :
            i == 4 ? CardType::structure :
-           i == 8 ? CardType::action :
            CardType::num_cardtypes);
 }
 
-Skill skill_name_to_id(const char* name)
+Skill skill_name_to_id(const std::string & name)
 {
     static std::map<std::string, int> skill_map;
     if(skill_map.empty())
     {
         for(unsigned i(0); i < Skill::num_skills; ++i)
         {
-            std::string skill_id{skill_names[i]};
-            std::transform(skill_id.begin(), skill_id.end(), skill_id.begin(), ::tolower);
+            std::string skill_id = boost::to_lower_copy(skill_names[i]);
             skill_map[skill_id] = i;
         }
     }
-    auto x = skill_map.find(name);
+    auto x = skill_map.find(boost::to_lower_copy(name));
     return x == skill_map.end() ? no_skill : (Skill)x->second;
 }
 
@@ -93,34 +82,16 @@ Skill skill_target_skill(xml_node<>* skill)
 }
 
 //------------------------------------------------------------------------------
-void load_decks_xml(Decks& decks, const Cards& all_cards)
+void load_decks_xml(Decks& decks, const Cards& all_cards, const char * mission_filename)
 {
     try
     {
-        read_missions(decks, all_cards, "missions.xml");
+        read_missions(decks, all_cards, mission_filename);
     }
-    catch(const rapidxml::parse_error& e)
+    catch (const rapidxml::parse_error& e)
     {
-        std::cout << "\nException while loading decks from file missions.xml\n";
+        std::cout << "\nFailed to parse file data/missions.xml\n";
     }
-#if not defined(TYRANT_UNLEASHED)
-    try
-    {
-        read_raids(decks, all_cards, "raids.xml");
-    }
-    catch(const rapidxml::parse_error& e)
-    {
-        std::cout << "\nException while loading decks from file raids.xml\n";
-    }
-    try
-    {
-        read_quests(decks, all_cards, "quests.xml");
-    }
-    catch(const rapidxml::parse_error& e)
-    {
-        std::cout << "\nException while loading decks from file quests.xml\n";
-    }
-#endif
 }
 
 //------------------------------------------------------------------------------
@@ -161,14 +132,9 @@ void parse_card_node(Cards& all_cards, Card* card, xml_node<>* card_node)
     xml_node<>* card_id_node = card_node->first_node("card_id");
     assert(id_node || card_id_node);
     xml_node<>* name_node(card_node->first_node("name"));
-    xml_node<>* hidden_node(card_node->first_node("hidden"));
-    xml_node<>* replace_node(card_node->first_node("replace"));
     xml_node<>* attack_node(card_node->first_node("attack"));
     xml_node<>* health_node(card_node->first_node("health"));
     xml_node<>* cost_node(card_node->first_node("cost"));
-    xml_node<>* unique_node(card_node->first_node("unique"));
-    xml_node<>* reserve_node(card_node->first_node("reserve"));
-    xml_node<>* base_card_node(card_node->first_node("base_card"));
     xml_node<>* rarity_node(card_node->first_node("rarity"));
     xml_node<>* type_node(card_node->first_node("type"));
     xml_node<>* set_node(card_node->first_node("set"));
@@ -193,29 +159,30 @@ void parse_card_node(Cards& all_cards, Card* card, xml_node<>* card_node)
         { card->m_type = CardType::commander; }
         else if (card->m_id < 3000)
         { card->m_type = CardType::structure; }
+#if 0
         else if (card->m_id < 4000)
         { card->m_type = CardType::action; }
+#endif
+        else if (card->m_id < 8000)
+        { card->m_type = CardType::assault; }
+        else if (card->m_id < 10000)
+        { card->m_type = CardType::structure; }
         else
+        { card->m_type = cost_node ? (attack_node ? CardType::assault : CardType::structure) : CardType::commander; }
+#if 0
         { card->m_type = cost_node ? (attack_node ? CardType::assault : CardType::structure) : (health_node ? CardType::commander : CardType::action); }
+#endif
     }
-    if(hidden_node) { card->m_hidden = atoi(hidden_node->value()); }
-    if(replace_node) { card->m_replace = atoi(replace_node->value()); }
     if(attack_node) { card->m_attack = atoi(attack_node->value()); }
     if(health_node) { card->m_health = atoi(health_node->value()); }
     if(cost_node) { card->m_delay = atoi(cost_node->value()); }
-    if(unique_node) { card->m_unique = true; }
-    if(reserve_node) { card->m_reserve = atoi(reserve_node->value()); }
-    if(base_card_node) { card->m_base_id = atoi(base_card_node->value()); }
     if(rarity_node) { card->m_rarity = atoi(rarity_node->value()); }
     if(type_node) { card->m_faction = map_to_faction(atoi(type_node->value())); }
     card->m_set = set;
 
     if (card_node->first_node("skill"))
     { // inherit no skill if there is skill node
-        for (unsigned mod = 0; mod < SkillMod::num_skill_activation_modifiers; ++ mod)
-        {
-            card->m_skills[mod].clear();
-        }
+        card->m_skills.clear();
         memset(card->m_skill_value, 0, sizeof card->m_skill_value);
     }
     for(xml_node<>* skill_node = card_node->first_node("skill");
@@ -224,27 +191,15 @@ void parse_card_node(Cards& all_cards, Card* card, xml_node<>* card_node)
     {
         Skill skill_id = skill_name_to_id(skill_node->first_attribute("id")->value());
         if(skill_id == no_skill) { continue; }
-
-        bool all(skill_node->first_attribute("all"));
-        bool played(skill_node->first_attribute("played"));
-        bool attacked(skill_node->first_attribute("attacked"));
-        bool kill(skill_node->first_attribute("kill"));
-        bool died(skill_node->first_attribute("died"));
-        bool normal(!(played || died || attacked || kill));
-
         auto x = node_value(skill_node, "x", 0);
         auto y = skill_faction(skill_node);
+        auto n = node_value(skill_node, "n", 0);
         auto c = node_value(skill_node, "c", 0);
         auto s = skill_target_skill(skill_node);
-
-        if (played)   { card->add_skill(skill_id, x, y, c, s, all, SkillMod::on_play); }
-        if (attacked) { card->add_skill(skill_id, x, y, c, s, all, SkillMod::on_attacked); }
-        if (kill)     { card->add_skill(skill_id, x, y, c, s, all, SkillMod::on_kill); }
-        if (died)     { card->add_skill(skill_id, x, y, c, s, all, SkillMod::on_death); }
-        if (normal)   { card->add_skill(skill_id, x, y, c, s, all); }
+        bool all(skill_node->first_attribute("all"));
+        card->add_skill(skill_id, x, y, n, c, s, all);
     }
     all_cards.cards.push_back(card);
-#if defined(TYRANT_UNLEASHED)
     Card * top_card = card;
     for(xml_node<>* upgrade_node = card_node->first_node("upgrade");
             upgrade_node;
@@ -268,24 +223,19 @@ void parse_card_node(Cards& all_cards, Card* card, xml_node<>* card_node)
         pre_upgraded_card->m_used_for_cards[top_card] = 1;
     }
     card->m_top_level_card = top_card;
-#endif
 }
 
-void read_cards(Cards& all_cards)
+void load_cards_xml(Cards & all_cards, const char * filename)
 {
     std::vector<char> buffer;
     xml_document<> doc;
-    parse_file("cards.xml", buffer, doc);
+    parse_file(filename, buffer, doc);
     xml_node<>* root = doc.first_node();
 
     if(!root)
     {
         return;
     }
-#if 0
-    unsigned nb_cards(0);
-    std::map<unsigned, unsigned> sets_counts;
-#endif
     for(xml_node<>* card_node = root->first_node("unit");
         card_node;
         card_node = card_node->next_sibling("unit"))
@@ -294,13 +244,6 @@ void read_cards(Cards& all_cards)
         parse_card_node(all_cards, card, card_node);
     }
     all_cards.organize();
-#if 0
-    std::cout << "nb cards: " << nb_cards << "\n";
-    for(auto counts: sets_counts)
-    {
-        std::cout << "set " << counts.first << ": " << counts.second << "\n";
-    }
-#endif
 }
 //------------------------------------------------------------------------------
 Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, const char* effect_node_name, DeckType::DeckType decktype, unsigned id, std::string base_deck_name, bool has_levels=false)
@@ -351,7 +294,6 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, const ch
     unsigned mission_req(mission_req_node ? atoi(mission_req_node->value()) : 0);
     xml_node<>* effect_id_node(node->first_node(effect_node_name));
     Effect effect = effect_id_node ? static_cast<enum Effect>(atoi(effect_id_node->value())) : Effect::none;
-#if defined(TYRANT_UNLEASHED)
     if (has_levels)
     {
         for (unsigned level = 1; level <= 9; ++ level)
@@ -365,11 +307,9 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, const ch
             decks.by_name[alt_name] = deck;
         }
     }
-#endif
     decks.decks.push_back(Deck{all_cards, decktype, id, base_deck_name, effect});
     Deck* deck = &decks.decks.back();
     deck->set(commander_card, always_cards, some_cards, reward_cards, mission_req);
-#if defined(TYRANT_UNLEASHED)
     if (has_levels)
     { // upgrade cards in deck
         deck->commander = deck->commander->m_top_level_card;
@@ -381,7 +321,6 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, const ch
             { card = card->m_top_level_card; }
         }
     }
-#endif
     std::string alt_name = decktype_names[decktype] + " #" + to_string(id);
     decks.by_name[base_deck_name] = deck;
     decks.by_name[alt_name] = deck;
@@ -439,40 +378,13 @@ void read_raids(Decks& decks, const Cards& all_cards, std::string filename)
         read_deck(decks, all_cards, raid_node, "effect", DeckType::raid, id, deck_name);
     }
 }
+
 //------------------------------------------------------------------------------
-void read_quests(Decks& decks, const Cards& all_cards, std::string filename)
+void load_recipes_xml(Cards& all_cards, const char * filename)
 {
     std::vector<char> buffer;
     xml_document<> doc;
-    parse_file(filename.c_str(), buffer, doc);
-    xml_node<>* root = doc.first_node();
-
-    if(!root)
-    {
-        return;
-    }
-
-    // Seems always_cards is empty for all quests.
-    std::vector<const Card*> always_cards;
-
-    for(xml_node<>* quest_node = root->first_node("step");
-        quest_node;
-        quest_node = quest_node->next_sibling("step"))
-    {
-        xml_node<>* id_node(quest_node->first_node("id"));
-        assert(id_node);
-        unsigned id(id_node ? atoi(id_node->value()) : 0);
-        std::string deck_name{"Step " + std::string{id_node->value()}};
-        read_deck(decks, all_cards, quest_node, "battleground_id", DeckType::quest, id, deck_name);
-    }
-}
-
-//------------------------------------------------------------------------------
-void load_recipes_xml(Cards& all_cards)
-{
-    std::vector<char> buffer;
-    xml_document<> doc;
-    parse_file("fusion_recipes_cj2.xml", buffer, doc);
+    parse_file(filename, buffer, doc);
     xml_node<>* root = doc.first_node();
 
     if(!root)
@@ -502,161 +414,3 @@ void load_recipes_xml(Cards& all_cards)
     }
 }
 
-//------------------------------------------------------------------------------
-Comparator get_comparator(xml_node<>* node, Comparator default_comparator)
-{
-    xml_attribute<>* compare(node->first_attribute("compare"));
-    if(!compare) { return default_comparator; }
-    else if(strcmp(compare->value(), "equal") == 0) { return equal; }
-    else if(strcmp(compare->value(), "great_equal") == 0) { return great_equal; }
-    else if(strcmp(compare->value(), "less_equal") == 0) { return less_equal; }
-    else { throw std::runtime_error(std::string("Not implemented: compare=\"") + compare->value() + "\""); }
-}
-
-void read_achievement(Decks& decks, const Cards& all_cards, Achievement& achievement, const char* achievement_id_name, std::string filename/* = "achievements.xml"*/)
-{
-    std::vector<char> buffer;
-    xml_document<> doc;
-    parse_file(filename.c_str(), buffer, doc);
-    xml_node<>* root = doc.first_node();
-
-    if(!root)
-    {
-        throw std::runtime_error("Failed to parse " + filename);
-    }
-
-    for(xml_node<>* achievement_node = root->first_node("achievement");
-        achievement_node;
-        achievement_node = achievement_node->next_sibling("achievement"))
-    {
-        xml_node<>* id_node(achievement_node->first_node("id"));
-        xml_node<>* name_node(achievement_node->first_node("name"));
-        if(!id_node || !name_node || (strcmp(id_node->value(), achievement_id_name) != 0 && strcmp(name_node->value(), achievement_id_name) != 0)) { continue; }
-        achievement.id = atoi(id_node->value());
-        achievement.name = name_node->value();
-        std::cout << "Achievement " << id_node->value() << " " << name_node->value() << ": " << achievement_node->first_node("desc")->value() << std::endl;
-        xml_node<>* type_node(achievement_node->first_node("type"));
-        xml_attribute<>* mission_id(type_node ? type_node->first_attribute("mission_id") : NULL);
-        if(!type_node || !mission_id)
-        {
-            throw std::runtime_error("Must be 'mission' type.");
-        }
-        assert(strcmp(type_node->first_attribute("winner")->value(), "1") == 0);
-        if(strcmp(mission_id->value(), "*") != 0)
-        {
-            achievement.mission_condition.init(atoi(mission_id->value()), get_comparator(type_node, equal));
-            std::cout << "  Mission" << achievement.mission_condition.str() << " (" << decks.by_type_id[{DeckType::mission, atoi(mission_id->value())}]->name << ") and win" << std::endl;
-        }
-        for (xml_node<>* req_node = achievement_node->first_node("req");
-            req_node;
-            req_node = req_node->next_sibling("req"))
-        {
-            Comparator comparator = get_comparator(req_node, great_equal);
-            xml_attribute<>* skill_id_node(req_node->first_attribute("skill_id"));
-            xml_attribute<>* unit_id(req_node->first_attribute("unit_id"));
-            xml_attribute<>* unit_type(req_node->first_attribute("unit_type"));
-            xml_attribute<>* unit_race(req_node->first_attribute("unit_race"));
-            xml_attribute<>* unit_rarity(req_node->first_attribute("unit_rarity"));
-            xml_attribute<>* num_turns(req_node->first_attribute("num_turns"));
-            xml_attribute<>* num_used(req_node->first_attribute("num_used"));
-            xml_attribute<>* num_played(req_node->first_attribute("num_played"));
-            xml_attribute<>* num_killed(req_node->first_attribute("num_killed"));
-            xml_attribute<>* num_killed_with(req_node->first_attribute("num_killed_with"));
-            xml_attribute<>* damage(req_node->first_attribute("damage"));
-            xml_attribute<>* com_total(req_node->first_attribute("com_total"));
-            xml_attribute<>* only(req_node->first_attribute("only"));
-            if(skill_id_node && num_used)
-            {
-                auto skill_id = skill_name_to_id(skill_id_node->value());
-                if(skill_id == no_skill)
-                {
-                    throw std::runtime_error(std::string("Unknown skill ") + skill_id_node->value());
-                }
-                achievement.skill_used[skill_id] = achievement.req_counter.size();
-                achievement.req_counter.emplace_back(atoi(num_used->value()), comparator);
-                std::cout << "  Use skills: " << skill_id_node->value() << achievement.req_counter.back().str() << std::endl;
-            }
-            else if(unit_id && num_played)
-            {
-                achievement.unit_played[atoi(unit_id->value())] = achievement.req_counter.size();
-                achievement.req_counter.emplace_back(atoi(num_played->value()), comparator);
-                std::cout << "  Play units: " << all_cards.by_id(atoi(unit_id->value()))->m_name << achievement.req_counter.back().str() << std::endl;
-            }
-            else if(unit_type && num_played)
-            {
-                auto i = map_to_type(atoi(unit_type->value()));
-                if(i == CardType::num_cardtypes)
-                {
-                    throw std::runtime_error(std::string("Unknown unit_type ") + unit_type->value());
-                }
-                achievement.unit_type_played[i] = achievement.req_counter.size();
-                achievement.req_counter.emplace_back(atoi(num_played->value()), comparator);
-                std::cout << "  Play units of type: " << cardtype_names[i] << achievement.req_counter.back().str() << std::endl;
-            }
-            else if(unit_race && num_played)
-            {
-                auto i = map_to_faction(atoi(unit_race->value()));
-                if(i == Faction::allfactions)
-                {
-                    throw std::runtime_error(std::string("Unknown unit_race ") + unit_race->value());
-                }
-                achievement.unit_faction_played[i] = achievement.req_counter.size();
-                achievement.req_counter.emplace_back(atoi(num_played->value()), comparator);
-                std::cout << "  Play units of race (faction): " << faction_names[i] << achievement.req_counter.back().str() << std::endl;
-            }
-            else if(unit_rarity && num_played)
-            {
-                achievement.unit_rarity_played[atoi(unit_rarity->value())] = achievement.req_counter.size();
-                achievement.req_counter.emplace_back(atoi(num_played->value()), comparator);
-                std::cout << "  Play units of rarity: " << rarity_names[atoi(unit_rarity->value())] << achievement.req_counter.back().str() << std::endl;
-            }
-            else if(unit_type && num_killed)
-            {
-                auto i = map_to_type(atoi(unit_type->value()));
-                if(i == CardType::num_cardtypes)
-                {
-                    throw std::runtime_error(std::string("Unknown unit_type ") + unit_type->value());
-                }
-                achievement.unit_type_killed[i] = achievement.req_counter.size();
-                achievement.req_counter.emplace_back(atoi(num_killed->value()), comparator);
-                std::cout << "  Kill units of type: " << cardtype_names[i] << achievement.req_counter.back().str() << std::endl;
-            }
-            else if(num_killed_with && skill_id_node && strcmp(skill_id_node->value(), "flying") == 0)
-            {
-                achievement.misc_req[AchievementMiscReq::unit_with_flying_killed] = achievement.req_counter.size();
-                achievement.req_counter.emplace_back(atoi(num_killed_with->value()), comparator);
-                std::cout << "  " << achievement_misc_req_names[AchievementMiscReq::unit_with_flying_killed] << achievement.req_counter.back().str() << std::endl;
-            }
-            else if(only && skill_id_node && strcmp(skill_id_node->value(), "0") == 0)
-            {
-                achievement.misc_req[AchievementMiscReq::skill_activated] = achievement.req_counter.size();
-                achievement.req_counter.emplace_back(0, equal);
-                std::cout << "  " << achievement_misc_req_names[AchievementMiscReq::skill_activated] << achievement.req_counter.back().str() << std::endl;
-            }
-            else if(num_turns)
-            {
-                achievement.misc_req[AchievementMiscReq::turns] = achievement.req_counter.size();
-                achievement.req_counter.emplace_back(atoi(num_turns->value()), comparator);
-                std::cout << "  " << achievement_misc_req_names[AchievementMiscReq::turns] << achievement.req_counter.back().str() << std::endl;
-            }
-            else if(damage)
-            {
-                achievement.misc_req[AchievementMiscReq::damage] = achievement.req_counter.size();
-                achievement.req_counter.emplace_back(atoi(damage->value()), comparator);
-                std::cout << "  " << achievement_misc_req_names[AchievementMiscReq::damage] << achievement.req_counter.back().str() << std::endl;
-            }
-            else if(com_total)
-            {
-                achievement.misc_req[AchievementMiscReq::com_total] = achievement.req_counter.size();
-                achievement.req_counter.emplace_back(atoi(com_total->value()), comparator);
-                std::cout << "  " << achievement_misc_req_names[AchievementMiscReq::com_total] << achievement.req_counter.back().str() << std::endl;
-            }
-            else
-            {
-                throw std::runtime_error("Not implemented.");
-            }
-        }
-        return;
-    }
-    throw std::runtime_error("No such achievement.");
-}

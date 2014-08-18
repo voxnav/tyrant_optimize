@@ -1,18 +1,18 @@
-MAIN := tyrant_optimize_debug
+MAIN := tuodebug.exe
 SRCS := $(wildcard *.cpp)
-OBJS := $(patsubst %.cpp,obj-wmt-debug/%.o,$(SRCS))
+OBJS := $(patsubst %.cpp,obj-debug/%.o,$(SRCS))
 INCS := $(wildcard *.h)
 
-CPPFLAGS := -Wall -Werror -Wno-unused-but-set-variable -std=gnu++11 -O3
+CPPFLAGS := -Wall -Werror -std=gnu++11 -O3
 LDFLAGS := -lboost_system -lboost_thread -lboost_filesystem -lboost_regex
 
 all: $(MAIN)
 
-obj-wmt-debug/%.o: %.cpp $(INCS)
+obj-debug/%.o: %.cpp $(INCS)
 	$(CXX) $(CPPFLAGS) -o $@ -c $<
 
 $(MAIN): $(OBJS)
 	$(CXX) -o $@ $(OBJS) $(LDFLAGS)
 
 clean:
-	del /q $(MAIN).exe obj-wmt-debug\*.o
+	del /q $(MAIN).exe obj-debug\*.o

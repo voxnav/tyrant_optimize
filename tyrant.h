@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "1.3.0"
+#define TYRANT_OPTIMIZER_VERSION "2.0.0"
 
 #include <string>
 #include <sstream>
@@ -23,53 +23,34 @@ extern const std::string faction_names[num_factions];
 
 enum Skill
 {
+    // Placeholder for no-skill:
     no_skill,
     // Attack:
     attack,
-    // Activation (including Destroyed):
-    augment, backfire, chaos, cleanse, enfeeble, freeze, heal, infuse, jam,
-    mimic, protect, rally, recharge, repair, rush, shock, siege, split, strike, summon, supply,
-    trigger_regen, // not actually a skill; handles regeneration after strike/siege
-    weaken, 
-    // Combat-Modifier:
-    antiair, burst, fear, flurry, pierce, swipe, valor,
-    // Damage-Dependant:
-    berserk, crush, disease, immobilize, inhibit, leech, phase, poison, siphon, sunder,
+    // Activation:
+    BEGIN_ACTIVATION_HARMFUL, // TODO skill traits
+    enfeeble, jam, siege, strike, weaken, 
+    END_ACTIVATION_HARMFUL,
+    BEGIN_ACTIVATION_HELPFUL,
+    enhance, heal, overload, protect, rally, 
+    END_ACTIVATION_HELPFUL,
     // Defensive:
-    armored, corrosive, counter, emulate, evade, flying, intercept, payback, refresh, regenerate, stun, tribute, wall,
-    // Triggered:
-    blitz, legion,
-    // Tyrant Unleashed:
-    enhance,
-    // Static, ignored:
-    fusion,
-    /* blizzard, mist, */
-    // Placeholder for new gained skill from battleground effect:
+    BEGIN_DEFENSIVE,
+    armored, corrosive, counter, evade, wall,
+    END_DEFENSIVE,
+    // Combat-Modifier:
+    flurry, pierce,
+    // Damage-Dependant:
+    berserk, inhibit, leech, poison,
     num_skills
 };
 extern std::string skill_names[num_skills];
-extern std::unordered_set<Skill, std::hash<unsigned>> helpful_skills;
-extern std::unordered_set<Skill, std::hash<unsigned>> defensive_skills;
-
-namespace SkillMod {
-enum SkillMod
-{
-    on_activate,
-    on_play,
-    on_attacked,
-    on_kill,
-    on_death,
-    num_skill_activation_modifiers
-};
-}
-extern std::string skill_activation_modifier_names[SkillMod::num_skill_activation_modifiers];
 
 namespace CardType {
 enum CardType {
     commander,
     assault,
     structure,
-    action,
     num_cardtypes
 };
 }
@@ -78,10 +59,8 @@ extern std::string cardtype_names[CardType::num_cardtypes];
 
 extern std::string rarity_names[];
 
-// begin for TYRANT_UNLEASHED
 extern unsigned upgrade_cost[];
 extern unsigned salvaging_income[][7];
-// end
 
 namespace DeckType {
 enum DeckType {
@@ -98,54 +77,21 @@ extern std::string decktype_names[DeckType::num_decktypes];
 
 enum Effect {
     none,
-    time_surge,
-    copycat,
-    quicksilver,
-    decay,
-    high_skies,
-    impenetrable,
-    invigorate,
-    clone_project,
-    friendly_fire,
-    genesis,
-    artillery_strike,
-    photon_shield,
-    decrepit,
-    forcefield,
-    chilling_touch,
-    clone_experiment,
-    toxic,
-    haunt,
-    united_front,
-    harsh_conditions,
+    progenitors,
     num_effects
 };
 
 extern std::string effect_names[Effect::num_effects];
 
-enum AchievementMiscReq
-{
-    unit_with_flying_killed,  // 104 Sky Control
-    skill_activated,  // 105 Brute Strength
-    turns,  // all "Speedy" and "Slow"
-    damage,  // 168 SMASH!; 183 Rally Free Zone
-    com_total,  // 169 Overkill; 170 EXTREME Overkill!!!
-    num_achievement_misc_reqs
-};
-
-extern std::string achievement_misc_req_names[num_achievement_misc_reqs];
-
 enum gamemode_t
 {
     fight,
     surge,
-    tournament
 };
 
 enum class OptimizationMode
 {
     winrate,
-    achievement,
     raid,
     defense
 };
@@ -177,10 +123,10 @@ struct SkillSpec
     Skill id;
     unsigned x;
     Faction y;
+    unsigned n;
     unsigned c;
     Skill s;
     bool all;
-    SkillMod::SkillMod mod;
 };
 
 // --------------------------------------------------------------------------------
@@ -194,7 +140,7 @@ std::string to_string(const T val)
 }
 
 //---------------------- Debugging stuff ---------------------------------------
-extern unsigned debug_print;
+extern signed debug_print;
 extern unsigned debug_cached;
 extern bool debug_line;
 extern std::string debug_str;

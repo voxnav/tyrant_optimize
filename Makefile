@@ -1,18 +1,19 @@
-MAIN := tyrant_optimize_debug
+MAIN := tuo.exe
 SRCS := $(wildcard *.cpp)
-OBJS := $(patsubst %.cpp,obj-tu-debug/%.o,$(SRCS))
+OBJS := $(patsubst %.cpp,obj/%.o,$(SRCS))
 INCS := $(wildcard *.h)
 
-CPPFLAGS := -Wall -Werror -std=gnu++11 -O3 -DTYRANT_UNLEASHED
+CPPFLAGS := -Wall -Werror -std=gnu++11 -O3 -DNDEBUG
 LDFLAGS := -lboost_system -lboost_thread -lboost_filesystem -lboost_regex
 
 all: $(MAIN)
 
-obj-tu-debug/%.o: %.cpp $(INCS)
+obj/%.o: %.cpp $(INCS)
 	$(CXX) $(CPPFLAGS) -o $@ -c $<
 
 $(MAIN): $(OBJS)
 	$(CXX) -o $@ $(OBJS) $(LDFLAGS)
 
 clean:
-	del /q $(MAIN).exe obj-tu-debug\*.o
+	del /q $(MAIN).exe obj\*.o
+

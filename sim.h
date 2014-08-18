@@ -125,46 +125,35 @@ struct CardStatus
     const Card* m_card;
     unsigned m_index;
     unsigned m_player;
-    unsigned m_augmented;
     unsigned m_berserk;
-    bool m_blitzing;
-    bool m_chaosed;
     unsigned m_corroded_rate;
     unsigned m_corroded_weakened;
     unsigned m_delay;
-    bool m_diseased;
     unsigned m_evaded;
     unsigned m_enfeebled;
     Faction m_faction;
-    bool m_frozen;
     unsigned m_hp;
-    bool m_immobilized;
-    bool m_infused;
     unsigned m_inhibited;
     bool m_jammed;
-    bool m_phased;
+    bool m_overloaded;
     unsigned m_poisoned;
     unsigned m_protected;
     unsigned m_rallied;
-    unsigned m_stunned;
-    bool m_sundered;
     unsigned m_weakened;
-    bool m_temporary_split;
-    bool m_is_summoned; // is this card summoned (or split)?
     CardStep m_step;
-// begin for TYRANT_UNLEASHED
     unsigned m_enhanced_value[num_skills];
     unsigned m_skill_cd[num_skills];
-// end
 
     CardStatus() {}
 
     void set(const Card* card);
     void set(const Card& card);
     std::string description();
-    bool has_skill(Skill skill, SkillMod::SkillMod mod=SkillMod::on_activate) const;
-    unsigned skill(Skill skill, SkillMod::SkillMod mod=SkillMod::on_activate) const;
+    bool has_skill(Skill skill_id) const;
+    template<Skill skill_id> bool has_skill() const;
+    template<Skill skill_id> unsigned skill() const;
     unsigned enhanced(Skill skill) const;
+    unsigned protected_value() const;
 };
 //------------------------------------------------------------------------------
 // Represents a particular draw from a deck.
@@ -210,7 +199,6 @@ public:
     const Effect effect;
     Skill bg_enhanced_skill;
     unsigned bg_enhanced_value;
-    const Achievement& achievement;
     // With the introduction of on death skills, a single skill can trigger arbitrary many skills.
     // They are stored in this, and cleared after all have been performed.
     std::deque<std::tuple<CardStatus*, SkillSpec>> skill_queue;
@@ -219,7 +207,6 @@ public:
     enum phase
     {
         playcard_phase,
-        legion_phase,
         commander_phase,
         structures_phase,
         assaults_phase,
@@ -231,14 +218,10 @@ public:
     // Meaningless in playcard_phase,
     // otherwise is the index of the current card in players->structures or players->assaults
     unsigned current_ci;
-    unsigned last_decision_turn;
 //    unsigned points_since_last_decision;
 
-    unsigned fusion_count;
-    std::vector<unsigned> achievement_counter;
-
     Field(std::mt19937& re_, const Cards& cards_, Hand& hand1, Hand& hand2, gamemode_t gamemode_, OptimizationMode optimization_mode_,
-            Effect effect_, Skill bg_enhanced_skill_, unsigned bg_enhanced_value_, const Achievement& achievement_) :
+            Effect effect_, Skill bg_enhanced_skill_, unsigned bg_enhanced_value_) :
         end{false},
         re(re_),
         cards(cards_),
@@ -248,8 +231,7 @@ public:
         optimization_mode(optimization_mode_),
         effect(effect_),
         bg_enhanced_skill(bg_enhanced_skill_),
-        bg_enhanced_value(bg_enhanced_value_),
-        achievement(achievement_)
+        bg_enhanced_value(bg_enhanced_value_)
     {
     }
 
@@ -273,48 +255,6 @@ public:
     template <typename CardsIter, typename Functor>
     inline unsigned make_selection_array(CardsIter first, CardsIter last, Functor f);
     inline void print_selection_array();
-
-    template <class T>
-    inline void set_counter(T& container, unsigned key, unsigned value)
-    {
-        auto x = container.find(key);
-        if(x != container.end())
-        {
-            achievement_counter[x->second] = value;
-        }
-    }
-
-    template <class T>
-    inline void inc_counter(T& container, unsigned key, unsigned value = 1)
-    {
-        auto x = container.find(key);
-        if(x != container.end())
-        {
-            achievement_counter[x->second] += value;
-#if 0
-            if(achievement.req_counter[x->second].predict_monoinc(achievement_counter[x->second]) < 0)
-            {
-                end = true;
-            }
-#endif
-        }
-    }
-
-    template <class T>
-    inline void update_max_counter(T& container, unsigned key, unsigned value)
-    {
-        auto x = container.find(key);
-        if(x != container.end() && achievement_counter[x->second] < value)
-        {
-            achievement_counter[x->second] = value;
-#if 0
-            if(achievement.req_counter[x->second].predict_monoinc(achievement_counter[x->second]) < 0)
-            {
-                end = true;
-            }
-#endif
-        }
-    }
 };
 
 #endif

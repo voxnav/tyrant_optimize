@@ -16,11 +16,11 @@
 #include "cards.h"
 #include "deck.h"
 
-void load_decks(Decks& decks, Cards& all_cards)
+void load_custom_decks(Decks& decks, Cards& all_cards, const char * filename)
 {
-    if(boost::filesystem::exists("Custom.txt"))
+    if(boost::filesystem::exists(filename))
     {
-        read_custom_decks(decks, all_cards, "Custom.txt");
+        read_custom_decks(decks, all_cards, filename);
     }
 }
 
@@ -175,10 +175,6 @@ void parse_card_spec(const Cards& all_cards, std::string& card_spec, unsigned& c
     {
         mark = card_name[0];
         card_name.erase(0, 1);
-    }
-    if(card_name.empty())
-    {
-        throw std::runtime_error("no card name");
     }
     // If card name is not found, try find card id quoted in '[]' in name, ignoring other characters.
     std::string simple_name{simplify_name(card_name)};
@@ -339,7 +335,7 @@ unsigned read_custom_decks(Decks& decks, Cards& all_cards, std::string filename)
     return(0);
 }
 
-void read_owned_cards(Cards& all_cards, std::map<unsigned, unsigned>& owned_cards, std::map<unsigned, unsigned>& buyable_cards, const char *filename)
+void read_owned_cards(Cards& all_cards, std::map<unsigned, unsigned>& owned_cards, std::string filename)
 {
     std::ifstream owned_file{filename};
     if(!owned_file.good())
@@ -376,10 +372,6 @@ void read_owned_cards(Cards& all_cards, std::map<unsigned, unsigned>& owned_card
             else if(num_sign == '-')
             {
                 owned_cards[card_id] = owned_cards[card_id] > card_num ? owned_cards[card_id] - card_num : 0;
-            }
-            else if(num_sign == '$')
-            {
-                buyable_cards[card_id] = card_num;
             }
         }
         catch(std::exception& e)

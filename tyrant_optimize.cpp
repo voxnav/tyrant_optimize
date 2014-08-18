@@ -30,10 +30,10 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/barrier.hpp>
 #include <boost/math/distributions/binomial.hpp>
+#include <boost/algorithm/string.hpp>
 #include "card.h"
 #include "cards.h"
 #include "deck.h"
-#include "achievement.h"
 #include "read.h"
 #include "sim.h"
 #include "tyrant.h"
@@ -44,8 +44,7 @@ namespace {
     gamemode_t gamemode{fight};
     OptimizationMode optimization_mode{OptimizationMode::winrate};
     std::map<unsigned, unsigned> owned_cards;
-    std::map<unsigned, unsigned> buyable_cards;
-    bool use_owned_cards{false};
+    bool use_owned_cards{true};
     unsigned min_deck_len{1};
     unsigned max_deck_len{10};
     unsigned fund{0};
@@ -146,17 +145,11 @@ unsigned get_deck_cost(const Deck * deck)
     for(auto it: num_in_deck)
     {
         unsigned card_id = it.first->m_id;
-        unsigned num_to_buy = safe_minus(it.second, owned_cards[card_id]);
-//        std::cout << "BUY " << it.first->m_name << " +" << num_to_buy << " =" << it.second << ".\n"; // XXX
-        if(num_to_buy > 0)
+        if (it.second > owned_cards[card_id])
         {
-            auto buyable_iter = buyable_cards.find(card_id);
-            if(buyable_iter == buyable_cards.end())
-            { return UINT_MAX; }
-            deck_cost += num_to_buy * buyable_iter->second;
+            return UINT_MAX;
         }
     }
-//    std::cout << "\n"; // XXX
     return deck_cost;
 }
 
@@ -258,64 +251,23 @@ bool adjust_deck(Deck * deck, const signed from_slot, const signed to_slot, cons
     return true;
 }
 
-// @claim_all: true = claim all cards; false = claim only non-buyable cards.
-// @is_reward: not claim a card if there is upgraded version (assuming the reward card has been upgraded).
-void claim_cards(const std::vector<const Card*> & card_list, bool claim_all, bool is_reward=false)
+void claim_cards(const std::vector<const Card*> & card_list)
 {
     std::map<const Card *, unsigned> num_cards;
     get_required_cards_before_upgrade(card_list, num_cards);
-    for(auto it: num_cards)
+    for(const auto & it: num_cards)
     {
         const Card * card = it.first;
-        if(claim_all || buyable_cards.find(card->m_id) == buyable_cards.end())
+        unsigned num_to_claim = safe_minus(it.second, owned_cards[card->m_id]);
+        if(num_to_claim > 0)
         {
-            unsigned num_to_claim = safe_minus(it.second, owned_cards[card->m_id]);
-            if (is_reward)
+            owned_cards[card->m_id] += num_to_claim;
+            if(debug_print)
             {
-                for (const auto & it : card->m_used_for_cards)  // low-priority FIXME: upgraded several times
-                {
-                    num_to_claim = safe_minus(num_to_claim, owned_cards[it.first->m_id] * it.second);
-                }
-            }
-            if(num_to_claim > 0)
-            {
-                owned_cards[card->m_id] += num_to_claim;
-                if(debug_print)
-                {
-                    std::cout << "Claim " << card->m_name << " (" << num_to_claim << ")" << std::endl;
-                }
+                std::cout << "Claim " << card->m_name << " (" << num_to_claim << ")" << std::endl;
             }
         }
     }
-}
-
-//------------------------------------------------------------------------------
-inline bool suitable_non_commander(const Deck& deck, unsigned slot, const Card* card)
-{
-#if not defined(TYRANT_UNLEASHED)
-    assert(card->m_type != CardType::commander);
-    if(card->m_rarity == 4) // legendary - 1 per deck
-    {
-        for(unsigned i(0); i < deck.cards.size(); ++i)
-        {
-            if(i != slot && deck.cards[i]->m_rarity == 4)
-            {
-                return false;
-            }
-        }
-    }
-    if(card->m_unique) // unique - 1 card with same id per deck
-    {
-        for(unsigned i(0); i < deck.cards.size(); ++i)
-        {
-            if(i != slot && deck.cards[i]->m_base_id == card->m_base_id)
-            {
-                return false;
-            }
-        }
-    }
-#endif
-    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -361,62 +313,60 @@ struct SimulationData
     std::mt19937 re;
     const Cards& cards;
     const Decks& decks;
-    std::shared_ptr<Deck> att_deck;
-    Hand att_hand;
-    std::vector<std::shared_ptr<Deck>> def_decks;
-    std::vector<Hand*> def_hands;
+    std::shared_ptr<Deck> your_deck;
+    Hand your_hand;
+    std::vector<std::shared_ptr<Deck>> enemy_decks;
+    std::vector<Hand*> enemy_hands;
     std::vector<long double> factors;
     gamemode_t gamemode;
     enum Effect effect;
     Skill bg_enhanced_skill;
     unsigned bg_enhanced_value;
-    const Achievement& achievement;
 
-    SimulationData(unsigned seed, const Cards& cards_, const Decks& decks_, unsigned num_def_decks_, std::vector<long double> factors_, gamemode_t gamemode_,
-            enum Effect effect_, Skill bg_enhanced_skill_, unsigned bg_enhanced_value_, const Achievement& achievement_) :
+    SimulationData(unsigned seed, const Cards& cards_, const Decks& decks_, unsigned num_enemy_decks_, std::vector<long double> factors_, gamemode_t gamemode_,
+            enum Effect effect_, Skill bg_enhanced_skill_, unsigned bg_enhanced_value_) :
         re(seed),
         cards(cards_),
         decks(decks_),
-        att_deck(),
-        att_hand(nullptr),
-        def_decks(num_def_decks_),
+        your_deck(),
+        your_hand(nullptr),
+        enemy_decks(num_enemy_decks_),
         factors(factors_),
         gamemode(gamemode_),
         effect(effect_),
         bg_enhanced_skill(bg_enhanced_skill_),
-        bg_enhanced_value(bg_enhanced_value_),
-        achievement(achievement_)
+        bg_enhanced_value(bg_enhanced_value_)
     {
-        for(auto def_deck: def_decks)
+        for (size_t i = 0; i < num_enemy_decks_; ++i)
         {
-            def_hands.emplace_back(new Hand(nullptr));
+            enemy_hands.emplace_back(new Hand(nullptr));
         }
     }
 
     ~SimulationData()
     {
-        for(auto hand: def_hands) { delete(hand); }
+        for(auto hand: enemy_hands) { delete(hand); }
     }
 
-    void set_decks(const Deck* const att_deck_, std::vector<Deck*> const & def_decks_)
+    void set_decks(const Deck* const your_deck_, std::vector<Deck*> const & enemy_decks_)
     {
-        att_deck.reset(att_deck_->clone());
-        att_hand.deck = att_deck.get();
-        for(unsigned i(0); i < def_decks_.size(); ++i)
+        your_deck.reset(your_deck_->clone());
+        your_hand.deck = your_deck.get();
+        for(unsigned i(0); i < enemy_decks_.size(); ++i)
         {
-            def_decks[i].reset(def_decks_[i]->clone());
-            def_hands[i]->deck = def_decks[i].get();
+            enemy_decks[i].reset(enemy_decks_[i]->clone());
+            enemy_hands[i]->deck = enemy_decks[i].get();
         }
     }
 
     inline std::vector<Results<uint64_t>> evaluate()
     {
         std::vector<Results<uint64_t>> res;
-        for(Hand* def_hand: def_hands)
+        for(Hand* enemy_hand: enemy_hands)
         {
-            att_hand.reset(re);
-            def_hand->reset(re);
-            Field fd(re, cards, att_hand, *def_hand, gamemode, optimization_mode, effect != Effect::none ? effect : def_hand->deck->effect, bg_enhanced_skill, bg_enhanced_value, achievement);
+            your_hand.reset(re);
+            enemy_hand->reset(re);
+            Field fd(re, cards, your_hand, *enemy_hand, gamemode, optimization_mode, effect != Effect::none ? effect : enemy_hand->deck->effect, bg_enhanced_skill, bg_enhanced_value);
             Results<uint64_t> result(play(&fd));
             res.emplace_back(result);
         }
@@ -441,35 +391,33 @@ public:
     boost::mutex shared_mutex;
     const Cards& cards;
     const Decks& decks;
-    Deck* att_deck;
-    const std::vector<Deck*> def_decks;
+    Deck* your_deck;
+    const std::vector<Deck*> enemy_decks;
     std::vector<long double> factors;
     gamemode_t gamemode;
     enum Effect effect;
     Skill bg_enhanced_skill;
     unsigned bg_enhanced_value;
-    Achievement achievement;
 
-    Process(unsigned num_threads_, const Cards& cards_, const Decks& decks_, Deck* att_deck_, std::vector<Deck*> def_decks_, std::vector<long double> factors_, gamemode_t gamemode_,
-            enum Effect effect_, Skill bg_enhanced_skill_, unsigned bg_enhanced_value_, const Achievement& achievement_) :
+    Process(unsigned num_threads_, const Cards& cards_, const Decks& decks_, Deck* your_deck_, std::vector<Deck*> enemy_decks_, std::vector<long double> factors_, gamemode_t gamemode_,
+            enum Effect effect_, Skill bg_enhanced_skill_, unsigned bg_enhanced_value_) :
         num_threads(num_threads_),
         main_barrier(num_threads+1),
         cards(cards_),
         decks(decks_),
-        att_deck(att_deck_),
-        def_decks(def_decks_),
+        your_deck(your_deck_),
+        enemy_decks(enemy_decks_),
         factors(factors_),
         gamemode(gamemode_),
         effect(effect_),
         bg_enhanced_skill(bg_enhanced_skill_),
-        bg_enhanced_value(bg_enhanced_value_),
-        achievement(achievement_)
+        bg_enhanced_value(bg_enhanced_value_)
     {
         destroy_threads = false;
         unsigned seed(time(0));
         for(unsigned i(0); i < num_threads; ++i)
         {
-            threads_data.push_back(new SimulationData(seed + i, cards, decks, def_decks.size(), factors, gamemode, effect, bg_enhanced_skill, bg_enhanced_value, achievement));
+            threads_data.push_back(new SimulationData(seed + i, cards, decks, enemy_decks.size(), factors, gamemode, effect, bg_enhanced_skill, bg_enhanced_value));
             threads.push_back(new boost::thread(thread_evaluate, std::ref(main_barrier), std::ref(shared_mutex), std::ref(*threads_data.back()), std::ref(*this), i));
         }
     }
@@ -485,7 +433,7 @@ public:
     std::pair<std::vector<Results<uint64_t>> , unsigned> evaluate(unsigned num_iterations)
     {
         thread_num_iterations = num_iterations;
-        thread_results = std::vector<Results<uint64_t>>(def_decks.size());
+        thread_results = std::vector<Results<uint64_t>>(enemy_decks.size());
         thread_total = 0;
         thread_compare = false;
         // unlock all the threads
@@ -498,7 +446,7 @@ public:
     std::pair<std::vector<Results<uint64_t>> , unsigned> compare(unsigned num_iterations, long double prev_score)
     {
         thread_num_iterations = num_iterations;
-        thread_results = std::vector<Results<uint64_t>>(def_decks.size());
+        thread_results = std::vector<Results<uint64_t>>(enemy_decks.size());
         thread_total = 0;
         thread_prev_score = prev_score;
         thread_compare = true;
@@ -520,7 +468,7 @@ void thread_evaluate(boost::barrier& main_barrier,
     while(true)
     {
         main_barrier.wait();
-        sim.set_decks(p.att_deck, p.def_decks);
+        sim.set_decks(p.your_deck, p.enemy_decks);
         if(destroy_threads)
         { return; }
         while(true)
@@ -586,7 +534,7 @@ void print_score_info(const std::pair<std::vector<Results<uint64_t>> , unsigned>
 {
     auto final = compute_score(results, factors);
     std::cout << final.points << " (";
-    for(auto val: results.first)
+    for(const auto & val: results.first)
     {
         switch(optimization_mode)
         {
@@ -608,7 +556,7 @@ void print_results(const std::pair<std::vector<Results<uint64_t>> , unsigned>& r
     if(optimization_mode == OptimizationMode::raid)
     {
         std::cout <<  "win%: " << (final.wins + final.draws) * 100.0 << " (";
-        for(auto val: results.first)
+        for(const auto & val: results.first)
         {
             std::cout << val.wins + val.draws << " ";
         }
@@ -616,7 +564,7 @@ void print_results(const std::pair<std::vector<Results<uint64_t>> , unsigned>& r
     }
 
     std::cout << (optimization_mode == OptimizationMode::raid ? "slay%: " : "win%: ") << final.wins * 100.0 << " (";
-    for(auto val: results.first)
+    for(const auto & val: results.first)
     {
         std::cout << val.wins << " ";
     }
@@ -625,7 +573,7 @@ void print_results(const std::pair<std::vector<Results<uint64_t>> , unsigned>& r
     if(optimization_mode != OptimizationMode::raid)
     {
         std::cout << "stall%: " << final.draws * 100.0 << " (";
-        for(auto val: results.first)
+        for(const auto & val: results.first)
         {
             std::cout << val.draws << " ";
         }
@@ -633,7 +581,7 @@ void print_results(const std::pair<std::vector<Results<uint64_t>> , unsigned>& r
     }
 
     std::cout << "loss%: " << final.losses * 100.0 << " (";
-    for(auto val: results.first)
+    for(const auto & val: results.first)
     {
         std::cout << val.losses << " ";
     }
@@ -643,7 +591,7 @@ void print_results(const std::pair<std::vector<Results<uint64_t>> , unsigned>& r
     {
         case OptimizationMode::raid:
             std::cout << "ard: " << final.points << " (";
-            for(auto val: results.first)
+            for(const auto & val: results.first)
             {
                 std::cout << val.points << " ";
             }
@@ -652,14 +600,6 @@ void print_results(const std::pair<std::vector<Results<uint64_t>> , unsigned>& r
             {
                 std::cout << "stdev: " << sqrt(final.sq_points - final.points * final.points) << std::endl;
             }
-            break;
-        case OptimizationMode::achievement:
-            std::cout << "achievement%: " << final.points << " (";
-            for(auto val: results.first)
-            {
-                std::cout << val.points / 100 << " ";
-            }
-            std::cout << "/ " << results.second << ")" << std::endl;
             break;
         default:
             break;
@@ -681,9 +621,6 @@ void print_deck_inline(const unsigned deck_cost, const Results<long double> scor
                 std::cout << ", " << sqrt(score.sq_points - score.points * score.points) << " stdev";
             }
             std::cout << ") ";
-            break;
-        case OptimizationMode::achievement:
-            std::cout << "(" << score.wins * 100.0 << "% win) ";
             break;
         case OptimizationMode::defense:
             std::cout << "(" << score.draws * 100.0 << "% stall) ";
@@ -799,8 +736,7 @@ void hill_climbing(unsigned num_iterations, Deck* d1, Process& proc, std::map<si
             d1->commander = best_commander;
             d1->cards = best_cards;
             if (card_candidate ?
-                    ((slot_i < best_cards.size() && card_candidate->m_name == best_cards[slot_i]->m_name) || // Omega -> Omega
-                     !suitable_non_commander(*d1, slot_i, card_candidate))
+                    (slot_i < best_cards.size() && card_candidate->m_name == best_cards[slot_i]->m_name) // Omega -> Omega
                     :
                      (slot_i == best_cards.size()))  // void -> void
             { continue; }
@@ -931,8 +867,7 @@ void hill_climbing_ordered(unsigned num_iterations, Deck* d1, Process& proc, std
                 d1->commander = best_commander;
                 d1->cards = best_cards;
                 if (card_candidate ?
-                        ((from_slot < best_cards.size() && (from_slot == to_slot && card_candidate->m_name == best_cards[to_slot]->m_name)) || // 2 Omega -> 2 Omega
-                         !suitable_non_commander(*d1, from_slot, card_candidate))
+                        (from_slot < best_cards.size() && (from_slot == to_slot && card_candidate->m_name == best_cards[to_slot]->m_name)) // 2 Omega -> 2 Omega
                         :
                          (from_slot == best_cards.size())) // void -> void
                 { continue; }
@@ -1052,19 +987,6 @@ enum Operation {
     debuguntil
 };
 //------------------------------------------------------------------------------
-void print_available_decks(Decks & decks, bool allow_card_pool)
-{
-    std::cout << "Available decks: (use double-quoted name)" << std::endl;
-    std::cout << "(All missions, omitted because the list is too long.)" << std::endl;
-    for(auto& deck: decks.decks)
-    {
-        if(deck.decktype != DeckType::mission && (allow_card_pool || deck.raid_cards.empty()))
-        {
-            std::cout << deck.short_description() << "\n";
-        }
-    }
-}
-//------------------------------------------------------------------------------
 void print_available_effects()
 {
     std::cout << "Available effects:" << std::endl;
@@ -1088,23 +1010,21 @@ void usage(int argc, char** argv)
         "  example: \'fear:0.2;slowroll:0.8\' means fear is the defense deck 20% of the time, while slowroll is the defense deck 80% of the time.\n"
         "\n"
         "Flags:\n"
-        "  -A <achievement>: optimize for the achievement specified by either id or name.\n"
         "  -e <effect>: set the battleground effect. effect is automatically set when applicable.\n"
         "  -r: the attack deck is played in order instead of randomly (respects the 3 cards drawn limit).\n"
         "  -s: use surge (default is fight).\n"
         "  -t <num>: set the number of threads, default is 4.\n"
-        "  -turnlimit <num>: set the number of turns in a battle, default is 50 (can be used for speedy achievements).\n"
         "  win:     simulate/optimize for win rate. default for non-raids.\n"
         "  defense: simulate/optimize for win rate + stall rate. can be used for defending deck or win rate oriented raid simulations.\n"
-        "  raid:    simulate/optimize for average raid damage (ARD). default for raids.\n"
+//        "  raid:    simulate/optimize for average raid damage (ARD). default for raids.\n"
         "Flags for climb:\n"
         "  -c: don't try to optimize the commander.\n"
         "  -L <min> <max>: restrict deck size between <min> and <max>.\n"
-        "  -o: restrict to the owned cards listed in \"ownedcards.txt\".\n"
+        "  -o: restrict to the owned cards listed in \"data/ownedcards.txt\".\n"
         "  -o=<filename>: restrict to the owned cards listed in <filename>.\n"
         "  fund <num>: fund <num> gold to buy/upgrade cards. prices are specified in ownedcards file.\n"
         "  target <num>: stop as soon as the score reaches <num>.\n"
-        "  -u: don't upgrade owned cards. (by default, upgrade owned cards when needed)\n"
+//        "  -u: don't upgrade owned cards. (by default, upgrade owned cards when needed)\n"
         "\n"
         "Operations:\n"
         "  sim <num>: simulate <num> battles to evaluate a deck.\n"
@@ -1119,207 +1039,104 @@ void usage(int argc, char** argv)
 
 int main(int argc, char** argv)
 {
-    if(argc == 1) { usage(argc, argv); return(0); }
-    if(argc <= 2 && strcmp(argv[1], "-version") == 0)
+    if (argc == 2 && strcmp(argv[1], "-version") == 0)
     {
-#if defined(TYRANT_UNLEASHED)
         std::cout << "Tyrant Unleashed Optimizer " << TYRANT_OPTIMIZER_VERSION << std::endl;
-#else
-        std::cout << "Tyrant Optimizer " << TYRANT_OPTIMIZER_VERSION << std::endl;
-#endif
         return(0);
     }
-    unsigned num_threads = 4;
-    DeckStrategy::DeckStrategy att_strategy(DeckStrategy::random);
-    DeckStrategy::DeckStrategy def_strategy(DeckStrategy::random);
-    Cards all_cards;
-    read_cards(all_cards);
-    read_card_abbrs(all_cards, "cardabbrs.txt");
-    Decks decks;
-    Achievement achievement;
-    load_decks_xml(decks, all_cards);
-    load_decks(decks, all_cards);
-#if defined(TYRANT_UNLEASHED)
-    load_recipes_xml(all_cards);
-#endif
-    fill_skill_table();
-
-    if(argc <= 2)
+    if (argc <= 2)
     {
-        print_available_decks(decks, true);
-        return(4);
+        usage(argc, argv);
+        return(0);
+
     }
 
-    int argIndex(1);
-    if (strcmp(argv[argIndex], "ext_b64") == 0)
-    {
-        hash_to_ids = hash_to_ids_ext_b64;
-        encode_deck = encode_deck_ext_b64;
-        argIndex += 1;
-    }
-    else if (strcmp(argv[argIndex], "wmt_b64") == 0)
-    {
-        hash_to_ids = hash_to_ids_wmt_b64;
-        encode_deck = encode_deck_wmt_b64;
-        argIndex += 1;
-    }
-    else if (strcmp(argv[argIndex], "ddd_b64") == 0)
-    {
-        hash_to_ids = hash_to_ids_ddd_b64;
-        encode_deck = encode_deck_ddd_b64;
-        argIndex += 1;
-    }
+    unsigned opt_num_threads(4);
+    DeckStrategy::DeckStrategy opt_your_strategy(DeckStrategy::random);
+    DeckStrategy::DeckStrategy opt_enemy_strategy(DeckStrategy::random);
+    std::string opt_forts, opt_enemy_forts;
+    std::string opt_hand, opt_enemy_hand;
+    std::vector<std::string> opt_owned_cards_str_list;
+    bool opt_do_optimization(false);
+    bool opt_keep_commander{false};
+    std::vector<std::tuple<unsigned, unsigned, Operation>> opt_todo;
+    std::string opt_effect;
+    enum Effect opt_effect_id(Effect::none);
+    Skill opt_bg_enhanced_skill(no_skill);
+    unsigned opt_bg_enhanced_value(0);
 
-    std::string att_deck_name{argv[argIndex]};
-    auto && deck_list_parsed = parse_deck_list(argv[argIndex + 1], decks);
-    argIndex += 2;
-
-    Deck* att_deck{nullptr};
-    std::vector<Deck*> def_decks;
-    std::vector<long double> def_decks_factors;
-    enum Effect effect(Effect::none);
-    Skill bg_enhanced_skill(no_skill);
-    unsigned bg_enhanced_value(0);
-    bool keep_commander{false};
-    bool fixed_len{false};
-    std::vector<std::tuple<unsigned, unsigned, Operation>> todo;
-
-    try
+    for(int argIndex = 3; argIndex < argc; ++argIndex)
     {
-        att_deck = find_deck(decks, all_cards, att_deck_name);
-    }
-    catch(const std::runtime_error& e)
-    {
-        std::cerr << "Error: Deck " << att_deck_name << ": " << e.what() << std::endl;
-        return(5);
-    }
-    if(att_deck == nullptr)
-    {
-        std::cerr << "Error: Invalid attack deck name/hash " << att_deck_name << ".\n";
-    }
-    else if(!att_deck->raid_cards.empty())
-    {
-        std::cerr << "Error: Invalid attack deck " << att_deck_name << ": has optional cards.\n";
-        att_deck = nullptr;
-    }
-    if(att_deck == nullptr)
-    {
-        print_available_decks(decks, false);
-        return(5);
-    }
-
-    for(auto deck_parsed: deck_list_parsed)
-    {
-        Deck* def_deck{nullptr};
-        try
+        // Codec
+        if (strcmp(argv[argIndex], "ext_b64") == 0)
         {
-            def_deck = find_deck(decks, all_cards, deck_parsed.first);
+            hash_to_ids = hash_to_ids_ext_b64;
+            encode_deck = encode_deck_ext_b64;
         }
-        catch(const std::runtime_error& e)
+        else if (strcmp(argv[argIndex], "wmt_b64") == 0)
         {
-            std::cerr << "Error: Deck " << deck_parsed.first << ": " << e.what() << std::endl;
-            return(5);
+            hash_to_ids = hash_to_ids_wmt_b64;
+            encode_deck = encode_deck_wmt_b64;
         }
-        if(def_deck == nullptr)
+        else if (strcmp(argv[argIndex], "ddd_b64") == 0)
         {
-            std::cerr << "Error: Invalid defense deck name/hash " << deck_parsed.first << ".\n";
-            print_available_decks(decks, true);
-            return(5);
+            hash_to_ids = hash_to_ids_ddd_b64;
+            encode_deck = encode_deck_ddd_b64;
         }
-        if(def_deck->decktype == DeckType::raid)
+        // Base Game Mode
+        else if (strcmp(argv[argIndex], "fight") == 0)
         {
-            optimization_mode = OptimizationMode::raid;
-            turn_limit = 30;
-            target_score = 250;
+            gamemode = fight;
         }
-        def_decks.push_back(def_deck);
-        def_decks_factors.push_back(deck_parsed.second);
-    }
-
-    std::map<std::string, int> effect_map;
-    for(unsigned i(0); i < Effect::num_effects; ++i)
-    {
-        effect_map[effect_names[i]] = static_cast<enum Effect>(i);
-        std::stringstream ss;
-        ss << i;
-        effect_map[ss.str()] = static_cast<enum Effect>(i);
-    }
-
-    for(; argIndex < argc; ++argIndex)
-    {
-        if(strcmp(argv[argIndex], "win") == 0)
+        else if (strcmp(argv[argIndex], "-s") == 0 || strcmp(argv[argIndex], "surge") == 0)
+        {
+            gamemode = surge;
+        }
+        // Base Scoring Mode
+        else if (strcmp(argv[argIndex], "win") == 0)
         {
             optimization_mode = OptimizationMode::winrate;
         }
-        else if(strcmp(argv[argIndex], "raid") == 0)
+        else if (strcmp(argv[argIndex], "defense") == 0)
+        {
+            optimization_mode = OptimizationMode::defense;
+        }
+        else if (strcmp(argv[argIndex], "raid") == 0)
         {
             optimization_mode = OptimizationMode::raid;
             turn_limit = 30;
             target_score = 250;
         }
-        else if(strcmp(argv[argIndex], "defense") == 0)
+        // Mode Package
+        else if (strcmp(argv[argIndex], "pvp") == 0)
         {
+            gamemode = fight;
+            optimization_mode = OptimizationMode::winrate;
+        }
+        else if (strcmp(argv[argIndex], "pvp-defense") == 0)
+        {
+            gamemode = surge;
             optimization_mode = OptimizationMode::defense;
         }
-        else if(strcmp(argv[argIndex], "-A") == 0)
+        else if (strcmp(argv[argIndex], "gw") == 0)
         {
-            try
-            {
-                read_achievement(decks, all_cards, achievement, argv[argIndex + 1]);
-                optimization_mode = OptimizationMode::achievement;
-            }
-            catch(const std::runtime_error& e)
-            {
-                std::cerr << "Error: Achievement " << argv[argIndex + 1] << ": " << e.what() << std::endl;
-                return(1);
-            }
-            for(auto def_deck: def_decks)
-            {
-                if(def_deck->decktype != DeckType::mission)
-                {
-                    std::cerr << "Error: Enemy's deck must be mission for achievement." << std::endl;
-                    return(1);
-                }
-                if(!achievement.mission_condition.check(def_deck->id))
-                {
-                    std::cerr << "Error: Wrong mission [" << def_deck->name << "] for achievement." << std::endl;
-                    return(1);
-                }
-            }
+            gamemode = surge;
+            optimization_mode = OptimizationMode::winrate;
+        }
+        else if (strcmp(argv[argIndex], "gw-defense") == 0)
+        {
+            gamemode = fight;
+            optimization_mode = OptimizationMode::defense;
+        }
+        // Others
+        else if (strcmp(argv[argIndex], "-c") == 0)
+        {
+            opt_keep_commander = true;
+        }
+        else if (strcmp(argv[argIndex], "-e") == 0)
+        {
+            opt_effect = argv[argIndex + 1];
             argIndex += 1;
-        }
-        else if(strcmp(argv[argIndex], "-c") == 0)
-        {
-            keep_commander = true;
-        }
-        else if(strcmp(argv[argIndex], "-e") == 0)
-        {
-#if defined(TYRANT_UNLEASHED)
-            std::string arg_skill(argv[argIndex + 1]);
-            bg_enhanced_skill = skill_name_to_id(arg_skill.c_str());
-            if(bg_enhanced_skill == no_skill)
-            {
-                std::cout << "The skill '" << arg_skill << "' was not found. ";
-                return(6);
-            }
-            bg_enhanced_value = atoi(argv[argIndex + 2]);
-            argIndex += 2;
-#else
-            std::string arg_effect(argv[argIndex + 1]);
-            const auto & x = effect_map.find(arg_effect);
-            if(x == effect_map.end())
-            {
-                std::cout << "The effect '" << arg_effect << "' was not found. ";
-                print_available_effects();
-                return(6);
-            }
-            effect = static_cast<enum Effect>(x->second);
-            argIndex += 1;
-#endif
-        }
-        else if(strcmp(argv[argIndex], "-fixedlen") == 0)
-        {
-            fixed_len = true;
         }
         else if(strcmp(argv[argIndex], "-L") == 0)
         {
@@ -1327,63 +1144,48 @@ int main(int argc, char** argv)
             max_deck_len = atoi(argv[argIndex + 2]);
             argIndex += 2;
         }
+        else if(strcmp(argv[argIndex], "-o-") == 0)
+        {
+            use_owned_cards = false;
+        }
         else if(strcmp(argv[argIndex], "-o") == 0)
         {
-            read_owned_cards(all_cards, owned_cards, buyable_cards, "ownedcards.txt");
+            opt_owned_cards_str_list.push_back("data/ownedcards.txt");
             use_owned_cards = true;
         }
         else if(strncmp(argv[argIndex], "-o=", 3) == 0)
         {
-            read_owned_cards(all_cards, owned_cards, buyable_cards, argv[argIndex] + 3);
+            opt_owned_cards_str_list.push_back(argv[argIndex] + 3);
             use_owned_cards = true;
-        }
-        else if(strncmp(argv[argIndex], "-o+", 3) == 0)
-        {
-            unsigned completed_mission_id = atoi(argv[argIndex] + 3);
-            // claim reward cards as owned; use filter file if you want to exclude
-            for(auto def_deck: def_decks)
-            {
-                unsigned prev_mission_id = def_deck->mission_req;
-                while(prev_mission_id > completed_mission_id)
-                {
-                    auto prev_deck = decks.by_type_id[{DeckType::mission, prev_mission_id}];
-                    prev_mission_id = prev_deck->mission_req;
-                    claim_cards(prev_deck->reward_cards, true, true);
-                }
-            }
         }
         else if(strcmp(argv[argIndex], "fund") == 0)
         {
             fund = atoi(argv[argIndex+1]);
             argIndex += 1;
         }
+        else if (strcmp(argv[argIndex], "random") == 0)
+        {
+            opt_your_strategy = DeckStrategy::random;
+        }
         else if(strcmp(argv[argIndex], "-r") == 0 || strcmp(argv[argIndex], "ordered") == 0)
         {
-            att_strategy = DeckStrategy::ordered;
+            opt_your_strategy = DeckStrategy::ordered;
         }
         else if(strcmp(argv[argIndex], "exact-ordered") == 0)
         {
-            att_strategy = DeckStrategy::exact_ordered;
+            opt_your_strategy = DeckStrategy::exact_ordered;
         }
-        else if(strcmp(argv[argIndex], "defender:ordered") == 0)
+        else if(strcmp(argv[argIndex], "enemy:ordered") == 0)
         {
-            def_strategy = DeckStrategy::ordered;
+            opt_enemy_strategy = DeckStrategy::ordered;
         }
-        else if(strcmp(argv[argIndex], "defender:exact-ordered") == 0)
+        else if(strcmp(argv[argIndex], "enemy:exact-ordered") == 0)
         {
-            def_strategy = DeckStrategy::exact_ordered;
-        }
-        else if(strcmp(argv[argIndex], "-s") == 0 || strcmp(argv[argIndex], "surge") == 0)
-        {
-            gamemode = surge;
-        }
-        else if(strcmp(argv[argIndex], "tournament") == 0)
-        {
-            gamemode = tournament;
+            opt_enemy_strategy = DeckStrategy::exact_ordered;
         }
         else if(strcmp(argv[argIndex], "-t") == 0)
         {
-            num_threads = atoi(argv[argIndex+1]);
+            opt_num_threads = atoi(argv[argIndex+1]);
             argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "target") == 0)
@@ -1391,7 +1193,7 @@ int main(int argc, char** argv)
             target_score = atof(argv[argIndex+1]);
             argIndex += 1;
         }
-        else if(strcmp(argv[argIndex], "-turnlimit") == 0)
+        else if(strcmp(argv[argIndex], "turnlimit") == 0)
         {
             turn_limit = atoi(argv[argIndex+1]);
             argIndex += 1;
@@ -1408,61 +1210,59 @@ int main(int argc, char** argv)
         {
             use_harmonic_mean = true;
         }
+        else if(strcmp(argv[argIndex], "-v") == 0)
+        {
+            -- debug_print;
+        }
         else if(strcmp(argv[argIndex], "+v") == 0)
         {
             ++ debug_print;
         }
         else if(strcmp(argv[argIndex], "hand") == 0)  // set initial hand for test
         {
-            att_deck->set_given_hand(argv[argIndex + 1]);
+            opt_hand = argv[argIndex + 1];
             argIndex += 1;
         }
-        else if(strcmp(argv[argIndex], "defender:hand") == 0)  // set enemies' initial hand for test
+        else if(strcmp(argv[argIndex], "enemy:hand") == 0)  // set enemies' initial hand for test
         {
-            for(auto def_deck: def_decks)
-            {
-                def_deck->set_given_hand(argv[argIndex + 1]);
-            }
+            opt_enemy_hand = argv[argIndex + 1];
             argIndex += 1;
         }
-        else if(strcmp(argv[argIndex], "forts") == 0)  // set forts
+        else if (strcmp(argv[argIndex], "yf") == 0 || strcmp(argv[argIndex], "yfort") == 0)  // set forts
         {
-            att_deck->set_forts(argv[argIndex + 1]);
+            opt_forts = std::string(argv[argIndex + 1]) + ",";
             argIndex += 1;
         }
-        else if(strcmp(argv[argIndex], "defender:forts") == 0)  // set enemies' forts
+        else if (strcmp(argv[argIndex], "ef") == 0 || strcmp(argv[argIndex], "efort") == 0)  // set enemies' forts
         {
-            for(auto def_deck: def_decks)
-            {
-                def_deck->set_forts(argv[argIndex + 1]);
-            }
+            opt_enemy_forts = std::string(argv[argIndex + 1]) + ",";
             argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "sim") == 0)
         {
-            todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), 0u, simulate));
+            opt_todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), 0u, simulate));
             argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "climb") == 0)
         {
-            todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), 0u, climb));
+            opt_todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), 0u, climb));
+            opt_do_optimization = true;
             argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "reorder") == 0)
         {
-            att_strategy = DeckStrategy::ordered;
-            todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), 0u, reorder));
+            opt_todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), 0u, reorder));
             argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "debug") == 0)
         {
-            todo.push_back(std::make_tuple(0u, 0u, debug));
+            opt_todo.push_back(std::make_tuple(0u, 0u, debug));
         }
         else if(strcmp(argv[argIndex], "debuguntil") == 0)
         {
             // output the debug info for the first battle that min_score <= score <= max_score.
             // E.g., 0 0: lose; 100 100: win (non-raid); 150 250: at least 150 damage (raid).
-            todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), (unsigned)atoi(argv[argIndex + 2]), debuguntil));
+            opt_todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), (unsigned)atoi(argv[argIndex + 2]), debuguntil));
             argIndex += 2;
         }
         else
@@ -1472,43 +1272,154 @@ int main(int argc, char** argv)
         }
     }
 
-    // Force to claim non-buyable cards in your initial deck.
-    if(use_owned_cards)
+    Cards all_cards;
+    Decks decks;
+    load_cards_xml(all_cards, "data/cards.xml");
+    read_card_abbrs(all_cards, "data/cardabbrs.txt");
+    load_decks_xml(decks, all_cards, "data/missions.xml");
+    load_custom_decks(decks, all_cards, "data/customdecks.txt");
+    load_recipes_xml(all_cards, "data/fusion_recipes_cj2.xml");
+    fill_skill_table();
+
+    if (opt_do_optimization and use_owned_cards)
     {
-        claim_cards({att_deck->commander}, fund == 0, false);
-        claim_cards(att_deck->cards, fund == 0, false);
+        if (opt_owned_cards_str_list.empty())
+        {  // load default file is specify no file
+            opt_owned_cards_str_list.push_back("data/ownedcards.txt");
+        }
+        for (const auto & oc_str: opt_owned_cards_str_list)
+        {
+            read_owned_cards(all_cards, owned_cards, oc_str);
+        }
     }
 
-    att_deck->strategy = att_strategy;
-    for(auto def_deck: def_decks)
+    if (! opt_effect.empty())
     {
-        def_deck->strategy = def_strategy;
+        std::map<std::string, int> effect_map;
+        for(unsigned i(0); i < Effect::num_effects; ++i)
+        {
+            effect_map[boost::to_lower_copy(effect_names[i])] = static_cast<enum Effect>(i);
+            std::stringstream ss;
+            ss << i;
+            effect_map[ss.str()] = static_cast<enum Effect>(i);
+        }
+        std::vector<std::string> tokens;
+        boost::split(tokens, opt_effect, boost::is_any_of(" -"));
+        opt_bg_enhanced_skill = skill_name_to_id(tokens[0]);
+        if (tokens.size() >= 2 && opt_bg_enhanced_skill != no_skill)
+        {
+            opt_bg_enhanced_value = atoi(tokens[1].c_str());
+        }
+        else
+        {
+            const auto & x = effect_map.find(boost::to_lower_copy(opt_effect));
+            if(x == effect_map.end())
+            {
+                std::cout << "The effect '" << opt_effect << "' was not found. ";
+                print_available_effects();
+                return(6);
+            }
+            opt_effect_id = static_cast<enum Effect>(x->second);
+        }
     }
 
-    if(keep_commander)
+    std::string your_deck_name{argv[1]};
+    std::string enemy_deck_list{argv[2]};
+    auto && deck_list_parsed = parse_deck_list(enemy_deck_list, decks);
+
+    Deck* your_deck{nullptr};
+    std::vector<Deck*> enemy_decks;
+    std::vector<long double> enemy_decks_factors;
+
+    try
     {
-        att_deck->card_marks[-1] = '!';
+        your_deck = find_deck(decks, all_cards, your_deck_name);
     }
-    if(fixed_len)
+    catch(const std::runtime_error& e)
     {
-        min_deck_len = max_deck_len = att_deck->cards.size();
+        std::cerr << "Error: Deck " << your_deck_name << ": " << e.what() << std::endl;
+        return(5);
+    }
+    if(your_deck == nullptr)
+    {
+        std::cerr << "Error: Invalid attack deck name/hash " << your_deck_name << ".\n";
+    }
+    else if(!your_deck->raid_cards.empty())
+    {
+        std::cerr << "Error: Invalid attack deck " << your_deck_name << ": has optional cards.\n";
+        your_deck = nullptr;
+    }
+    if(your_deck == nullptr)
+    {
+        usage(argc, argv);
+        return(5);
     }
 
-    std::cout << "Your Deck: " << (debug_print ? att_deck->long_description() : att_deck->medium_description()) << std::endl;
-    for (unsigned i(0); i < def_decks.size(); ++i)
+    your_deck->strategy = opt_your_strategy;
+    your_deck->set_forts(opt_forts);
+    your_deck->set_given_hand(opt_hand);
+    if (opt_keep_commander)
     {
-        std::cout << "Enemy's Deck:" << def_decks_factors[i] << ": " << (debug_print ? def_decks[i]->long_description() : def_decks[i]->medium_description()) << std::endl;
-    }
-    if(effect != Effect::none)
-    {
-        std::cout << "Effect: " << effect_names[effect] << std::endl;
+        your_deck->card_marks[-1] = '!';
     }
 
-    Process p(num_threads, all_cards, decks, att_deck, def_decks, def_decks_factors, gamemode, effect, bg_enhanced_skill, bg_enhanced_value, achievement);
+    for(auto deck_parsed: deck_list_parsed)
+    {
+        Deck* enemy_deck{nullptr};
+        try
+        {
+            enemy_deck = find_deck(decks, all_cards, deck_parsed.first);
+        }
+        catch(const std::runtime_error& e)
+        {
+            std::cerr << "Error: Deck " << deck_parsed.first << ": " << e.what() << std::endl;
+            return(5);
+        }
+        if(enemy_deck == nullptr)
+        {
+            std::cerr << "Error: Invalid defense deck name/hash " << deck_parsed.first << ".\n";
+            usage(argc, argv);
+            return(5);
+        }
+        if(enemy_deck->decktype == DeckType::raid)
+        {
+            optimization_mode = OptimizationMode::raid;
+            turn_limit = 30;
+            target_score = 250;
+        }
+        enemy_deck->strategy = opt_enemy_strategy;
+        enemy_deck->set_forts(opt_enemy_forts);
+        enemy_deck->set_given_hand(opt_enemy_hand);
+        enemy_decks.push_back(enemy_deck);
+        enemy_decks_factors.push_back(deck_parsed.second);
+    }
+
+    // Force to claim cards in your initial deck.
+    if (opt_do_optimization and use_owned_cards)
+    {
+        claim_cards({your_deck->commander});
+        claim_cards(your_deck->cards);
+    }
+
+    std::cout << "Your Deck: " << (debug_print ? your_deck->long_description() : your_deck->medium_description()) << std::endl;
+    for (unsigned i(0); i < enemy_decks.size(); ++i)
+    {
+        std::cout << "Enemy's Deck:" << enemy_decks_factors[i] << ": " << (debug_print ? enemy_decks[i]->long_description() : enemy_decks[i]->medium_description()) << std::endl;
+    }
+    if(opt_effect_id != Effect::none)
+    {
+        std::cout << "Effect: " << effect_names[opt_effect_id] << std::endl;
+    }
+    else if(opt_bg_enhanced_skill != no_skill)
+    {
+        std::cout << "Effect: (Enhance all) " << skill_names[opt_bg_enhanced_skill] << " " << opt_bg_enhanced_value << std::endl;
+    }
+
+    Process p(opt_num_threads, all_cards, decks, your_deck, enemy_decks, enemy_decks_factors, gamemode, opt_effect_id, opt_bg_enhanced_skill, opt_bg_enhanced_value);
 
     {
         //ScopeClock timer;
-        for(auto op: todo)
+        for(auto op: opt_todo)
         {
             switch(std::get<2>(op))
             {
@@ -1518,43 +1429,39 @@ int main(int argc, char** argv)
                 break;
             }
             case climb: {
-                switch (att_strategy)
+                switch (opt_your_strategy)
                 {
                 case DeckStrategy::random:
-                    hill_climbing(std::get<0>(op), att_deck, p, att_deck->card_marks);
+                    hill_climbing(std::get<0>(op), your_deck, p, your_deck->card_marks);
                     break;
 //                case DeckStrategy::ordered:
 //                case DeckStrategy::exact_ordered:
                 default:
-                    hill_climbing_ordered(std::get<0>(op), att_deck, p, att_deck->card_marks);
+                    hill_climbing_ordered(std::get<0>(op), your_deck, p, your_deck->card_marks);
                     break;
                 }
                 break;
             }
             case reorder: {
-                min_deck_len = max_deck_len = att_deck->cards.size();
+                your_deck->strategy = DeckStrategy::ordered;
+                min_deck_len = max_deck_len = your_deck->cards.size();
                 use_owned_cards = true;
                 auto_upgrade_cards = false;
                 owned_cards.clear();
-                claim_cards({att_deck->commander}, true, false);
-                claim_cards(att_deck->cards, true, false);
-                hill_climbing_ordered(std::get<0>(op), att_deck, p, att_deck->card_marks);
+                claim_cards({your_deck->commander});
+                claim_cards(your_deck->cards);
+                hill_climbing_ordered(std::get<0>(op), your_deck, p, your_deck->card_marks);
                 break;
             }
             case debug: {
-                unsigned saved_num_threads = num_threads;
-                num_threads = 1;
                 ++ debug_print;
                 debug_str.clear();
                 auto results = p.evaluate(1);
                 print_results(results, p.factors);
                 -- debug_print;
-                num_threads = saved_num_threads;
                 break;
             }
             case debuguntil: {
-                unsigned saved_num_threads = num_threads;
-                num_threads = 1;
                 ++ debug_print;
                 ++ debug_cached;
                 while(1)
@@ -1571,7 +1478,6 @@ int main(int argc, char** argv)
                 }
                 -- debug_cached;
                 -- debug_print;
-                num_threads = saved_num_threads;
                 break;
             }
             }

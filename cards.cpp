@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <cstring>
 #include <list>
+#include <iostream>
 
 #include "tyrant.h"
 #include "card.h"
@@ -80,24 +81,17 @@ void Cards::organize()
         {
             card->m_name.erase(pos, 1);
         }
-#if defined(TYRANT_UNLEASHED)
         // set m_top_level_card for non base cards
         card->m_top_level_card = by_id(card->m_base_id)->m_top_level_card;
         // add a suffix of level to the name of cards; register as alias for the full-level cards (the formal name is without suffix)
         if (card == card->m_top_level_card)
         {
-            player_cards_by_name[{simplify_name(card->m_name + "-" + to_string(card->m_level)), card->m_hidden}] = card;
+            player_cards_by_name[simplify_name(card->m_name + "-" + to_string(card->m_level))] = card;
         }
         else
         {
             card->m_name += "-" + to_string(card->m_level);
         }
-#else
-        if(card->m_set == 5002)
-        {
-            card->m_name += '*';
-        }
-#endif
         // Card available to players
         if(card->m_set != 0)
         {
@@ -116,24 +110,26 @@ void Cards::organize()
                     player_structures.push_back(card);
                     break;
                 }
-                case CardType::action: {
-                    player_actions.push_back(card);
-                    break;
-                }
                 case CardType::num_cardtypes: {
                     throw card->m_type;
                     break;
                 }
             }
             std::string simple_name{simplify_name(card->m_name)};
-            auto card_itr = player_cards_by_name.find({simple_name, card->m_hidden});
-            if(card_itr == player_cards_by_name.end() || card_itr->second->m_id == card->m_replace)
+            auto card_itr = player_cards_by_name.find(simple_name);
+            if (card_itr == player_cards_by_name.end())
             {
-                player_cards_by_name[{simple_name, card->m_hidden}] = card;
+                player_cards_by_name[simple_name] = card;
+            }
+            else
+            {
+                // TODO check set visible
+//                std::cerr << "Duplicated card name [" << card->m_name << "] " << card_itr->second->m_set << ":" << card->m_set << "\n"; // XXX
             }
         }
     }
-    // Round 3: depend on player_cards_by_name; set abbreviations and [WMT] recipes
+#if 0 // TODO refactor precedence
+    // Round 3: depend on player_cards_by_name; set abbreviations
     for(Card* card: cards)
     {
         // generate abbreviations
@@ -141,42 +137,28 @@ void Cards::organize()
         {
             for(auto&& abbr_name : get_abbreviations(card->m_name))
             {
-                if(abbr_name.length() > 1 && player_cards_by_name.find({abbr_name, 0}) == player_cards_by_name.end())
+                if(abbr_name.length() > 1 && player_cards_by_name.find(abbr_name) == player_cards_by_name.end())
                 {
                     player_cards_abbr[abbr_name] = card->m_name;
                 }
             }
         }
-#if not defined(TYRANT_UNLEASHED)
-        // update recipes
-        if(card->m_set == 5002)
-        {
-            std::string material_name{simplify_name(card->m_name)};
-            material_name.erase(material_name.size() - 1);  // remove suffix "*"
-            Card * material_card = player_cards_by_name[{material_name, card->m_hidden}];
-            // Promo and Unpurchasable Reward cards only require 1 copy
-            unsigned number = material_card->m_set == 5001 || (material_card->m_set == 5000 && material_card->m_reserve) ? 1 : 2;
-            // Reward cards still have gold cost
-            card->m_recipe_cost = material_card->m_set == 5000 ? (card->m_rarity == 4 ? 100000 : 20000) : 0;
-            card->m_recipe_cards[material_card] = number;
-            material_card->m_used_for_cards[card] = number;
-        }
-#endif
     }
+#endif
 }
 
 // class Card
-void Card::add_skill(Skill id, unsigned x, Faction y, unsigned c, Skill s, bool all, SkillMod::SkillMod mod)
+void Card::add_skill(Skill id, unsigned x, Faction y, unsigned n, unsigned c, Skill s, bool all)
 {
-    for(auto it = m_skills[mod].begin(); it != m_skills[mod].end(); ++ it)
+    for(auto it = m_skills.begin(); it != m_skills.end(); ++ it)
     {
         if(it->id == id)
         {
-            m_skills[mod].erase(it);
+            m_skills.erase(it);
             break;
         }
     }
-    m_skills[mod].push_back({id, x, y, c, s, all, mod});
-    m_skill_value[mod][id] = std::max(1u, x);
+    m_skills.push_back({id, x, y, n, c, s, all});
+    m_skill_value[id] = x ? x : n ? n : 1;
 }
 

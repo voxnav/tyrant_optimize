@@ -148,6 +148,7 @@ void hash_to_ids_ext_b64(const char* hash, std::vector<unsigned>& ids)
             d = p - base64_chars;
         }
         id += factor * (d - 32);
+        ++ pc;
         ids.push_back(id);
     }
 }
@@ -218,59 +219,62 @@ void encode_deck_ddd_b64(std::stringstream &ios, const Card* commander, std::vec
     }
 }
 
-#if defined(TYRANT_UNLEASHED)
 DeckDecoder hash_to_ids = hash_to_ids_ext_b64;
 DeckEncoder encode_deck = encode_deck_ext_b64;
-#else
-DeckDecoder hash_to_ids = hash_to_ids_wmt_b64;
-DeckEncoder encode_deck = encode_deck_wmt_b64;
-#endif
 
 const std::pair<std::vector<unsigned>, std::map<signed, char>> string_to_ids(const Cards& all_cards, const std::string& deck_string, const std::string & description)
 {
     std::vector<unsigned> card_ids;
     std::map<signed, char> card_marks;
-    if(deck_string.find_first_of(":,") == std::string::npos)
+    std::vector<std::string> error_list;
+    boost::tokenizer<boost::char_delimiters_separator<char>> deck_tokens{deck_string, boost::char_delimiters_separator<char>{false, ":,", ""}};
+    auto token_iter = deck_tokens.begin();
+    signed p = -1;
+    for(; token_iter != deck_tokens.end(); ++token_iter)
     {
+        std::string card_spec(*token_iter);
+        unsigned card_id{0};
+        unsigned card_num{1};
+        char num_sign{0};
+        char mark{0};
         try
         {
-            hash_to_ids(deck_string.c_str(), card_ids);
+            parse_card_spec(all_cards, card_spec, card_id, card_num, num_sign, mark);
+            assert(num_sign == 0);
+            for(unsigned i(0); i < card_num; ++i)
+            {
+                card_ids.push_back(card_id);
+                if(mark) { card_marks[p] = mark; }
+                ++ p;
+            }
         }
         catch(std::exception& e)
         {
-            std::cerr << "Error while resolving " << description << ": " << e.what() << std::endl;
-            throw;
+            error_list.push_back(e.what());
+            continue;
         }
     }
-    else
+    if (! card_ids.empty())
     {
-        boost::tokenizer<boost::char_delimiters_separator<char>> deck_tokens{deck_string, boost::char_delimiters_separator<char>{false, ":,", ""}};
-        auto token_iter = deck_tokens.begin();
-        signed p = -1;
-        for(; token_iter != deck_tokens.end(); ++token_iter)
+        if (! error_list.empty())
         {
-            std::string card_spec(*token_iter);
-            unsigned card_id{0};
-            unsigned card_num{1};
-            char num_sign{0};
-            char mark{0};
-            try
+            std::cerr << "Warning while resolving " << description << ": ";
+            for (auto error: error_list)
             {
-                parse_card_spec(all_cards, card_spec, card_id, card_num, num_sign, mark);
-                assert(num_sign == 0);
-                for(unsigned i(0); i < card_num; ++i)
-                {
-                    card_ids.push_back(card_id);
-                    if(mark) { card_marks[p] = mark; }
-                    ++ p;
-                }
+                std::cerr << '[' << error << ']';
             }
-            catch(std::exception& e)
-            {
-                std::cerr << "Warning while resolving " << description << ": " << e.what() << std::endl;
-                continue;
-            }
+            std::cerr << std::endl;
         }
+        return {card_ids, card_marks};
+    }
+    try
+    {
+        hash_to_ids(deck_string.c_str(), card_ids);
+    }
+    catch(std::exception& e)
+    {
+        std::cerr << "Error while resolving " << description << ": " << e.what() << std::endl;
+        throw;
     }
     return {card_ids, card_marks};
 }
