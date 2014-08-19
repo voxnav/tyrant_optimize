@@ -842,7 +842,7 @@ struct PerformAttack
         std::string desc;
         if(def_status->m_enfeebled > 0)
         {
-            if(debug_print) { desc += "+" + to_string(def_status->m_enfeebled) + "(enfeebled)"; }
+            if(debug_print > 0) { desc += "+" + to_string(def_status->m_enfeebled) + "(enfeebled)"; }
             att_dmg += def_status->m_enfeebled;
         }
         // prevent damage
@@ -851,21 +851,21 @@ struct PerformAttack
         unsigned armored_value = def_status->skill<armored>();
         if(armored_value > 0)
         {
-            if(debug_print) { reduced_desc += to_string(armored_value) + "(armored)"; }
+            if(debug_print > 0) { reduced_desc += to_string(armored_value) + "(armored)"; }
             reduced_dmg += armored_value;
         }
         if(def_status->protected_value() > 0)
         {
-            if(debug_print) { reduced_desc += (reduced_desc.empty() ? "" : "+") + to_string(def_status->protected_value()) + "(protected)"; }
+            if(debug_print > 0) { reduced_desc += (reduced_desc.empty() ? "" : "+") + to_string(def_status->protected_value()) + "(protected)"; }
             reduced_dmg += def_status->protected_value();
         }
         if(reduced_dmg > 0 && att_status->skill<pierce>() > 0)
         {
-            if(debug_print) { reduced_desc += "-" + to_string(att_status->skill<pierce>()) + "(pierce)"; }
+            if(debug_print > 0) { reduced_desc += "-" + to_string(att_status->skill<pierce>()) + "(pierce)"; }
             reduced_dmg = safe_minus(reduced_dmg, att_status->skill<pierce>());
         }
         att_dmg = safe_minus(att_dmg, reduced_dmg);
-        if(debug_print)
+        if(debug_print > 0)
         {
             if(!reduced_desc.empty()) { desc += "-[" + reduced_desc + "]"; }
             if(!desc.empty()) { desc += "=" + to_string(att_dmg); }

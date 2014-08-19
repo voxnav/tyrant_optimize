@@ -48,7 +48,6 @@ namespace {
     unsigned min_deck_len{1};
     unsigned max_deck_len{10};
     unsigned fund{0};
-    bool auto_upgrade_cards{true};
     long double target_score{100};
     bool show_stdev{false};
     bool use_harmonic_mean{false};
@@ -112,12 +111,13 @@ unsigned get_required_cards_before_upgrade(const std::vector<const Card *> & car
         ++ num_cards[card];
         unresolved_cards.insert(card);
     }
-    while (!unresolved_cards.empty())
+    // un-upgrade only if fund is used
+    while (fund > 0 && !unresolved_cards.empty())
     {
         auto card_it = unresolved_cards.end();
         auto card = *(-- card_it);
         unresolved_cards.erase(card_it);
-        if(auto_upgrade_cards && owned_cards[card->m_id] < num_cards[card] && !card->m_recipe_cards.empty())
+        if(owned_cards[card->m_id] < num_cards[card] && !card->m_recipe_cards.empty())
         {
             unsigned num_under = num_cards[card] - owned_cards[card->m_id];
             num_cards[card] = owned_cards[card->m_id];
@@ -262,7 +262,7 @@ void claim_cards(const std::vector<const Card*> & card_list)
         if(num_to_claim > 0)
         {
             owned_cards[card->m_id] += num_to_claim;
-            if(debug_print)
+            if(debug_print > 0)
             {
                 std::cout << "Claim " << card->m_name << " (" << num_to_claim << ")" << std::endl;
             }
@@ -1022,9 +1022,8 @@ void usage(int argc, char** argv)
         "  -L <min> <max>: restrict deck size between <min> and <max>.\n"
         "  -o: restrict to the owned cards listed in \"data/ownedcards.txt\".\n"
         "  -o=<filename>: restrict to the owned cards listed in <filename>.\n"
-        "  fund <num>: fund <num> gold to buy/upgrade cards. prices are specified in ownedcards file.\n"
+        "  fund <num>: invest <num> SP to upgrade cards.\n"
         "  target <num>: stop as soon as the score reaches <num>.\n"
-//        "  -u: don't upgrade owned cards. (by default, upgrade owned cards when needed)\n"
         "\n"
         "Operations:\n"
         "  sim <num>: simulate <num> battles to evaluate a deck.\n"
@@ -1042,12 +1041,12 @@ int main(int argc, char** argv)
     if (argc == 2 && strcmp(argv[1], "-version") == 0)
     {
         std::cout << "Tyrant Unleashed Optimizer " << TYRANT_OPTIMIZER_VERSION << std::endl;
-        return(0);
+        return 0;
     }
     if (argc <= 2)
     {
         usage(argc, argv);
-        return(0);
+        return 0;
 
     }
 
@@ -1129,11 +1128,11 @@ int main(int argc, char** argv)
             optimization_mode = OptimizationMode::defense;
         }
         // Others
-        else if (strcmp(argv[argIndex], "-c") == 0)
+        else if (strcmp(argv[argIndex], "keep-commander") == 0 || strcmp(argv[argIndex], "-c") == 0)
         {
             opt_keep_commander = true;
         }
-        else if (strcmp(argv[argIndex], "-e") == 0)
+        else if (strcmp(argv[argIndex], "effect") == 0 || strcmp(argv[argIndex], "-e") == 0)
         {
             opt_effect = argv[argIndex + 1];
             argIndex += 1;
@@ -1183,7 +1182,7 @@ int main(int argc, char** argv)
         {
             opt_enemy_strategy = DeckStrategy::exact_ordered;
         }
-        else if(strcmp(argv[argIndex], "-t") == 0)
+        else if(strcmp(argv[argIndex], "threads") == 0 || strcmp(argv[argIndex], "-t") == 0)
         {
             opt_num_threads = atoi(argv[argIndex+1]);
             argIndex += 1;
@@ -1197,10 +1196,6 @@ int main(int argc, char** argv)
         {
             turn_limit = atoi(argv[argIndex+1]);
             argIndex += 1;
-        }
-        else if(strcmp(argv[argIndex], "-u") == 0)
-        {
-            auto_upgrade_cards = false;
         }
         else if(strcmp(argv[argIndex], "+stdev") == 0)
         {
@@ -1268,7 +1263,7 @@ int main(int argc, char** argv)
         else
         {
             std::cerr << "Error: Unknown option " << argv[argIndex] << std::endl;
-            return(1);
+            return 0;
         }
     }
 
@@ -1317,7 +1312,7 @@ int main(int argc, char** argv)
             {
                 std::cout << "The effect '" << opt_effect << "' was not found. ";
                 print_available_effects();
-                return(6);
+                return 0;
             }
             opt_effect_id = static_cast<enum Effect>(x->second);
         }
@@ -1338,7 +1333,7 @@ int main(int argc, char** argv)
     catch(const std::runtime_error& e)
     {
         std::cerr << "Error: Deck " << your_deck_name << ": " << e.what() << std::endl;
-        return(5);
+        return 0;
     }
     if(your_deck == nullptr)
     {
@@ -1352,7 +1347,7 @@ int main(int argc, char** argv)
     if(your_deck == nullptr)
     {
         usage(argc, argv);
-        return(5);
+        return 0;
     }
 
     your_deck->strategy = opt_your_strategy;
@@ -1373,13 +1368,13 @@ int main(int argc, char** argv)
         catch(const std::runtime_error& e)
         {
             std::cerr << "Error: Deck " << deck_parsed.first << ": " << e.what() << std::endl;
-            return(5);
+            return 0;
         }
         if(enemy_deck == nullptr)
         {
             std::cerr << "Error: Invalid defense deck name/hash " << deck_parsed.first << ".\n";
             usage(argc, argv);
-            return(5);
+            return 0;
         }
         if(enemy_deck->decktype == DeckType::raid)
         {
@@ -1401,18 +1396,21 @@ int main(int argc, char** argv)
         claim_cards(your_deck->cards);
     }
 
-    std::cout << "Your Deck: " << (debug_print ? your_deck->long_description() : your_deck->medium_description()) << std::endl;
-    for (unsigned i(0); i < enemy_decks.size(); ++i)
+    if (debug_print >= 0)
     {
-        std::cout << "Enemy's Deck:" << enemy_decks_factors[i] << ": " << (debug_print ? enemy_decks[i]->long_description() : enemy_decks[i]->medium_description()) << std::endl;
-    }
-    if(opt_effect_id != Effect::none)
-    {
-        std::cout << "Effect: " << effect_names[opt_effect_id] << std::endl;
-    }
-    else if(opt_bg_enhanced_skill != no_skill)
-    {
-        std::cout << "Effect: (Enhance all) " << skill_names[opt_bg_enhanced_skill] << " " << opt_bg_enhanced_value << std::endl;
+        std::cout << "Your Deck: " << (debug_print > 0 ? your_deck->long_description() : your_deck->medium_description()) << std::endl;
+        for (unsigned i(0); i < enemy_decks.size(); ++i)
+        {
+            std::cout << "Enemy's Deck:" << enemy_decks_factors[i] << ": " << (debug_print > 0 ? enemy_decks[i]->long_description() : enemy_decks[i]->medium_description()) << std::endl;
+        }
+        if(opt_effect_id != Effect::none)
+        {
+            std::cout << "Effect: " << effect_names[opt_effect_id] << std::endl;
+        }
+        else if(opt_bg_enhanced_skill != no_skill)
+        {
+            std::cout << "Effect: (Enhance all) " << skill_names[opt_bg_enhanced_skill] << " " << opt_bg_enhanced_value << std::endl;
+        }
     }
 
     Process p(opt_num_threads, all_cards, decks, your_deck, enemy_decks, enemy_decks_factors, gamemode, opt_effect_id, opt_bg_enhanced_skill, opt_bg_enhanced_value);
@@ -1444,9 +1442,9 @@ int main(int argc, char** argv)
             }
             case reorder: {
                 your_deck->strategy = DeckStrategy::ordered;
-                min_deck_len = max_deck_len = your_deck->cards.size();
                 use_owned_cards = true;
-                auto_upgrade_cards = false;
+                min_deck_len = max_deck_len = your_deck->cards.size();
+                fund = 0;
                 owned_cards.clear();
                 claim_cards({your_deck->commander});
                 claim_cards(your_deck->cards);
@@ -1483,5 +1481,5 @@ int main(int argc, char** argv)
             }
         }
     }
-    return(0);
+    return 0;
 }

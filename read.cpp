@@ -188,8 +188,7 @@ void parse_card_spec(const Cards& all_cards, std::string& card_spec, unsigned& c
 //        }
         simple_name = simplify_name(abbr_it->second);
     }
-    auto card_it = all_cards.player_cards_by_name.find({simple_name, 0});
-    if (card_it == all_cards.player_cards_by_name.end()) { card_it = all_cards.player_cards_by_name.find({simple_name, 1}); }
+    auto card_it = all_cards.player_cards_by_name.find(simple_name);
     auto card_id_iter = advance_until(simple_name.begin(), simple_name.end(), [](char c){return(c=='[');});
     if(card_it != all_cards.player_cards_by_name.end())
     {
@@ -252,13 +251,13 @@ unsigned read_card_abbrs(Cards& all_cards, const std::string& filename)
                 continue;
             }
             abbr_string_iter = advance_until(abbr_string_iter + 1, abbr_string.end(), [](const char& c){return(c != ' ');});
-            if(all_cards.player_cards_by_name.find({abbr_name, 0}) != all_cards.player_cards_by_name.end())
+            if(all_cards.player_cards_by_name.find(abbr_name) != all_cards.player_cards_by_name.end())
             {
                 std::cerr << "Warning in card abbreviation file " << filename << " at line " << num_line << ": ignored because the name has been used by an existing card." << std::endl;
             }
             else
             {
-                all_cards.player_cards_abbr[abbr_name] = std::string{abbr_string_iter, abbr_string.end()};
+                all_cards.player_cards_abbr[simplify_name(abbr_name)] = std::string{abbr_string_iter, abbr_string.end()};
             }
         }
     }

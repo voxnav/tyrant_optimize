@@ -454,6 +454,10 @@ std::string Deck::long_description() const
             }
         }
     }
+    for (const Card * fort: fort_cards)
+    {
+        ios << card_description(all_cards, fort) << "\n";
+    }
     if (! reward_cards.empty())
     {
         ios << "Reward Cards: ";
