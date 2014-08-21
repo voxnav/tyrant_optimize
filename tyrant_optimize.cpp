@@ -1047,7 +1047,6 @@ int main(int argc, char** argv)
     {
         usage(argc, argv);
         return 0;
-
     }
 
     unsigned opt_num_threads(4);

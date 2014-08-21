@@ -258,7 +258,7 @@ const std::pair<std::vector<unsigned>, std::map<signed, char>> string_to_ids(con
     {
         if (! error_list.empty())
         {
-            std::cerr << "Warning while resolving " << description << ": ";
+            std::cerr << "Warning: Ignore some cards while resolving " << description << ": ";
             for (auto error: error_list)
             {
                 std::cerr << '[' << error << ']';
@@ -273,7 +273,7 @@ const std::pair<std::vector<unsigned>, std::map<signed, char>> string_to_ids(con
     }
     catch(std::exception& e)
     {
-        std::cerr << "Error while resolving " << description << ": " << e.what() << std::endl;
+        std::cerr << "Error: Failed to resolve " << description << ": " << e.what() << std::endl;
         throw;
     }
     return {card_ids, card_marks};

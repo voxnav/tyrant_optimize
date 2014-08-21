@@ -140,13 +140,6 @@ void parse_card_node(Cards& all_cards, Card* card, xml_node<>* card_node)
     xml_node<>* set_node(card_node->first_node("set"));
     int set(set_node ? atoi(set_node->value()) : card->m_set);
     xml_node<>* level_node(card_node->first_node("level"));
-#if 0
-    if (set > 0)  // not AI only
-    {
-        nb_cards++;
-        sets_counts[set]++;
-    }
-#endif
     if (id_node) { card->m_base_id = card->m_id = atoi(id_node->value()); }
     else if (card_id_node) { card->m_id = atoi(card_id_node->value()); }
     if (name_node) { card->m_name = name_node->value(); }
@@ -350,7 +343,15 @@ void read_missions(Decks& decks, const Cards& all_cards, std::string filename)
         unsigned id(id_node ? atoi(id_node->value()) : 0);
         xml_node<>* name_node(mission_node->first_node("name"));
         std::string deck_name{name_node->value()};
-        read_deck(decks, all_cards, mission_node, "effect", DeckType::mission, id, deck_name, true);
+        try
+        {
+            read_deck(decks, all_cards, mission_node, "effect", DeckType::mission, id, deck_name, true);
+        }
+        catch (const std::runtime_error& e)
+        {
+            std::cerr << "Warning: Failed to parse mission [" << deck_name << "] in file " << filename << ": [" << e.what() << "]. Skip the mission.\n";
+            continue;
+        }
     }
 }
 //------------------------------------------------------------------------------

@@ -148,9 +148,17 @@ DeckList parse_deck_list(std::string list_string, const Decks& decks)
         auto deck_name = *deck_token;
         double factor = 1.0d;
         ++ deck_token;
-        if(deck_token != deck_tokens.end())
+        if (deck_token != deck_tokens.end())
         {
-            factor = boost::lexical_cast<long double>(*deck_token);
+            try
+            {
+                factor = boost::lexical_cast<long double>(*deck_token);
+            }
+            catch (const boost::bad_lexical_cast & e)
+            {
+                std::cerr << "Warning: Is ':' a typo? Skip deck [" << list_token << "]\n";
+                continue;
+            }
         }
         auto && decklist = expand_deck_to_list(deck_name, decks);
         for (const auto & it : decklist)

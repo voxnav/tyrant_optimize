@@ -50,7 +50,7 @@ const Card* Cards::by_id(unsigned id) const
     std::map<unsigned, Card*>::const_iterator cardIter{cards_by_id.find(id)};
     if(cardIter == cards_by_id.end())
     {
-        throw std::runtime_error("While trying to find the card with id " + to_string(id) + ": no such key in the cards_by_id map.");
+        throw std::runtime_error("No card with id " + to_string(id));
     }
     else
     {
