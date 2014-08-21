@@ -281,7 +281,7 @@ const std::pair<std::vector<unsigned>, std::map<signed, char>> string_to_ids(con
 
 namespace range = boost::range;
 
-void Deck::set(const std::vector<unsigned>& ids, const std::map<signed, char> marks)
+void Deck::set(const std::vector<unsigned>& ids, const std::map<signed, char> &marks)
 {
     commander = nullptr;
     strategy = DeckStrategy::random;
