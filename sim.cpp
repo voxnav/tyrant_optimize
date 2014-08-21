@@ -1116,7 +1116,7 @@ inline unsigned select_fast(Field* fd, CardStatus* src_status, const std::vector
     }
     else
     {
-        return(fd->make_selection_array(cards.begin(), cards.end(), [fd, src_status, s](CardStatus* c){return((c->m_faction == s.y || s.y == progenitor) && skill_predicate<skill_id>(fd, src_status, c, s));}));
+        return(fd->make_selection_array(cards.begin(), cards.end(), [fd, src_status, s](CardStatus* c){return((c->m_faction == s.y || c->m_faction == progenitor) && skill_predicate<skill_id>(fd, src_status, c, s));}));
     }
 }
 
