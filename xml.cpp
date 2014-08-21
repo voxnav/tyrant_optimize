@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <set>
 #include <stdexcept>
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
@@ -41,6 +42,7 @@ CardType::CardType map_to_type(unsigned i)
 Skill skill_name_to_id(const std::string & name)
 {
     static std::map<std::string, int> skill_map;
+    static std::set<std::string> unknown_skills;
     if(skill_map.empty())
     {
         for(unsigned i(0); i < Skill::num_skills; ++i)
@@ -48,9 +50,22 @@ Skill skill_name_to_id(const std::string & name)
             std::string skill_id = boost::to_lower_copy(skill_names[i]);
             skill_map[skill_id] = i;
         }
+        skill_map["armored"] = skill_map["armor"]; // Special case for Armor: id and name differ
     }
     auto x = skill_map.find(boost::to_lower_copy(name));
-    return x == skill_map.end() ? no_skill : (Skill)x->second;
+    if (x == skill_map.end())
+    {
+        if (unknown_skills.count(name) == 0)
+        { // Warn only once for each unknown skill
+            unknown_skills.insert(name);
+            std::cerr << "Warning: Ignore unknown skill [" << name << "]\n";
+        }
+        return no_skill;
+    }
+    else
+    {
+        return (Skill)x->second;
+    }
 }
 
 Faction skill_faction(xml_node<>* skill)
