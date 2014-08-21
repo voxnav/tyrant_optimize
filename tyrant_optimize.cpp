@@ -998,7 +998,8 @@ void print_available_effects()
 
 void usage(int argc, char** argv)
 {
-    std::cout << "usage: " << argv[0] << " Your_Deck Enemy_Deck [Flags] [Operations]\n"
+    std::cout << "Tyrant Unleashed Optimizer (TUO) " << TYRANT_OPTIMIZER_VERSION << "\n"
+        "usage: " << argv[0] << " Your_Deck Enemy_Deck [Flags] [Operations]\n"
         "\n"
         "Your_Deck:\n"
         "  the name/hash/cards of a custom deck.\n"
@@ -1442,7 +1443,10 @@ int main(int argc, char** argv)
             case reorder: {
                 your_deck->strategy = DeckStrategy::ordered;
                 use_owned_cards = true;
-                min_deck_len = max_deck_len = your_deck->cards.size();
+                if (min_deck_len == 1 && max_deck_len == 10)
+                {
+                    min_deck_len = max_deck_len = your_deck->cards.size();
+                }
                 fund = 0;
                 owned_cards.clear();
                 claim_cards({your_deck->commander});

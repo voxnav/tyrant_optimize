@@ -16,4 +16,3 @@ $(MAIN): $(OBJS)
 
 clean:
 	del /q $(MAIN).exe obj\*.o
-
