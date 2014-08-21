@@ -38,8 +38,9 @@ extern DeckEncoder encode_deck;
 
 //------------------------------------------------------------------------------
 // No support for ordered raid decks
-struct Deck
+class Deck
 {
+public:
     const Cards& all_cards;
     DeckType::DeckType decktype;
     unsigned id;
@@ -99,7 +100,12 @@ struct Deck
         mission_req = mission_req_;
     }
 
-    void set(const std::vector<unsigned>& ids, const std::map<signed, char> marks = {});
+    void set(const std::vector<unsigned>& ids, const std::map<signed, char> &marks);
+    void set(const std::vector<unsigned>& ids)
+    {
+        std::map<signed, char> empty;
+        set(ids, empty);
+    }
     void set(const std::string& deck_string_);
     void resolve();
     void set_given_hand(const std::string& deck_string_);
@@ -130,8 +136,9 @@ struct Deck
 };
 
 typedef std::map<std::string, long double> DeckList;
-struct Decks
+class Decks
 {
+public:
     std::list<Deck> decks;
     std::map<std::pair<DeckType::DeckType, unsigned>, Deck*> by_type_id;
     std::map<std::string, Deck*> by_name;
