@@ -848,11 +848,11 @@ struct PerformAttack
         // prevent damage
         std::string reduced_desc;
         unsigned reduced_dmg(0);
-        unsigned armored_value = def_status->skill<armored>();
-        if(armored_value > 0)
+        unsigned armor_value = def_status->skill<armor>();
+        if(armor_value > 0)
         {
-            if(debug_print > 0) { reduced_desc += to_string(armored_value) + "(armored)"; }
-            reduced_dmg += armored_value;
+            if(debug_print > 0) { reduced_desc += to_string(armor_value) + "(armor)"; }
+            reduced_dmg += armor_value;
         }
         if(def_status->protected_value() > 0)
         {
@@ -1109,13 +1109,13 @@ inline void perform_skill<weaken>(Field* fd, CardStatus* src, CardStatus* dst, c
 template<unsigned skill_id>
 inline unsigned select_fast(Field* fd, CardStatus* src_status, const std::vector<CardStatus*>& cards, const SkillSpec& s)
 {
-    if(s.y == allfactions)
+    if(s.y == allfactions || fd->effect == progenitors)
     {
         return(fd->make_selection_array(cards.begin(), cards.end(), [fd, src_status, s](CardStatus* c){return(skill_predicate<skill_id>(fd, src_status, c, s));}));
     }
     else
     {
-        return(fd->make_selection_array(cards.begin(), cards.end(), [fd, src_status, s](CardStatus* c){return((c->m_faction == s.y || s.y == progenitor || fd->effect == progenitors) && skill_predicate<skill_id>(fd, src_status, c, s));}));
+        return(fd->make_selection_array(cards.begin(), cards.end(), [fd, src_status, s](CardStatus* c){return((c->m_faction == s.y || s.y == progenitor) && skill_predicate<skill_id>(fd, src_status, c, s));}));
     }
 }
 
