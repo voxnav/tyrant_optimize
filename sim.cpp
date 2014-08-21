@@ -2,6 +2,7 @@
 
 #include <boost/range/adaptors.hpp>
 #include <boost/range/join.hpp>
+#include <iostream>
 #include <random>
 #include <string>
 #include <sstream>
