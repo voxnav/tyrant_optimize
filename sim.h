@@ -8,6 +8,7 @@
 #include <tuple>
 #include <vector>
 #include <map>
+#include <random>
 
 #include "tyrant.h"
 

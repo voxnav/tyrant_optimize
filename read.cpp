@@ -88,7 +88,7 @@ DeckList expand_deck_to_list(std::string deck_name, const Decks& decks)
     if (expanding_decks.count(deck_name))
     {
         std::cerr << "Warning: circular referred deck: " << deck_name << std::endl;
-        return {};
+        return DeckList();
     }
     auto deck_string = deck_name;
     const auto & deck = decks.by_name.find(deck_name);
@@ -146,7 +146,7 @@ DeckList parse_deck_list(std::string list_string, const Decks& decks)
         boost::tokenizer<boost::char_delimiters_separator<char>> deck_tokens{list_token, boost::char_delimiters_separator<char>{false, ":", ""}};
         auto deck_token = deck_tokens.begin();
         auto deck_name = *deck_token;
-        double factor = 1.0d;
+        double factor = 1.0;
         ++ deck_token;
         if (deck_token != deck_tokens.end())
         {
