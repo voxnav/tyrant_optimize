@@ -226,12 +226,7 @@ void resolve_skill(Field* fd)
         auto& status(std::get<0>(skill_instance));
         const auto& skill(std::get<1>(skill_instance));
         fd->skill_queue.pop_front();
-        if(!status)
-        {
-            // trigger_regen
-            skill_table[skill.id](fd, status, skill);
-        }
-        else if(!status->m_jammed)
+        if (!status->m_jammed)
         {
             unsigned enhanced_value = status->enhanced(skill.id);
             auto& enhanced_s = enhanced_value > 0 ? apply_enhance(skill, enhanced_value) : skill;
@@ -334,6 +329,7 @@ Results<uint64_t> play(Field* fd)
     fd->tap = fd->players[fd->tapi];
     fd->tip = fd->players[fd->tipi];
     fd->end = false;
+    fd->n_player_kills = 0;
 
     // Play fortresses
     for (unsigned _ = 0; _ < 2; ++ _)
@@ -477,25 +473,15 @@ Results<uint64_t> play(Field* fd)
         std::swap(fd->tap, fd->tip);
         ++fd->turn;
     }
+    unsigned raid_damage = 15 + fd->n_player_kills - (10 * fd->players[1]->commander.m_hp / fd->players[1]->commander.m_card->m_health);
     // you lose
     if(fd->players[0]->commander.m_hp == 0)
     {
         _DEBUG_MSG(1, "You lose.\n");
-        return {0, 0, 1, 0, 0};
-    }
-    // you win in raid
-    if(fd->optimization_mode == OptimizationMode::raid)
-    {
-        if(fd->players[1]->commander.m_hp == 0)
-        {
-            _DEBUG_MSG(1, "You win (boss killed).\n");
-            return {1, 0, 0, fd->players[1]->commander.m_card->m_health + 50, 0};
-        }
+        if (fd->optimization_mode == OptimizationMode::raid)
+        { return {0, 0, 1, raid_damage, 0}; }
         else
-        {
-            _DEBUG_MSG(1, "You win (survival).\n");
-            return {0, 1, 0, fd->players[1]->commander.m_card->m_health - fd->players[1]->commander.m_hp, 0};
-        }
+        { return {0, 0, 1, 0, 0}; }
     }
     // you win
     if(fd->players[1]->commander.m_hp == 0)
@@ -508,6 +494,8 @@ Results<uint64_t> play(Field* fd)
         _DEBUG_MSG(1, "Stall after %u turns.\n", turn_limit);
         if (fd->optimization_mode == OptimizationMode::defense)
         { return {1, 1, 0, 100, 0}; }
+        else if (fd->optimization_mode == OptimizationMode::raid)
+        { return {0, 1, 0, raid_damage, 0}; }
         else
         { return {0, 1, 0, 0, 0}; }
     }
@@ -542,6 +530,10 @@ void remove_hp(Field* fd, CardStatus& status, unsigned dmg)
     if(status.m_hp == 0)
     {
         _DEBUG_MSG(1, "%s dies\n", status_description(&status).c_str());
+        if (status.m_player == 1)
+        {
+            fd->n_player_kills += 1;
+        }
     }
 }
 inline bool is_it_dead(CardStatus& c)

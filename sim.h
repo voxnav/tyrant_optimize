@@ -203,8 +203,7 @@ public:
     // With the introduction of on death skills, a single skill can trigger arbitrary many skills.
     // They are stored in this, and cleared after all have been performed.
     std::deque<std::tuple<CardStatus*, SkillSpec>> skill_queue;
-    std::vector<CardStatus*> killed_with_on_death;
-    std::vector<CardStatus*> killed_with_regen;
+    unsigned n_player_kills;
     enum phase
     {
         playcard_phase,
@@ -219,7 +218,6 @@ public:
     // Meaningless in playcard_phase,
     // otherwise is the index of the current card in players->structures or players->assaults
     unsigned current_ci;
-//    unsigned points_since_last_decision;
 
     Field(std::mt19937& re_, const Cards& cards_, Hand& hand1, Hand& hand2, gamemode_t gamemode_, OptimizationMode optimization_mode_,
             Effect effect_, Skill bg_enhanced_skill_, unsigned bg_enhanced_value_) :
@@ -232,7 +230,8 @@ public:
         optimization_mode(optimization_mode_),
         effect(effect_),
         bg_enhanced_skill(bg_enhanced_skill_),
-        bg_enhanced_value(bg_enhanced_value_)
+        bg_enhanced_value(bg_enhanced_value_),
+        n_player_kills(0)
     {
     }
 

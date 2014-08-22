@@ -553,32 +553,19 @@ void print_results(const std::pair<std::vector<Results<uint64_t>> , unsigned>& r
 {
     auto final = compute_score(results, factors);
 
-    if(optimization_mode == OptimizationMode::raid)
-    {
-        std::cout <<  "win%: " << (final.wins + final.draws) * 100.0 << " (";
-        for(const auto & val: results.first)
-        {
-            std::cout << val.wins + val.draws << " ";
-        }
-        std::cout << "/ " << results.second << ")" << std::endl;
-    }
-
-    std::cout << (optimization_mode == OptimizationMode::raid ? "slay%: " : "win%: ") << final.wins * 100.0 << " (";
+    std::cout << "win%: " << final.wins * 100.0 << " (";
     for(const auto & val: results.first)
     {
         std::cout << val.wins << " ";
     }
     std::cout << "/ " << results.second << ")" << std::endl;
 
-    if(optimization_mode != OptimizationMode::raid)
+    std::cout << "stall%: " << final.draws * 100.0 << " (";
+    for(const auto & val: results.first)
     {
-        std::cout << "stall%: " << final.draws * 100.0 << " (";
-        for(const auto & val: results.first)
-        {
-            std::cout << val.draws << " ";
-        }
-        std::cout << "/ " << results.second << ")" << std::endl;
+        std::cout << val.draws << " ";
     }
+    std::cout << "/ " << results.second << ")" << std::endl;
 
     std::cout << "loss%: " << final.losses * 100.0 << " (";
     for(const auto & val: results.first)
@@ -615,7 +602,7 @@ void print_deck_inline(const unsigned deck_cost, const Results<long double> scor
     switch(optimization_mode)
     {
         case OptimizationMode::raid:
-            std::cout << "(" << (score.wins + score.draws) * 100 << "% win, " << score.wins * 100.0 << "% slay";
+            std::cout << "(" << score.wins * 100 << "% win, " << score.draws * 100 << "% stall";
             if (show_stdev)
             {
                 std::cout << ", " << sqrt(score.sq_points - score.points * score.points) << " stdev";
@@ -1378,8 +1365,7 @@ int main(int argc, char** argv)
         {
             if (enemy_deck->decktype == DeckType::raid)
             {
-                // optimization_mode = OptimizationMode::raid; // TODO how ARD is calculated?
-                optimization_mode = OptimizationMode::winrate;
+                optimization_mode = OptimizationMode::raid;
             }
             else
             {
