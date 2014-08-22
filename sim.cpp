@@ -313,8 +313,6 @@ void PlayCard::setStorage<CardType::structure>()
     storage = &fd->tap->structures;
 }
 //------------------------------------------------------------------------------
-inline bool is_attacking_or_has_attacked(CardStatus* c) { return(c->m_step >= CardStep::attacking); }
-inline bool is_attacking(CardStatus* c) { return(c->m_step == CardStep::attacking); }
 inline bool has_attacked(CardStatus* c) { return(c->m_step == CardStep::attacked); }
 inline bool is_jammed(CardStatus* c) { return(c->m_jammed); }
 inline bool is_active(CardStatus* c) { return(c->m_delay == 0); }
@@ -427,13 +425,11 @@ Results<uint64_t> play(Field* fd)
                 for(unsigned action_index(0); action_index < num_actions; ++action_index)
                 {
                     // Evaluate skills
-                    current_status->m_step = CardStep::none;
                     evaluate_skills(fd, current_status, current_status->m_card->m_skills);
                     // no commander-killing skill yet // if(__builtin_expect(fd->end, false)) { break; }
                     // Attack
                     if(can_attack(current_status))
                     {
-                        current_status->m_step = CardStep::attacking;
                         attacked = attack_phase(fd) || attacked;
                         if(__builtin_expect(fd->end, false)) { break; }
                     }
@@ -1003,7 +999,7 @@ inline bool skill_predicate<jam>(Field* fd, CardStatus* src, CardStatus* dst, co
 template<>
 inline bool skill_predicate<overload>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
-    if (dst->m_overloaded || ! (is_active(dst) && can_act(dst)))
+    if (dst->m_overloaded || has_attacked(dst) || !(is_active(dst) && can_act(dst)))
     {
         return false;
     }
@@ -1033,7 +1029,7 @@ inline bool skill_predicate<overload>(Field* fd, CardStatus* src, CardStatus* ds
 template<>
 inline bool skill_predicate<rally>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
-    return can_attack(dst) && is_active(dst) && !is_attacking_or_has_attacked(dst);
+    return can_attack(dst) && is_active(dst) && !has_attacked(dst);
 }
 
 template<>

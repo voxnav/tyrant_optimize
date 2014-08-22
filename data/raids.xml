@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<root>
+
+	<raid>
+		<id>1</id>
+		<name>Apocalypse</name>
+		<health>25000</health>
+		<commander>1373</commander>
+        <levels>26</levels>
+		<deck>
+			<card_pool amount="10">
+				<card>7695</card>
+				<card>7695</card>
+				<card>7705</card>
+				<card>7705</card>
+				<card>7715</card>
+   			  	<card>7715</card>
+				<card>7725</card>
+`				<card>7725</card>
+				<card>7735</card>
+   			 	<card>7735</card>
+				<card>7745</card>
+				<card>7745</card>
+			</card_pool>
+		</deck>
+	</raid>
+</root>
+

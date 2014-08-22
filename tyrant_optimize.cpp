@@ -42,7 +42,7 @@
 
 namespace {
     gamemode_t gamemode{fight};
-    OptimizationMode optimization_mode{OptimizationMode::winrate};
+    OptimizationMode optimization_mode{OptimizationMode::notset};
     std::map<unsigned, unsigned> owned_cards;
     bool use_owned_cards{true};
     unsigned min_deck_len{1};
@@ -514,7 +514,7 @@ void thread_evaluate(boost::barrier& main_barrier,
                         score_accum = thread_score_local[0];
                     }
                     bool compare_stop(false);
-                    long double best_possible = (optimization_mode == OptimizationMode::raid ? 250 : 100);
+                    long double best_possible = 100;
                     // Get a loose (better than no) upper bound. TODO: Improve it.
                     compare_stop = (boost::math::binomial_distribution<>::find_upper_bound_on_p(thread_total_local, score_accum / best_possible, 0.01) * best_possible < thread_prev_score);
                     if(compare_stop)
@@ -1017,7 +1017,7 @@ void usage(int argc, char** argv)
         "  -t <num>: set the number of threads, default is 4.\n"
         "  win:     simulate/optimize for win rate. default for non-raids.\n"
         "  defense: simulate/optimize for win rate + stall rate. can be used for defending deck or win rate oriented raid simulations.\n"
-//        "  raid:    simulate/optimize for average raid damage (ARD). default for raids.\n"
+        "  raid:    simulate/optimize for average raid damage (ARD). default for raids.\n"
         "Flags for climb:\n"
         "  -c: don't try to optimize the commander.\n"
         "  -L <min> <max>: restrict deck size between <min> and <max>.\n"
@@ -1103,8 +1103,6 @@ int main(int argc, char** argv)
         else if (strcmp(argv[argIndex], "raid") == 0)
         {
             optimization_mode = OptimizationMode::raid;
-            turn_limit = 30;
-            target_score = 250;
         }
         // Mode Package
         else if (strcmp(argv[argIndex], "pvp") == 0)
@@ -1256,7 +1254,7 @@ int main(int argc, char** argv)
         else if(strcmp(argv[argIndex], "debuguntil") == 0)
         {
             // output the debug info for the first battle that min_score <= score <= max_score.
-            // E.g., 0 0: lose; 100 100: win (non-raid); 150 250: at least 150 damage (raid).
+            // E.g., 0 0: lose; 100 100: win (non-raid); 20 100: at least 20 damage (raid).
             opt_todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), (unsigned)atoi(argv[argIndex + 2]), debuguntil));
             argIndex += 2;
         }
@@ -1271,7 +1269,7 @@ int main(int argc, char** argv)
     Decks decks;
     load_cards_xml(all_cards, "data/cards.xml");
     read_card_abbrs(all_cards, "data/cardabbrs.txt");
-    load_decks_xml(decks, all_cards, "data/missions.xml");
+    load_decks_xml(decks, all_cards, "data/missions.xml", "data/raids.xml");
     load_custom_decks(decks, all_cards, "data/customdecks.txt");
     load_recipes_xml(all_cards, "data/fusion_recipes_cj2.xml");
     fill_skill_table();
@@ -1376,11 +1374,17 @@ int main(int argc, char** argv)
             usage(argc, argv);
             return 0;
         }
-        if(enemy_deck->decktype == DeckType::raid)
+        if (optimization_mode == OptimizationMode::notset)
         {
-            optimization_mode = OptimizationMode::raid;
-            turn_limit = 30;
-            target_score = 250;
+            if (enemy_deck->decktype == DeckType::raid)
+            {
+                // optimization_mode = OptimizationMode::raid; // TODO how ARD is calculated?
+                optimization_mode = OptimizationMode::winrate;
+            }
+            else
+            {
+                optimization_mode = OptimizationMode::winrate;
+            }
         }
         enemy_deck->strategy = opt_enemy_strategy;
         enemy_deck->set_forts(opt_enemy_forts);

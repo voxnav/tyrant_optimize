@@ -46,7 +46,8 @@ public:
     unsigned id;
     std::string name;
     Effect effect; // for quests
-    unsigned upgrade_chance; // n/9 chance to upgrade; = level - 1 for level 1 to 9 and 0 for level 10
+    unsigned upgrade_chance; // probability chance/max_change to upgrade; = level - 1 for level 1 to (max_level - 1) and 0 for max_level (directly use full upgraded cards)
+    unsigned upgrade_max_chance;
     DeckStrategy::DeckStrategy strategy;
 
     const Card* commander;
@@ -71,6 +72,7 @@ public:
         std::string name_ = "",
         Effect effect_ = Effect::none,
         unsigned upgrade_chance_ = 0,
+        unsigned upgrade_max_chance_ = 1,
         DeckStrategy::DeckStrategy strategy_ = DeckStrategy::random) :
         all_cards(all_cards_),
         decktype(decktype_),
@@ -78,6 +80,7 @@ public:
         name(name_),
         effect(Effect::none),
         upgrade_chance(upgrade_chance_),
+        upgrade_max_chance(upgrade_max_chance_),
         strategy(strategy_),
         commander(nullptr),
         mission_req(0)

@@ -526,9 +526,9 @@ const Card* Deck::upgrade_card(const Card* card, std::mt19937& re)
     unsigned ups = card->m_top_level_card->m_level - card->m_level;
     if (upgrade_chance > 0 && ups > 0)
     {
-        for (std::mt19937::result_type rnd = re(); ups > 0; -- ups, rnd /= 9)
+        for (std::mt19937::result_type rnd = re(); ups > 0; -- ups, rnd = ups % 5 == 0 ? re() : rnd / upgrade_max_chance)
         {
-            if (rnd % 9 < upgrade_chance)
+            if (rnd % upgrade_max_chance < upgrade_chance)
             {
                 card = card->upgraded();
             }
@@ -553,13 +553,6 @@ void Deck::shuffle(std::mt19937& re)
 {
     shuffled_cards.clear();
     boost::insert(shuffled_cards, shuffled_cards.end(), cards);
-    if (upgrade_chance > 0)
-    {
-        for (auto && card: shuffled_cards)
-        {
-            card = upgrade_card(card, re);
-        }
-    }
     if(!raid_cards.empty())
     {
         if(strategy != DeckStrategy::random)
@@ -571,6 +564,13 @@ void Deck::shuffle(std::mt19937& re)
             assert(card_pool.first <= card_pool.second.size());
             partial_shuffle(card_pool.second.begin(), card_pool.second.begin() + card_pool.first, card_pool.second.end(), re);
             shuffled_cards.insert(shuffled_cards.end(), card_pool.second.begin(), card_pool.second.begin() + card_pool.first);
+        }
+    }
+    if (upgrade_chance > 0)
+    {
+        for (auto && card: shuffled_cards)
+        {
+            card = upgrade_card(card, re);
         }
     }
     if(strategy == DeckStrategy::ordered)
