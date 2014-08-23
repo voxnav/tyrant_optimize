@@ -110,7 +110,7 @@ std::string skill_description(const Cards& cards, const SkillSpec& s)
        (s.all ? " all" : s.n == 0 ? "" : std::string(" ") + to_string(s.n)) +
        (s.y == allfactions ? "" : std::string(" ") + faction_names[s.y]) +
        (s.s == no_skill ? "" : std::string(" ") + skill_names[s.s]) +
-       (s.x == 0 ? "" : std::string(" ") + to_string(s.x)) +
+       (s.x == 0 || s.x == s.n ? "" : std::string(" ") + to_string(s.x)) +
        (s.c == 0 ? "" : std::string(" every ") + to_string(s.c));
 }
 std::string skill_short_description(const SkillSpec& s)
@@ -1233,7 +1233,7 @@ void perform_targetted_allied_fast(Field* fd, CardStatus* src_status, const Skil
     select_targets<skill_id>(fd, src_status, s);
     for (CardStatus * dst: fd->selection_array)
     {
-        if(dst->m_inhibited > 0 && ! src_status->m_overloaded)
+        if(dst->m_inhibited > 0 && !src_status->m_overloaded)
         {
             _DEBUG_MSG(1, "%s %s on %s but it is inhibited\n", status_description(src_status).c_str(), skill_short_description(s).c_str(), status_description(dst).c_str());
             -- dst->m_inhibited;

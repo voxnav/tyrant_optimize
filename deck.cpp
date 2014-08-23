@@ -3,6 +3,7 @@
 #include <boost/range/algorithm_ext/insert.hpp>
 #include <boost/tokenizer.hpp>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -424,11 +425,7 @@ std::string Deck::long_description() const
     }
     if(commander)
     {
-        ios << card_description(all_cards, commander) << "\n";
-        if (upgrade_chance > 0 && commander != commander->m_top_level_card)
-        {
-            ios << "->" << card_description(all_cards, commander->m_top_level_card) << "\n";
-        }
+        show_upgrades(ios, commander, "");
     }
     else
     {
@@ -436,29 +433,21 @@ std::string Deck::long_description() const
     }
     for(const Card* card: cards)
     {
-        ios << "  " << card_description(all_cards, card) << "\n";
-        if (upgrade_chance > 0 && card != card->m_top_level_card)
-        {
-            ios << "  ->" << card_description(all_cards, card->m_top_level_card) << "\n";
-        }
+        show_upgrades(ios, card, "  ");
     }
     for(auto& pool: raid_cards)
     {
         ios << pool.first << " of:\n";
         for(auto& card: pool.second)
         {
-            ios << "  " << card_description(all_cards, card) << "\n";
-            if (upgrade_chance > 0 && card != card->m_top_level_card)
-            {
-                ios << "  ->" << card_description(all_cards, card->m_top_level_card) << "\n";
-            }
+            show_upgrades(ios, card, "  ");
         }
     }
     for (const Card * fort: fort_cards)
     {
         ios << card_description(all_cards, fort) << "\n";
     }
-    if (! reward_cards.empty())
+    if (debug_print >= 2 && !reward_cards.empty())
     {
         ios << "Reward Cards: ";
         for (const auto & card : reward_cards)
@@ -468,6 +457,34 @@ std::string Deck::long_description() const
         ios << "\n";
     }
     return ios.str();
+}
+
+void Deck::show_upgrades(std::stringstream &ios, const Card* card, const char * leading_chars) const
+{
+    ios << leading_chars << card_description(all_cards, card) << "\n";
+    if (upgrade_chance == 0 || card == card->m_top_level_card)
+    {
+        return;
+    }
+    if (debug_print < 2 && decktype != DeckType::raid)
+    {
+        ios << leading_chars << "-> " << card_description(all_cards, card->m_top_level_card) << "\n";
+        return;
+    }
+    // nCm * p^m / q^(n-m)
+    double p = 1.0 * upgrade_chance / upgrade_max_chance;
+    double q = 1.0 - p;
+    unsigned n = card->m_top_level_card->m_level - card->m_level;
+    unsigned m = 0;
+    double prob = 100.0 * pow(q, n);
+    ios << leading_chars << std::fixed << std::setprecision(2) << std::setw(5) << prob << "% no up\n";
+    while (card != card->m_top_level_card)
+    {
+        card = card->upgraded();
+        ++m;
+        prob = prob * (n + 1 - m) / m * p / q;
+        ios << leading_chars << std::setw(5) << prob << "% -> " << card_description(all_cards, card) << "\n";
+    }
 }
 
 Deck* Deck::clone() const

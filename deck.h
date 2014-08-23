@@ -131,6 +131,7 @@ public:
     std::string short_description() const;
     std::string medium_description() const;
     std::string long_description() const;
+    void show_upgrades(std::stringstream &ios, const Card* card, const char * leading_chars) const;
     const Card* next();
     const Card* upgrade_card(const Card* card, std::mt19937& re);
     const Card* get_commander(std::mt19937& re);
