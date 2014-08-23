@@ -1210,12 +1210,12 @@ int main(int argc, char** argv)
         }
         else if (strcmp(argv[argIndex], "yf") == 0 || strcmp(argv[argIndex], "yfort") == 0)  // set forts
         {
-            opt_forts = std::string(argv[argIndex + 1]) + ",";
+            opt_forts = std::string(argv[argIndex + 1]);
             argIndex += 1;
         }
         else if (strcmp(argv[argIndex], "ef") == 0 || strcmp(argv[argIndex], "efort") == 0)  // set enemies' forts
         {
-            opt_enemy_forts = std::string(argv[argIndex + 1]) + ",";
+            opt_enemy_forts = std::string(argv[argIndex + 1]);
             argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "sim") == 0)
@@ -1336,7 +1336,18 @@ int main(int argc, char** argv)
     }
 
     your_deck->strategy = opt_your_strategy;
-    your_deck->set_forts(opt_forts);
+    if (!opt_forts.empty())
+    {
+        try
+        {
+            your_deck->set_forts(opt_forts + ",");
+        }
+        catch(const std::runtime_error& e)
+        {
+            std::cerr << "Error: yf " << opt_forts << ": " << e.what() << std::endl;
+            return 0;
+        }
+    }
     your_deck->set_given_hand(opt_hand);
     if (opt_keep_commander)
     {
@@ -1373,7 +1384,18 @@ int main(int argc, char** argv)
             }
         }
         enemy_deck->strategy = opt_enemy_strategy;
-        enemy_deck->set_forts(opt_enemy_forts);
+        if (!opt_enemy_forts.empty())
+        {
+            try
+            {
+                enemy_deck->set_forts(opt_enemy_forts + ",");
+            }
+            catch(const std::runtime_error& e)
+            {
+                std::cerr << "Error: yf " << opt_forts << ": " << e.what() << std::endl;
+                return 0;
+            }
+        }
         enemy_deck->set_given_hand(opt_enemy_hand);
         enemy_decks.push_back(enemy_deck);
         enemy_decks_factors.push_back(deck_parsed.second);
