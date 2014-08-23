@@ -526,8 +526,9 @@ const Card* Deck::upgrade_card(const Card* card, std::mt19937& re)
     unsigned ups = card->m_top_level_card->m_level - card->m_level;
     if (upgrade_chance > 0 && ups > 0)
     {
-        for (std::mt19937::result_type rnd = re(); ups > 0; -- ups, rnd = ups % 5 == 0 ? re() : rnd / upgrade_max_chance)
+        for (; ups > 0; -- ups)
         {
+            std::mt19937::result_type rnd = re();
             if (rnd % upgrade_max_chance < upgrade_chance)
             {
                 card = card->upgraded();
