@@ -31,6 +31,7 @@
 #include <boost/thread/barrier.hpp>
 #include <boost/math/distributions/binomial.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 #include "card.h"
 #include "cards.h"
 #include "deck.h"
@@ -976,7 +977,7 @@ enum Operation {
 //------------------------------------------------------------------------------
 void print_available_effects()
 {
-    std::cout << "Available effects:" << std::endl;
+    std::cout << "Available effects besides \"<skill> X\":" << std::endl;
     for(int i(1); i < Effect::num_effects; ++ i)
     {
         std::cout << i << " \"" << effect_names[i] << "\"" << std::endl;
@@ -1285,17 +1286,25 @@ int main(int argc, char** argv)
         }
         std::vector<std::string> tokens;
         boost::split(tokens, opt_effect, boost::is_any_of(" -"));
-        opt_bg_enhanced_skill = skill_name_to_id(tokens[0]);
+        opt_bg_enhanced_skill = skill_name_to_id(tokens[0], false);
         if (tokens.size() >= 2 && opt_bg_enhanced_skill != no_skill)
         {
-            opt_bg_enhanced_value = atoi(tokens[1].c_str());
+            try
+            {
+                opt_bg_enhanced_value = boost::lexical_cast<unsigned>(tokens[1]);
+            }
+            catch (const boost::bad_lexical_cast & e)
+            {
+                std::cerr << "Error: Expect a number in effect \"" << opt_effect << "\".\n";
+                return 0;
+            }
         }
         else
         {
             const auto & x = effect_map.find(boost::to_lower_copy(opt_effect));
             if(x == effect_map.end())
             {
-                std::cout << "The effect '" << opt_effect << "' was not found. ";
+                std::cout << "Error: The effect \"" << opt_effect << "\" was not found.\n";
                 print_available_effects();
                 return 0;
             }

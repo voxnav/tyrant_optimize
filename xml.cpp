@@ -39,7 +39,7 @@ CardType::CardType map_to_type(unsigned i)
            CardType::num_cardtypes);
 }
 
-Skill skill_name_to_id(const std::string & name)
+Skill skill_name_to_id(const std::string & name, bool do_warn)
 {
     static std::map<std::string, int> skill_map;
     static std::set<std::string> unknown_skills;
@@ -55,10 +55,10 @@ Skill skill_name_to_id(const std::string & name)
     auto x = skill_map.find(boost::to_lower_copy(name));
     if (x == skill_map.end())
     {
-        if (unknown_skills.count(name) == 0)
+        if (do_warn and unknown_skills.count(name) == 0)
         { // Warn only once for each unknown skill
             unknown_skills.insert(name);
-            std::cerr << "Warning: Ignore unknown skill [" << name << "]\n";
+            std::cerr << "Warning: Ignore unknown skill [" << name << "] in data/cards.xml\n";
         }
         return no_skill;
     }
