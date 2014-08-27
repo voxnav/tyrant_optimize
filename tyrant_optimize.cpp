@@ -1322,7 +1322,7 @@ int main(int argc, char** argv)
 
     try
     {
-        your_deck = find_deck(decks, all_cards, your_deck_name);
+        your_deck = find_deck(decks, all_cards, your_deck_name)->clone();
     }
     catch(const std::runtime_error& e)
     {
