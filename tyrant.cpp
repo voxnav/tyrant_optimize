@@ -39,7 +39,7 @@ std::string decktype_names[DeckType::num_decktypes]{"Deck", "Mission", "Raid", "
 
 std::string effect_names[Effect::num_effects] = {
     "None",
-    "Progenitors",
+    "Metamorphosis",
 };
 
 signed debug_print(0);

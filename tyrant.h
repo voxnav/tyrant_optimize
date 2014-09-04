@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "2.1.2"
+#define TYRANT_OPTIMIZER_VERSION "2.1.3"
 
 #include <string>
 #include <sstream>
@@ -77,7 +77,7 @@ extern std::string decktype_names[DeckType::num_decktypes];
 
 enum Effect {
     none,
-    progenitors,
+    metamorphosis,
     num_effects
 };
 

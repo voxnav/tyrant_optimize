@@ -321,11 +321,10 @@ struct SimulationData
     std::vector<long double> factors;
     gamemode_t gamemode;
     enum Effect effect;
-    Skill bg_enhanced_skill;
-    unsigned bg_enhanced_value;
+    SkillSpec bg_skill;
 
     SimulationData(unsigned seed, const Cards& cards_, const Decks& decks_, unsigned num_enemy_decks_, std::vector<long double> factors_, gamemode_t gamemode_,
-            enum Effect effect_, Skill bg_enhanced_skill_, unsigned bg_enhanced_value_) :
+            enum Effect effect_, SkillSpec bg_skill_) :
         re(seed),
         cards(cards_),
         decks(decks_),
@@ -335,8 +334,7 @@ struct SimulationData
         factors(factors_),
         gamemode(gamemode_),
         effect(effect_),
-        bg_enhanced_skill(bg_enhanced_skill_),
-        bg_enhanced_value(bg_enhanced_value_)
+        bg_skill(bg_skill_)
     {
         for (size_t i = 0; i < num_enemy_decks_; ++i)
         {
@@ -367,7 +365,7 @@ struct SimulationData
         {
             your_hand.reset(re);
             enemy_hand->reset(re);
-            Field fd(re, cards, your_hand, *enemy_hand, gamemode, optimization_mode, effect != Effect::none ? effect : enemy_hand->deck->effect, bg_enhanced_skill, bg_enhanced_value);
+            Field fd(re, cards, your_hand, *enemy_hand, gamemode, optimization_mode, effect != Effect::none ? effect : enemy_hand->deck->effect, bg_skill);
             Results<uint64_t> result(play(&fd));
             res.emplace_back(result);
         }
@@ -397,11 +395,10 @@ public:
     std::vector<long double> factors;
     gamemode_t gamemode;
     enum Effect effect;
-    Skill bg_enhanced_skill;
-    unsigned bg_enhanced_value;
+    SkillSpec bg_skill;
 
     Process(unsigned num_threads_, const Cards& cards_, const Decks& decks_, Deck* your_deck_, std::vector<Deck*> enemy_decks_, std::vector<long double> factors_, gamemode_t gamemode_,
-            enum Effect effect_, Skill bg_enhanced_skill_, unsigned bg_enhanced_value_) :
+            enum Effect effect_, SkillSpec bg_skill_) :
         num_threads(num_threads_),
         main_barrier(num_threads+1),
         cards(cards_),
@@ -411,14 +408,13 @@ public:
         factors(factors_),
         gamemode(gamemode_),
         effect(effect_),
-        bg_enhanced_skill(bg_enhanced_skill_),
-        bg_enhanced_value(bg_enhanced_value_)
+        bg_skill(bg_skill_)
     {
         destroy_threads = false;
         unsigned seed(time(0));
         for(unsigned i(0); i < num_threads; ++i)
         {
-            threads_data.push_back(new SimulationData(seed + i, cards, decks, enemy_decks.size(), factors, gamemode, effect, bg_enhanced_skill, bg_enhanced_value));
+            threads_data.push_back(new SimulationData(seed + i, cards, decks, enemy_decks.size(), factors, gamemode, effect, bg_skill));
             threads.push_back(new boost::thread(thread_evaluate, std::ref(main_barrier), std::ref(shared_mutex), std::ref(*threads_data.back()), std::ref(*this), i));
         }
     }
@@ -1025,6 +1021,8 @@ void usage(int argc, char** argv)
         ;
 }
 
+std::string skill_description(const Cards& cards, const SkillSpec& s);
+
 int main(int argc, char** argv)
 {
     if (argc == 2 && strcmp(argv[1], "-version") == 0)
@@ -1049,8 +1047,7 @@ int main(int argc, char** argv)
     std::vector<std::tuple<unsigned, unsigned, Operation>> opt_todo;
     std::string opt_effect;
     enum Effect opt_effect_id(Effect::none);
-    Skill opt_bg_enhanced_skill(no_skill);
-    unsigned opt_bg_enhanced_value(0);
+    SkillSpec opt_bg_skill{no_skill, 0, allfactions, 0, 0, no_skill, false};
 
     for(int argIndex = 3; argIndex < argc; ++argIndex)
     {
@@ -1286,16 +1283,39 @@ int main(int argc, char** argv)
         }
         std::vector<std::string> tokens;
         boost::split(tokens, opt_effect, boost::is_any_of(" -"));
-        opt_bg_enhanced_skill = skill_name_to_id(tokens[0], false);
-        if (tokens.size() >= 2 && opt_bg_enhanced_skill != no_skill)
+
+        opt_bg_skill.id = skill_name_to_id(tokens[0], false);
+        unsigned skill_index = 1;
+        if (tokens.size() >= 2 && opt_bg_skill.id != no_skill)
         {
             try
             {
-                opt_bg_enhanced_value = boost::lexical_cast<unsigned>(tokens[1]);
+                if (skill_index < tokens.size() && tokens[skill_index] == "all")
+                {
+                    opt_bg_skill.all = true;
+                    skill_index += 1;
+                }
+                if (skill_index < tokens.size())
+                {
+                    opt_bg_skill.s = skill_name_to_id(tokens[skill_index], false);
+                    if (opt_bg_skill.s != no_skill)
+                    {
+                        skill_index += 1;
+                    }
+                }
+                if (skill_index < tokens.size())
+                {
+                    opt_bg_skill.x = boost::lexical_cast<unsigned>(tokens[skill_index]);
+                }
             }
             catch (const boost::bad_lexical_cast & e)
             {
                 std::cerr << "Error: Expect a number in effect \"" << opt_effect << "\".\n";
+                return 0;
+            }
+            catch (std::exception & e)
+            {
+                std::cerr << "Error: effect \"" << opt_effect << ": " << e.what() << "\".\n";
                 return 0;
             }
         }
@@ -1428,13 +1448,13 @@ int main(int argc, char** argv)
         {
             std::cout << "Effect: " << effect_names[opt_effect_id] << std::endl;
         }
-        else if(opt_bg_enhanced_skill != no_skill)
+        else if(opt_bg_skill.id != no_skill)
         {
-            std::cout << "Effect: (Enhance all) " << skill_names[opt_bg_enhanced_skill] << " " << opt_bg_enhanced_value << std::endl;
+            std::cout << "Effect: " << skill_description(all_cards, opt_bg_skill) << std::endl;
         }
     }
 
-    Process p(opt_num_threads, all_cards, decks, your_deck, enemy_decks, enemy_decks_factors, gamemode, opt_effect_id, opt_bg_enhanced_skill, opt_bg_enhanced_value);
+    Process p(opt_num_threads, all_cards, decks, your_deck, enemy_decks, enemy_decks_factors, gamemode, opt_effect_id, opt_bg_skill);
 
     {
         //ScopeClock timer;

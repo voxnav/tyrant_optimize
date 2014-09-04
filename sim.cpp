@@ -380,12 +380,11 @@ Results<uint64_t> play(Field* fd)
         }
         if(__builtin_expect(fd->end, false)) { break; }
 
-        if (fd->bg_enhanced_skill != no_skill)
+        if (fd->bg_skill.id != no_skill)
         {
             // Evaluate TU Battleground effect (Enhance all)
-            SkillSpec battleground_s = {enhance, fd->bg_enhanced_value, allfactions, 0, 0, fd->bg_enhanced_skill, true};
-            _DEBUG_MSG(2, "Evaluating Battleground skill %s\n", skill_description(fd->cards, battleground_s).c_str());
-            fd->skill_queue.emplace_back(&fd->tap->commander, battleground_s);
+            _DEBUG_MSG(2, "Evaluating Battleground skill %s\n", skill_description(fd->cards, fd->bg_skill).c_str());
+            fd->skill_queue.emplace_back(&fd->tap->commander, fd->bg_skill);
             resolve_skill(fd);
         }
 
@@ -1098,7 +1097,7 @@ inline void perform_skill<weaken>(Field* fd, CardStatus* src, CardStatus* dst, c
 template<unsigned skill_id>
 inline unsigned select_fast(Field* fd, CardStatus* src_status, const std::vector<CardStatus*>& cards, const SkillSpec& s)
 {
-    if(s.y == allfactions || fd->effect == progenitors)
+    if(s.y == allfactions || fd->effect == metamorphosis)
     {
         return(fd->make_selection_array(cards.begin(), cards.end(), [fd, src_status, s](CardStatus* c){return(skill_predicate<skill_id>(fd, src_status, c, s));}));
     }

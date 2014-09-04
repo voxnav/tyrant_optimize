@@ -198,8 +198,7 @@ public:
     gamemode_t gamemode;
     OptimizationMode optimization_mode;
     const Effect effect;
-    Skill bg_enhanced_skill;
-    unsigned bg_enhanced_value;
+    SkillSpec bg_skill;
     // With the introduction of on death skills, a single skill can trigger arbitrary many skills.
     // They are stored in this, and cleared after all have been performed.
     std::deque<std::tuple<CardStatus*, SkillSpec>> skill_queue;
@@ -220,7 +219,7 @@ public:
     unsigned current_ci;
 
     Field(std::mt19937& re_, const Cards& cards_, Hand& hand1, Hand& hand2, gamemode_t gamemode_, OptimizationMode optimization_mode_,
-            Effect effect_, Skill bg_enhanced_skill_, unsigned bg_enhanced_value_) :
+            Effect effect_, SkillSpec bg_skill_) :
         end{false},
         re(re_),
         cards(cards_),
@@ -229,8 +228,7 @@ public:
         gamemode(gamemode_),
         optimization_mode(optimization_mode_),
         effect(effect_),
-        bg_enhanced_skill(bg_enhanced_skill_),
-        bg_enhanced_value(bg_enhanced_value_),
+        bg_skill(bg_skill_),
         n_player_kills(0)
     {
     }
