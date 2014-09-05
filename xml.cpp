@@ -425,6 +425,11 @@ void load_recipes_xml(Cards& all_cards, const char * filename)
         if (!card_id_node) { continue; }
         unsigned card_id(atoi(card_id_node->value()));
         Card * card = all_cards.cards_by_id[card_id];
+        if (!card) {
+            std::cerr << "Could not find card by id " << card_id << std::endl;
+            continue;
+        }
+
         for(xml_node<>* resource_node = recipe_node->first_node("resource");
                 resource_node;
                 resource_node = resource_node->next_sibling("resource"))
