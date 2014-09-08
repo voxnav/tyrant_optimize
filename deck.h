@@ -114,18 +114,6 @@ public:
     void set_given_hand(const std::string& deck_string_);
     void set_forts(const std::string& deck_string_);
 
-    template<class Container>
-    Container card_ids() const
-    {
-        Container results;
-        results.insert(results.end(), commander->m_id);
-        for(auto card: cards)
-        {
-            results.insert(results.end(), card->m_id);
-        }
-        return(results);
-    }
-
     Deck* clone() const;
     std::string hash() const;
     std::string short_description() const;

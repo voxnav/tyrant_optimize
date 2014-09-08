@@ -23,7 +23,7 @@ std::string skill_names[Skill::num_skills] =
     "Armor", "Corrosive", "Counter", "Evade", "Wall",
     "<Error>",
     // Combat-Modifier:
-    "Flurry", "Pierce",
+    "Flurry", "Pierce", "Valor",
     // Damage-Dependant:
     "Berserk", "Inhibit", "Leech", "Poison",
 };

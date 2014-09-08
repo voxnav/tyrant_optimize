@@ -46,6 +46,21 @@ struct Results
     }
 };
 
+typedef std::pair<std::vector<Results<uint64_t>>, unsigned> EvaluatedResults;
+
+template<typename result_type>
+struct FinalResults
+{
+    result_type wins;
+    result_type draws;
+    result_type losses;
+    result_type points;
+    result_type sq_points;
+    result_type points_lower_bound;
+    result_type points_upper_bound;
+    uint64_t n_sims;
+};
+
 void fill_skill_table();
 Results<uint64_t> play(Field* fd);
 void modify_cards(Cards& cards, enum Effect effect);

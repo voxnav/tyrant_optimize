@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "2.1.3"
+#define TYRANT_OPTIMIZER_VERSION "2.1.4"
 
 #include <string>
 #include <sstream>
@@ -39,7 +39,7 @@ enum Skill
     armor, corrosive, counter, evade, wall,
     END_DEFENSIVE,
     // Combat-Modifier:
-    flurry, pierce,
+    flurry, pierce, valor,
     // Damage-Dependant:
     berserk, inhibit, leech, poison,
     num_skills
@@ -93,8 +93,10 @@ enum class OptimizationMode
 {
     notset,
     winrate,
+    defense,
+    war,
+    brawl,
     raid,
-    defense
 };
 
 struct true_ {};

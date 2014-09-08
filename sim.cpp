@@ -473,30 +473,38 @@ Results<uint64_t> play(Field* fd)
         ++fd->turn;
     }
     unsigned raid_damage = 15 + fd->n_player_kills - (10 * fd->players[1]->commander.m_hp / fd->players[1]->commander.m_card->m_health);
+    unsigned brawl_score = 50 + fd->n_player_kills * 2 - fd->turn / 2;  // Note that turn is +1, which is intentional
     // you lose
     if(fd->players[0]->commander.m_hp == 0)
     {
         _DEBUG_MSG(1, "You lose.\n");
-        if (fd->optimization_mode == OptimizationMode::raid)
-        { return {0, 0, 1, raid_damage, 0}; }
-        else
-        { return {0, 0, 1, 0, 0}; }
+        switch (fd->optimization_mode)
+        {
+        case OptimizationMode::raid: return {0, 0, 1, raid_damage, 0};
+        case OptimizationMode::brawl: return {0, 0, 1, 5, 0};
+        default: return {0, 0, 1, 0, 0};
+        }
     }
     // you win
     if(fd->players[1]->commander.m_hp == 0)
     {
         _DEBUG_MSG(1, "You win.\n");
-        return {1, 0, 0, 100, 0};
+        switch (fd->optimization_mode)
+        {
+        case OptimizationMode::brawl: return {1, 0, 0, brawl_score, 0};
+        default: return {1, 0, 0, 100, 0};
+        }
     }
     if (fd->turn > turn_limit)
     {
         _DEBUG_MSG(1, "Stall after %u turns.\n", turn_limit);
-        if (fd->optimization_mode == OptimizationMode::defense)
-        { return {1, 1, 0, 100, 0}; }
-        else if (fd->optimization_mode == OptimizationMode::raid)
-        { return {0, 1, 0, raid_damage, 0}; }
-        else
-        { return {0, 1, 0, 0, 0}; }
+        switch (fd->optimization_mode)
+        {
+        case OptimizationMode::defense: return {1, 1, 0, 100, 0};
+        case OptimizationMode::raid: return {0, 1, 0, raid_damage, 0};
+        case OptimizationMode::brawl: return {0, 1, 0, 5, 0};
+        default: return {0, 1, 0, 0, 0};
+        }
     }
 
     // Huh? How did we get here?
@@ -931,7 +939,7 @@ bool attack_phase(Field* fd)
     Storage<CardStatus>& def_assaults(fd->tip->assaults);
     if(attack_power(att_status) == 0)
     {
-        return false; 
+        return false;
     }
 
     if (alive_assault(def_assaults, fd->current_ci))
