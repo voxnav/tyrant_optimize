@@ -762,7 +762,7 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
                 if (! adjust_deck(d1, -1, -1, nullptr, fund, re, deck_cost, cards_out, cards_in))
                 { continue; }
                 auto && cur_deck = d1->hash();
-                auto && emplace_rv = evaluated_decks.emplace(cur_deck, zero_results);
+                auto && emplace_rv = evaluated_decks.insert({cur_deck, zero_results});
                 auto & prev_results = emplace_rv.first->second;
                 if (!emplace_rv.second)
                 {
@@ -809,7 +809,7 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
                     d1->cards.size() < min_deck_len)
             { continue; }
             auto && cur_deck = d1->hash();
-            auto && emplace_rv = evaluated_decks.emplace(cur_deck, zero_results);
+            auto && emplace_rv = evaluated_decks.insert({cur_deck, zero_results});
             auto & prev_results = emplace_rv.first->second;
             if (!emplace_rv.second)
             {
@@ -909,7 +909,7 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
                 if (! adjust_deck(d1, -1, -1, nullptr, fund, re, deck_cost, cards_out, cards_in))
                 { continue; }
                 auto && cur_deck = d1->hash();
-                auto && emplace_rv = evaluated_decks.emplace(cur_deck, zero_results);
+                auto && emplace_rv = evaluated_decks.insert({cur_deck, zero_results});
                 auto & prev_results = emplace_rv.first->second;
                 if (!emplace_rv.second)
                 {
@@ -960,7 +960,7 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
                         d1->cards.size() < min_deck_len)
                 { continue; }
                 auto && cur_deck = d1->hash();
-                auto && emplace_rv = evaluated_decks.emplace(cur_deck, zero_results);
+                auto && emplace_rv = evaluated_decks.insert({cur_deck, zero_results});
                 auto & prev_results = emplace_rv.first->second;
                 if (!emplace_rv.second)
                 {
