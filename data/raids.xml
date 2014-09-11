@@ -27,5 +27,27 @@
 			</card_pool>
 		</deck>
 	</raid>
-</root>
 
+	<raid>
+		<id>2</id>
+		<name>Jotun Max</name>
+		<health>25000</health>
+		<commander>1413</commander>
+		<levels>26</levels>
+		<deck>
+			<always_include>
+				<card>10551</card>
+				<card>10551</card>
+				<card>10521</card>
+				<card>10521</card>
+				<card>10541</card>
+				<card>10541</card>
+				<card>10531</card>
+				<card>10531</card>
+				<card>10511</card>
+				<card>10511</card>
+			</always_include>
+		</deck>
+	</raid>
+
+</root>
