@@ -529,6 +529,12 @@ inline bool skill_check<leech>(Field* fd, CardStatus* c, CardStatus* ref)
     return(can_be_healed(c));
 }
 
+template<>
+inline bool skill_check<valor>(Field* fd, CardStatus* c, CardStatus* ref)
+{
+    return(ref->m_card->m_type == CardType::assault && attack_power(ref) > attack_power(c));
+}
+
 void remove_hp(Field* fd, CardStatus& status, unsigned dmg)
 {
     assert(status.m_hp > 0);
@@ -783,7 +789,16 @@ struct PerformAttack
     void op()
     {
         unsigned pre_modifier_dmg = attack_power(att_status);
+        // valor boost
+        unsigned valor_value = att_status->skill<valor>();
+        if (valor_value > 0 && skill_check<valor>(fd, att_status, def_status))
+        {
+            _DEBUG_MSG(1, "%s activates Valor %u\n", status_description(att_status).c_str(), valor_value);
+            pre_modifier_dmg += valor_value;
+            att_status->m_rallied += valor_value;
+        }
         if(pre_modifier_dmg == 0) { return; }
+
         // Evaluation order:
         // modify damage
         // deal damage
@@ -834,8 +849,8 @@ struct PerformAttack
         assert(att_status->m_card->m_type == CardType::assault);
         assert(pre_modifier_dmg > 0);
         att_dmg = pre_modifier_dmg;
-        // enhance damage
         std::string desc;
+        // enhance damage
         if(def_status->m_enfeebled > 0)
         {
             if(debug_print > 0) { desc += "+" + to_string(def_status->m_enfeebled) + "(enfeebled)"; }

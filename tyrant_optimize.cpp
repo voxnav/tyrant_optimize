@@ -722,16 +722,14 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
     bool deck_has_been_improved = true;
     unsigned long skipped_simulations = 0;
     std::vector<std::pair<signed, const Card *>> cards_out, cards_in;
-    for(unsigned slot_i(0), dead_slot(0);
-        best_score.n_sims < num_iterations || best_score.points - target_score < -1e-9;
-        slot_i = (slot_i + 1) % std::min<unsigned>(max_deck_len, best_cards.size() + 1))
+    for(unsigned slot_i(0), dead_slot(0); ; slot_i = (slot_i + 1) % std::min<unsigned>(max_deck_len, best_cards.size() + 1))
     {
         if (deck_has_been_improved)
         {
             dead_slot = slot_i;
             deck_has_been_improved = false;
         }
-        else if (slot_i == dead_slot)
+        else if (slot_i == dead_slot || best_score.points - target_score > -1e-9)
         {
             if (best_score.n_sims >= num_iterations)
             {
@@ -744,6 +742,11 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
             best_score = compute_score(evaluate_result, proc.factors);
             std::cout << "Results refined: ";
             print_score_info(evaluate_result, proc.factors);
+            dead_slot = slot_i;
+        }
+        if (best_score.points - target_score > -1e-9)
+        {
+            continue;
         }
         if(!card_marks.count(-1))
         {
@@ -868,16 +871,14 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
     bool deck_has_been_improved = true;
     unsigned long skipped_simulations = 0;
     std::vector<std::pair<signed, const Card *>> cards_out, cards_in;
-    for(unsigned from_slot(0), dead_slot(0);
-        best_score.n_sims < num_iterations || best_score.points - target_score < -1e-9;
-        from_slot = (from_slot + 1) % std::min<unsigned>(max_deck_len, d1->cards.size() + 1))
+    for(unsigned from_slot(0), dead_slot(0); ; from_slot = (from_slot + 1) % std::min<unsigned>(max_deck_len, d1->cards.size() + 1))
     {
         if(deck_has_been_improved)
         {
             dead_slot = from_slot;
             deck_has_been_improved = false;
         }
-        else if (from_slot == dead_slot)
+        else if (from_slot == dead_slot || best_score.points - target_score > -1e-9)
         {
             if (best_score.n_sims >= num_iterations)
             {
@@ -890,6 +891,11 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
             best_score = compute_score(evaluate_result, proc.factors);
             std::cout << "Results refined: ";
             print_score_info(evaluate_result, proc.factors);
+            dead_slot = from_slot;
+        }
+        if (best_score.points - target_score > -1e-9)
+        {
+            continue;
         }
         if(!card_marks.count(-1))
         {
