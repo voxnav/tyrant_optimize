@@ -319,9 +319,8 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, const ch
         decks.decks.push_back(Deck{all_cards, decktype, id, deck_name, effect, level - 1, max_level - 1});
         Deck* deck = &decks.decks.back();
         deck->set(commander_card, always_cards, some_cards, reward_cards, mission_req);
-        std::string alt_name = decktype_names[decktype] + " #" + to_string(id) + "-" + to_string(level);
         decks.by_name[deck_name] = deck;
-        decks.by_name[alt_name] = deck;
+        decks.by_name[decktype_names[decktype] + " #" + to_string(id) + "-" + to_string(level)] = deck;
     }
 
     decks.decks.push_back(Deck{all_cards, decktype, id, base_deck_name, effect});
@@ -338,9 +337,10 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, const ch
         { card = card->m_top_level_card; }
     }
 
-    std::string alt_name = decktype_names[decktype] + " #" + to_string(id);
     decks.by_name[base_deck_name] = deck;
-    decks.by_name[alt_name] = deck;
+    decks.by_name[base_deck_name + "-" + to_string(max_level)] = deck;
+    decks.by_name[decktype_names[decktype] + " #" + to_string(id)] = deck;
+    decks.by_name[decktype_names[decktype] + " #" + to_string(id) + "-" + to_string(max_level)] = deck;
     decks.by_type_id[{decktype, id}] = deck;
     return deck;
 }
