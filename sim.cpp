@@ -14,7 +14,7 @@
 #include "deck.h"
 
 //------------------------------------------------------------------------------
-inline std::string status_description(CardStatus* status)
+inline std::string status_description(const CardStatus* status)
 {
     return status->description();
 }
@@ -79,27 +79,30 @@ inline void CardStatus::set(const Card& card)
     m_card = &card;
     m_index = 0;
     m_player = 0;
+    m_delay = card.m_delay;
+    m_faction = card.m_faction;
+    m_hp = card.m_health;
+    m_step = CardStep::none;
+
     m_berserk = 0;
     m_corroded_rate = 0;
     m_corroded_weakened = 0;
-    m_delay = card.m_delay;
     m_evaded = 0;
     m_enfeebled = 0;
-    m_faction = card.m_faction;
-    m_hp = card.m_health;
     m_inhibited = 0;
     m_jammed = false;
     m_overloaded = false;
     m_poisoned = 0;
     m_protected = 0;
     m_rallied = 0;
+    m_valored = false;
     m_weakened = 0;
-    m_step = CardStep::none;
+
     std::memset(m_enhanced_value, 0, sizeof m_enhanced_value);
     std::memset(m_skill_cd, 0, sizeof m_skill_cd);
 }
 //------------------------------------------------------------------------------
-inline int attack_power(CardStatus* att)
+inline int attack_power(const CardStatus* att)
 {
     return(safe_minus(att->m_card->m_attack + att->m_berserk + att->m_rallied, att->m_weakened + att->m_corroded_weakened));
 }
@@ -146,7 +149,7 @@ std::string card_description(const Cards& cards, const Card* c)
     return(desc);
 }
 //------------------------------------------------------------------------------
-std::string CardStatus::description()
+std::string CardStatus::description() const
 {
     std::string desc;
     switch(m_card->m_type)
@@ -319,6 +322,7 @@ inline bool can_be_healed(CardStatus* c) { return(c->m_hp > 0 && c->m_hp < c->m_
 //------------------------------------------------------------------------------
 void turn_start_phase(Field* fd);
 void turn_end_phase(Field* fd);
+bool check_and_perform_valor(Field* fd, CardStatus* src_status);
 // return value : (raid points) -> attacker wins, 0 -> defender wins
 Results<uint64_t> play(Field* fd)
 {
@@ -416,6 +420,7 @@ Results<uint64_t> play(Field* fd)
             }
             else
             {
+                check_and_perform_valor(fd, current_status);
                 unsigned num_actions(1);
                 for(unsigned action_index(0); action_index < num_actions; ++action_index)
                 {
@@ -532,7 +537,7 @@ inline bool skill_check<leech>(Field* fd, CardStatus* c, CardStatus* ref)
 template<>
 inline bool skill_check<valor>(Field* fd, CardStatus* c, CardStatus* ref)
 {
-    return(ref->m_card->m_type == CardType::assault && attack_power(ref) > attack_power(c));
+    return !c->m_valored;
 }
 
 void remove_hp(Field* fd, CardStatus& status, unsigned dmg)
@@ -789,14 +794,6 @@ struct PerformAttack
     void op()
     {
         unsigned pre_modifier_dmg = attack_power(att_status);
-        // valor boost
-        unsigned valor_value = att_status->skill<valor>();
-        if (valor_value > 0 && skill_check<valor>(fd, att_status, def_status))
-        {
-            _DEBUG_MSG(1, "%s activates Valor %u\n", status_description(att_status).c_str(), valor_value);
-            pre_modifier_dmg += valor_value;
-            att_status->m_rallied += valor_value;
-        }
         if(pre_modifier_dmg == 0) { return; }
 
         // Evaluation order:
@@ -1210,6 +1207,33 @@ bool check_and_perform_skill(Field* fd, CardStatus* src_status, CardStatus* dst_
     }
     _DEBUG_MSG(1, "(CANCELLED) %s %s on %s\n", status_description(src_status).c_str(), skill_short_description(s).c_str(), status_description(dst_status).c_str());
     return(false);
+}
+
+bool check_and_perform_valor(Field* fd, CardStatus* src_status)
+{
+    unsigned valor_value = src_status->skill<valor>();
+    if (valor_value > 0 && skill_check<valor>(fd, src_status, nullptr))
+    {
+        src_status->m_valored = true;
+        unsigned opponent_player = opponent(src_status->m_player);
+        const CardStatus * dst_status = fd->players[opponent_player]->assaults.size() <= src_status->m_index ?
+            &fd->players[opponent_player]->assaults[src_status->m_index] :
+            nullptr;
+        if (dst_status == nullptr || dst_status->m_hp <= 0)
+        {
+            _DEBUG_MSG(1, "%s loses Valor (no blocker)\n", status_description(src_status).c_str());
+            return false;
+        }
+        else if (attack_power(dst_status) <= attack_power(src_status))
+        {
+            _DEBUG_MSG(1, "%s loses Valor (weak blocker %s)\n", status_description(src_status).c_str(), status_description(dst_status).c_str());
+            return false;
+        }
+        _DEBUG_MSG(1, "%s activates Valor %u (as if Berserked)\n", status_description(src_status).c_str(), valor_value);
+        src_status->m_berserk += valor_value;
+        return true;
+    }
+    return false;
 }
 
 template<Skill skill_id>

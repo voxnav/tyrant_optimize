@@ -141,22 +141,25 @@ struct CardStatus
     const Card* m_card;
     unsigned m_index;
     unsigned m_player;
+    unsigned m_delay;
+    Faction m_faction;
+    unsigned m_hp;
+    CardStep m_step;
+
     unsigned m_berserk;
     unsigned m_corroded_rate;
     unsigned m_corroded_weakened;
-    unsigned m_delay;
     unsigned m_evaded;
     unsigned m_enfeebled;
-    Faction m_faction;
-    unsigned m_hp;
     unsigned m_inhibited;
     bool m_jammed;
     bool m_overloaded;
     unsigned m_poisoned;
     unsigned m_protected;
     unsigned m_rallied;
+    bool m_valored;
     unsigned m_weakened;
-    CardStep m_step;
+
     unsigned m_enhanced_value[num_skills];
     unsigned m_skill_cd[num_skills];
 
@@ -164,7 +167,7 @@ struct CardStatus
 
     void set(const Card* card);
     void set(const Card& card);
-    std::string description();
+    std::string description() const;
     bool has_skill(Skill skill_id) const;
     template<Skill skill_id> bool has_skill() const;
     template<Skill skill_id> unsigned skill() const;
