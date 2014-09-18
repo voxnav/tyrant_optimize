@@ -1145,6 +1145,7 @@ int main(int argc, char** argv)
     std::string opt_forts, opt_enemy_forts;
     std::string opt_hand, opt_enemy_hand;
     std::vector<std::string> opt_owned_cards_str_list;
+    std::vector<std::string> opt_custom_cards_str_list;
     bool opt_do_optimization(false);
     bool opt_keep_commander{false};
     std::vector<std::tuple<unsigned, unsigned, Operation>> opt_todo;
@@ -1252,6 +1253,14 @@ int main(int argc, char** argv)
         {
             opt_owned_cards_str_list.push_back(argv[argIndex] + 3);
             use_owned_cards = true;
+        }
+        else if(strcmp(argv[argIndex], "-C") == 0)
+        {
+            opt_custom_cards_str_list.push_back("data/customcards.txt");
+        }
+        else if(strncmp(argv[argIndex], "-C=", 3) == 0)
+        {
+            opt_custom_cards_str_list.push_back(argv[argIndex] + 3);
         }
         else if(strcmp(argv[argIndex], "fund") == 0)
         {
@@ -1386,6 +1395,12 @@ int main(int argc, char** argv)
     Cards all_cards;
     Decks decks;
     load_cards_xml(all_cards, "data/cards.xml");
+#if 0
+    for (const auto & cc_str: opt_custom_cards_str_list)
+    {
+        process_custom_cards(cc_str);
+    }
+#endif
     read_card_abbrs(all_cards, "data/cardabbrs.txt");
     load_decks_xml(decks, all_cards, "data/missions.xml", "data/raids.xml");
     load_custom_decks(decks, all_cards, "data/customdecks.txt");
@@ -1554,7 +1569,7 @@ int main(int argc, char** argv)
             }
             catch(const std::runtime_error& e)
             {
-                std::cerr << "Error: yf " << opt_forts << ": " << e.what() << std::endl;
+                std::cerr << "Error: ef " << opt_enemy_forts << ": " << e.what() << std::endl;
                 return 0;
             }
         }
