@@ -200,7 +200,7 @@ void Hand::reset(std::mt19937& re)
     assaults.reset();
     structures.reset();
     deck->shuffle(re);
-    commander.set(deck->commander);
+    commander.set(deck->shuffled_commander);
 }
 //---------------------- $40 Game rules implementation -------------------------
 // Everything about how a battle plays out, except the following:
@@ -1215,7 +1215,7 @@ bool check_and_perform_valor(Field* fd, CardStatus* src_status)
     {
         src_status->m_valored = true;
         unsigned opponent_player = opponent(src_status->m_player);
-        const CardStatus * dst_status = fd->players[opponent_player]->assaults.size() <= src_status->m_index ?
+        const CardStatus * dst_status = fd->players[opponent_player]->assaults.size() > src_status->m_index ?
             &fd->players[opponent_player]->assaults[src_status->m_index] :
             nullptr;
         if (dst_status == nullptr || dst_status->m_hp <= 0)

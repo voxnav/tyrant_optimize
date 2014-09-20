@@ -332,7 +332,7 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, const ch
     deck->set(commander_card, always_cards, some_cards, reward_cards, mission_req);
 
     // upgrade cards for full-level missions/raids
-    deck->base_commander = deck->base_commander->m_top_level_card;
+    deck->commander = deck->commander->m_top_level_card;
     for (auto && card: deck->cards)
     { card = card->m_top_level_card; }
     for (auto && pool: deck->raid_cards)

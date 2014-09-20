@@ -284,20 +284,20 @@ namespace range = boost::range;
 
 void Deck::set(const std::vector<unsigned>& ids, const std::map<signed, char> &marks)
 {
-    base_commander = nullptr;
+    commander = nullptr;
     strategy = DeckStrategy::random;
     for(auto id: ids)
     {
         const Card* card{all_cards.by_id(id)};
         if(card->m_type == CardType::commander)
         {
-            if (base_commander == nullptr)
+            if (commander == nullptr)
             {
-                base_commander = card;
+                commander = card;
             }
             else
             {
-                throw std::runtime_error("While constructing a deck: two commanders detected (" + card->m_name + " and " + base_commander->m_name + ")");
+                throw std::runtime_error("While constructing a deck: two commanders detected (" + card->m_name + " and " + commander->m_name + ")");
             }
         }
         else
@@ -305,7 +305,7 @@ void Deck::set(const std::vector<unsigned>& ids, const std::map<signed, char> &m
             cards.emplace_back(card);
         }
     }
-    if (base_commander == nullptr)
+    if (commander == nullptr)
     {
         throw std::runtime_error("While constructing a deck: no commander found");
     }
@@ -319,7 +319,7 @@ void Deck::set(const std::string& deck_string_)
 
 void Deck::resolve()
 {
-    if (base_commander != nullptr)
+    if (commander != nullptr)
     {
         return;
     }
@@ -351,11 +351,11 @@ std::string Deck::hash() const
     {
         auto sorted_cards = cards;
         std::sort(sorted_cards.begin(), sorted_cards.end(), [](const Card* a, const Card* b) { return a->m_id < b->m_id; });
-        encode_deck(ios, base_commander, sorted_cards);
+        encode_deck(ios, commander, sorted_cards);
     }
     else
     {
-        encode_deck(ios, base_commander, cards);
+        encode_deck(ios, commander, cards);
     }
     return ios.str();
 }
@@ -381,9 +381,9 @@ std::string Deck::medium_description() const
 {
     std::stringstream ios;
     ios << short_description() << std::endl;
-    if (base_commander)
+    if (commander)
     {
-        ios << base_commander->m_name;
+        ios << commander->m_name;
     }
     else
     {
@@ -419,9 +419,9 @@ std::string Deck::long_description() const
     {
         ios << "Effect: " << effect_names[effect] << "\n";
     }
-    if (base_commander)
+    if (commander)
     {
-        show_upgrades(ios, base_commander, "");
+        show_upgrades(ios, commander, "");
     }
     else
     {
@@ -553,14 +553,9 @@ const Card* Deck::upgrade_card(const Card* card, std::mt19937& re, unsigned &rem
     return card;
 }
 
-const Card* Deck::get_commander()
-{
-    return base_commander;
-}
-
 void Deck::shuffle(std::mt19937& re)
 {
-    commander = base_commander;
+    shuffled_commander = commander;
     shuffled_cards.clear();
     boost::insert(shuffled_cards, shuffled_cards.end(), cards);
     if(!raid_cards.empty())
@@ -580,7 +575,7 @@ void Deck::shuffle(std::mt19937& re)
     {
         unsigned remaining_upgrade_points = upgrade_points;
         unsigned remaining_upgrade_opportunities = upgrade_opportunities;
-        commander = upgrade_card(commander, re, remaining_upgrade_points, remaining_upgrade_opportunities);
+        shuffled_commander = upgrade_card(commander, re, remaining_upgrade_points, remaining_upgrade_opportunities);
         for (auto && card: shuffled_cards)
         {
             card = upgrade_card(card, re, remaining_upgrade_points, remaining_upgrade_opportunities);
