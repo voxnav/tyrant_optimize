@@ -265,8 +265,9 @@ void load_cards_xml(Cards & all_cards, const char * filename)
 Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, const char* effect_node_name, DeckType::DeckType decktype, unsigned id, std::string base_deck_name)
 {
     xml_node<>* commander_node(node->first_node("commander"));
-    unsigned card_id = atoi(commander_node->value());
-    const Card* commander_card{all_cards.by_id(card_id)};
+    const Card* card = all_cards.by_id(atoi(commander_node->value()));
+    const Card* commander_card{card};
+    unsigned upgrade_opportunities = card->m_top_level_card->m_level - card->m_level;
     std::vector<const Card*> always_cards;
     std::vector<std::pair<unsigned, std::vector<const Card*>>> some_cards;
     std::vector<const Card*> reward_cards;
@@ -278,8 +279,9 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, const ch
             card_node;
             card_node = card_node->next_sibling("card"))
     {
-        card_id = atoi(card_node->value());
-        always_cards.push_back(all_cards.by_id(card_id));
+        card = all_cards.by_id(atoi(card_node->value()));
+        always_cards.push_back(card);
+        upgrade_opportunities += card->m_top_level_card->m_level - card->m_level;
     }
     for(xml_node<>* pool_node = deck_node->first_node("card_pool");
             pool_node;
@@ -287,15 +289,17 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, const ch
     {
         unsigned num_cards_from_pool(atoi(pool_node->first_attribute("amount")->value()));
         std::vector<const Card*> cards_from_pool;
-
+        unsigned upgrade_points = 0;
         for(xml_node<>* card_node = pool_node->first_node("card");
                 card_node;
                 card_node = card_node->next_sibling("card"))
         {
-            unsigned card_id(atoi(card_node->value()));
-            cards_from_pool.push_back(all_cards.by_id(card_id));
+            card = all_cards.by_id(atoi(card_node->value()));
+            cards_from_pool.push_back(card);
+            upgrade_points += card->m_top_level_card->m_level - card->m_level;
         }
         some_cards.push_back(std::make_pair(num_cards_from_pool, cards_from_pool));
+        upgrade_opportunities += upgrade_points * num_cards_from_pool / cards_from_pool.size();
     }
     xml_node<>* rewards_node(node->first_node("rewards"));
     if(decktype == DeckType::mission && rewards_node)
@@ -304,8 +308,8 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, const ch
                 card_node;
                 card_node = card_node->next_sibling("card"))
         {
-            unsigned card_id(atoi(card_node->value()));
-            reward_cards.push_back(all_cards.by_id(card_id));
+            card = all_cards.by_id(atoi(card_node->value()));
+            reward_cards.push_back(card);
         }
     }
     xml_node<>* mission_req_node(node->first_node(decktype == DeckType::mission ? "req" : "mission_req"));
@@ -316,7 +320,7 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, const ch
     for (unsigned level = 1; level < max_level; ++ level)
     {
         std::string deck_name = base_deck_name + "-" + to_string(level);
-        decks.decks.push_back(Deck{all_cards, decktype, id, deck_name, effect, level - 1, max_level - 1});
+        decks.decks.push_back(Deck{all_cards, decktype, id, deck_name, effect, (upgrade_opportunities + 1) * (level - 1) / (max_level - 1), upgrade_opportunities});
         Deck* deck = &decks.decks.back();
         deck->set(commander_card, always_cards, some_cards, reward_cards, mission_req);
         decks.by_name[deck_name] = deck;
@@ -328,7 +332,7 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, const ch
     deck->set(commander_card, always_cards, some_cards, reward_cards, mission_req);
 
     // upgrade cards for full-level missions/raids
-    deck->commander = deck->commander->m_top_level_card;
+    deck->base_commander = deck->base_commander->m_top_level_card;
     for (auto && card: deck->cards)
     { card = card->m_top_level_card; }
     for (auto && pool: deck->raid_cards)

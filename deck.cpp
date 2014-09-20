@@ -284,20 +284,20 @@ namespace range = boost::range;
 
 void Deck::set(const std::vector<unsigned>& ids, const std::map<signed, char> &marks)
 {
-    commander = nullptr;
+    base_commander = nullptr;
     strategy = DeckStrategy::random;
     for(auto id: ids)
     {
         const Card* card{all_cards.by_id(id)};
         if(card->m_type == CardType::commander)
         {
-            if(commander == nullptr)
+            if (base_commander == nullptr)
             {
-                commander = card;
+                base_commander = card;
             }
             else
             {
-                throw std::runtime_error("While constructing a deck: two commanders detected (" + card->m_name + " and " + commander->m_name + ")");
+                throw std::runtime_error("While constructing a deck: two commanders detected (" + card->m_name + " and " + base_commander->m_name + ")");
             }
         }
         else
@@ -305,7 +305,7 @@ void Deck::set(const std::vector<unsigned>& ids, const std::map<signed, char> &m
             cards.emplace_back(card);
         }
     }
-    if(commander == nullptr)
+    if (base_commander == nullptr)
     {
         throw std::runtime_error("While constructing a deck: no commander found");
     }
@@ -319,7 +319,7 @@ void Deck::set(const std::string& deck_string_)
 
 void Deck::resolve()
 {
-    if(commander != nullptr)
+    if (base_commander != nullptr)
     {
         return;
     }
@@ -351,11 +351,11 @@ std::string Deck::hash() const
     {
         auto sorted_cards = cards;
         std::sort(sorted_cards.begin(), sorted_cards.end(), [](const Card* a, const Card* b) { return a->m_id < b->m_id; });
-        encode_deck(ios, commander, sorted_cards);
+        encode_deck(ios, base_commander, sorted_cards);
     }
     else
     {
-        encode_deck(ios, commander, cards);
+        encode_deck(ios, base_commander, cards);
     }
     return ios.str();
 }
@@ -381,13 +381,9 @@ std::string Deck::medium_description() const
 {
     std::stringstream ios;
     ios << short_description() << std::endl;
-    if(commander)
+    if (base_commander)
     {
-        ios << commander->m_name;
-        if (upgrade_chance > 0 && commander != commander->m_top_level_card)
-        {
-           ios << "+";
-        }
+        ios << base_commander->m_name;
     }
     else
     {
@@ -396,10 +392,6 @@ std::string Deck::medium_description() const
     for(const Card * card: cards)
     {
         ios << ", " << card->m_name;
-        if (upgrade_chance > 0 && card != card->m_top_level_card)
-        {
-           ios << "+";
-        }
     }
     unsigned num_pool_cards = 0;
     for(auto& pool: raid_cards)
@@ -409,6 +401,10 @@ std::string Deck::medium_description() const
     if(num_pool_cards > 0)
     {
         ios << ", and " << num_pool_cards << " cards from pool";
+    }
+    if (upgrade_points > 0)
+    {
+        ios << " +" << upgrade_points << "/" << upgrade_opportunities;
     }
     return ios.str();
 }
@@ -423,9 +419,9 @@ std::string Deck::long_description() const
     {
         ios << "Effect: " << effect_names[effect] << "\n";
     }
-    if(commander)
+    if (base_commander)
     {
-        show_upgrades(ios, commander, "");
+        show_upgrades(ios, base_commander, "");
     }
     else
     {
@@ -462,7 +458,7 @@ std::string Deck::long_description() const
 void Deck::show_upgrades(std::stringstream &ios, const Card* card, const char * leading_chars) const
 {
     ios << leading_chars << card_description(all_cards, card) << "\n";
-    if (upgrade_chance == 0 || card == card->m_top_level_card)
+    if (upgrade_points == 0 || card == card->m_top_level_card)
     {
         return;
     }
@@ -472,7 +468,7 @@ void Deck::show_upgrades(std::stringstream &ios, const Card* card, const char * 
         return;
     }
     // nCm * p^m / q^(n-m)
-    double p = 1.0 * upgrade_chance / upgrade_max_chance;
+    double p = 1.0 * upgrade_points / upgrade_opportunities;
     double q = 1.0 - p;
     unsigned n = card->m_top_level_card->m_level - card->m_level;
     unsigned m = 0;
@@ -538,37 +534,33 @@ const Card* Deck::next()
     throw std::runtime_error("Unknown strategy for deck.");
 }
 
-const Card* Deck::upgrade_card(const Card* card, std::mt19937& re)
+const Card* Deck::upgrade_card(const Card* card, std::mt19937& re, unsigned &remaining_upgrade_points, unsigned &remaining_upgrade_opportunities)
 {
-    unsigned ups = card->m_top_level_card->m_level - card->m_level;
-    if (upgrade_chance > 0 && ups > 0)
+    unsigned oppos = card->m_top_level_card->m_level - card->m_level;
+    if (remaining_upgrade_points > 0)
     {
-        for (; ups > 0; -- ups)
+        for (; oppos > 0; -- oppos)
         {
             std::mt19937::result_type rnd = re();
-            if (rnd % upgrade_max_chance < upgrade_chance)
+            if (rnd % remaining_upgrade_opportunities < remaining_upgrade_points)
             {
                 card = card->upgraded();
+                -- remaining_upgrade_points;
             }
+            -- remaining_upgrade_opportunities;
         }
     }
     return card;
 }
 
-const Card* Deck::get_commander(std::mt19937& re)
+const Card* Deck::get_commander()
 {
-    if (upgrade_chance == 0)
-    {
-        return(commander);
-    }
-    else
-    {
-        return(upgrade_card(commander, re));
-    }
+    return base_commander;
 }
 
 void Deck::shuffle(std::mt19937& re)
 {
+    commander = base_commander;
     shuffled_cards.clear();
     boost::insert(shuffled_cards, shuffled_cards.end(), cards);
     if(!raid_cards.empty())
@@ -584,11 +576,14 @@ void Deck::shuffle(std::mt19937& re)
             shuffled_cards.insert(shuffled_cards.end(), card_pool.second.begin(), card_pool.second.begin() + card_pool.first);
         }
     }
-    if (upgrade_chance > 0)
+    if (upgrade_points > 0)
     {
+        unsigned remaining_upgrade_points = upgrade_points;
+        unsigned remaining_upgrade_opportunities = upgrade_opportunities;
+        commander = upgrade_card(commander, re, remaining_upgrade_points, remaining_upgrade_opportunities);
         for (auto && card: shuffled_cards)
         {
-            card = upgrade_card(card, re);
+            card = upgrade_card(card, re, remaining_upgrade_points, remaining_upgrade_opportunities);
         }
     }
     if(strategy == DeckStrategy::ordered)

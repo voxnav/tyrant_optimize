@@ -199,8 +199,8 @@ void Hand::reset(std::mt19937& re)
 {
     assaults.reset();
     structures.reset();
-    commander.set(deck->get_commander(re));
     deck->shuffle(re);
+    commander.set(deck->commander);
 }
 //---------------------- $40 Game rules implementation -------------------------
 // Everything about how a battle plays out, except the following:
@@ -588,8 +588,7 @@ void turn_start_phase(Field* fd)
     cooldown_skills(fd->tap->commander);
     // Active player's assault cards:
     // update index
-    // reduce delay; [TU] reduce skill cooldown
-    // [WM:T] apply poison damage
+    // reduce delay; reduce skill cooldown
     {
         auto& assaults(fd->tap->assaults);
         for(unsigned index(0), end(assaults.size());
@@ -608,7 +607,7 @@ void turn_start_phase(Field* fd)
     }
     // Active player's structure cards:
     // update index
-    // reduce delay; [TU] reduce skill cooldown
+    // reduce delay; reduce skill cooldown
     {
         auto& structures(fd->tap->structures);
         for(unsigned index(0), end(structures.size());

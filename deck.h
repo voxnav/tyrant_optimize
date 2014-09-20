@@ -46,15 +46,17 @@ public:
     unsigned id;
     std::string name;
     Effect effect; // for quests
-    unsigned upgrade_chance; // probability chance/max_change to upgrade; = level - 1 for level 1 to (max_level - 1) and 0 for max_level (directly use full upgraded cards)
-    unsigned upgrade_max_chance;
+    unsigned upgrade_points;
+    unsigned upgrade_opportunities;
     DeckStrategy::DeckStrategy strategy;
 
-    const Card* commander;
+    const Card* base_commander;
     std::vector<const Card*> cards;
-
     std::map<signed, char> card_marks;  // <positions of card, prefix mark>: -1 indicating the commander. E.g, used as a mark to be kept in attacking deck when optimizing.
+
+    const Card* commander;
     std::deque<const Card*> shuffled_cards;
+
     // card id -> card order
     std::map<unsigned, std::list<unsigned>> order;
     std::vector<std::pair<unsigned, std::vector<const Card*>>> raid_cards;
@@ -71,17 +73,18 @@ public:
         unsigned id_ = 0,
         std::string name_ = "",
         Effect effect_ = Effect::none,
-        unsigned upgrade_chance_ = 0,
-        unsigned upgrade_max_chance_ = 1,
+        unsigned upgrade_points_ = 0,
+        unsigned upgrade_opportunities_ = 0,
         DeckStrategy::DeckStrategy strategy_ = DeckStrategy::random) :
         all_cards(all_cards_),
         decktype(decktype_),
         id(id_),
         name(name_),
         effect(Effect::none),
-        upgrade_chance(upgrade_chance_),
-        upgrade_max_chance(upgrade_max_chance_),
+        upgrade_points(upgrade_points_),
+        upgrade_opportunities(upgrade_opportunities_),
         strategy(strategy_),
+        base_commander(nullptr),
         commander(nullptr),
         mission_req(0)
     {
@@ -96,7 +99,7 @@ public:
         std::vector<const Card*> reward_cards_ = {},
         unsigned mission_req_ = 0)
     {
-        commander = commander_;
+        base_commander = commander_;
         cards = std::vector<const Card*>(std::begin(cards_), std::end(cards_));
         raid_cards = std::vector<std::pair<unsigned, std::vector<const Card*>>>(raid_cards_);
         reward_cards = std::vector<const Card*>(reward_cards_);
@@ -121,8 +124,8 @@ public:
     std::string long_description() const;
     void show_upgrades(std::stringstream &ios, const Card* card, const char * leading_chars) const;
     const Card* next();
-    const Card* upgrade_card(const Card* card, std::mt19937& re);
-    const Card* get_commander(std::mt19937& re);
+    const Card* upgrade_card(const Card* card, std::mt19937& re, unsigned &remaining_upgrade_points, unsigned &remaining_upgrade_opportunities);
+    const Card* get_commander();
     void shuffle(std::mt19937& re);
     void place_at_bottom(const Card* card);
 };
