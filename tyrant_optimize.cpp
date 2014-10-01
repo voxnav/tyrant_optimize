@@ -102,7 +102,13 @@ Deck* find_deck(Decks& decks, const Cards& all_cards, std::string deck_name)
     decks.decks.push_back(Deck{all_cards});
     Deck* deck = &decks.decks.back();
     deck->set(deck_name);
-    deck->resolve();
+    try
+    {
+        deck->resolve();
+    }
+    catch (std::exception & e)
+    {
+    }
     return(deck);
 }
 //---------------------- $80 deck optimization ---------------------------------
@@ -1525,7 +1531,15 @@ int main(int argc, char** argv)
             return 0;
         }
     }
-    your_deck->set_given_hand(opt_hand);
+    try
+    {
+        your_deck->set_given_hand(opt_hand);
+    }
+    catch(const std::runtime_error& e)
+    {
+        std::cerr << "Error: hand " << opt_hand << ": " << e.what() << std::endl;
+        return 0;
+    }
     if (opt_keep_commander)
     {
         your_deck->card_marks[-1] = '!';
@@ -1573,7 +1587,15 @@ int main(int argc, char** argv)
                 return 0;
             }
         }
-        enemy_deck->set_given_hand(opt_enemy_hand);
+        try
+        {
+            enemy_deck->set_given_hand(opt_enemy_hand);
+        }
+        catch(const std::runtime_error& e)
+        {
+            std::cerr << "Error: enemy:hand " << opt_enemy_hand << ": " << e.what() << std::endl;
+            return 0;
+        }
         enemy_decks.push_back(enemy_deck);
         enemy_decks_factors.push_back(deck_parsed.second);
     }

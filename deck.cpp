@@ -271,6 +271,17 @@ const std::pair<std::vector<unsigned>, std::map<signed, char>> string_to_ids(con
     try
     {
         hash_to_ids(deck_string.c_str(), card_ids);
+        for (auto & card_id: card_ids)
+        {
+            try
+            {
+                all_cards.by_id(card_id);
+            }
+            catch(std::exception& e)
+            {
+                throw std::runtime_error(std::string("Deck not found. Error to treat as hash: ") + e.what());
+            }
+        }
     }
     catch(std::exception& e)
     {
