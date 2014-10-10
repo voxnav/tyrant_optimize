@@ -26,6 +26,10 @@ std::string skill_names[Skill::num_skills] =
     "Flurry", "Pierce", "Valor",
     // Damage-Dependant:
     "Berserk", "Inhibit", "Leech", "Poison",
+    // Pseudo-Skill for BGE:
+    "<Error>",
+    "Reaping",
+    "<Error>",
 };
 
 std::string cardtype_names[CardType::num_cardtypes]{"Commander", "Assault", "Structure", };

@@ -220,6 +220,7 @@ public:
     // With the introduction of on death skills, a single skill can trigger arbitrary many skills.
     // They are stored in this, and cleared after all have been performed.
     std::deque<std::tuple<CardStatus*, SkillSpec>> skill_queue;
+    std::vector<CardStatus*> killed_with_on_death;
     unsigned n_player_kills;
     enum phase
     {

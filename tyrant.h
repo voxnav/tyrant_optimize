@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "2.1.6"
+#define TYRANT_OPTIMIZER_VERSION "2.2.0"
 
 #include <string>
 #include <sstream>
@@ -42,6 +42,10 @@ enum Skill
     flurry, pierce, valor,
     // Damage-Dependant:
     berserk, inhibit, leech, poison,
+    // Pseudo-Skill for BGE:
+    BEGIN_BGE_SKILL,
+    reaping,
+    END_BGE_SKILL,
     num_skills
 };
 extern std::string skill_names[num_skills];

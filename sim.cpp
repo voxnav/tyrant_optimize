@@ -220,6 +220,25 @@ SkillSpec apply_enhance(const SkillSpec& s, unsigned enhanced_value)
     return(enahnced_s);
 }
 //------------------------------------------------------------------------------
+void prepend_bge_reaping(Field* fd)
+{
+    if (fd->bg_skill.id != reaping)
+    {
+        return;
+    }
+    std::vector<std::tuple<CardStatus*, SkillSpec>> od_skills;
+    for(auto status: fd->killed_with_on_death)
+    {
+        SkillSpec ss_heal{heal, fd->bg_skill.x, allfactions, 0, 0, no_skill, true,};
+        SkillSpec ss_rally{rally, fd->bg_skill.x, allfactions, 0, 0, no_skill, true,};
+        _DEBUG_MSG(2, "Preparing %s skill %s and %s\n", status_description(status).c_str(), skill_description(fd->cards, ss_heal).c_str(), skill_description(fd->cards, ss_rally).c_str());
+        od_skills.emplace_back(status, ss_heal);
+        od_skills.emplace_back(status, ss_rally);
+    }
+    fd->skill_queue.insert(fd->skill_queue.begin(), od_skills.begin(), od_skills.end());
+    fd->killed_with_on_death.clear();
+}
+//------------------------------------------------------------------------------
 void(*skill_table[num_skills])(Field*, CardStatus* src_status, const SkillSpec&);
 void resolve_skill(Field* fd)
 {
@@ -384,7 +403,7 @@ Results<uint64_t> play(Field* fd)
         }
         if(__builtin_expect(fd->end, false)) { break; }
 
-        if (fd->bg_skill.id != no_skill)
+        if (fd->bg_skill.id != no_skill && skill_table[fd->bg_skill.id])
         {
             // Evaluate TU Battleground effect (Enhance all)
             _DEBUG_MSG(2, "Evaluating Battleground skill %s\n", skill_description(fd->cards, fd->bg_skill).c_str());
@@ -540,15 +559,20 @@ inline bool skill_check<valor>(Field* fd, CardStatus* c, CardStatus* ref)
     return !c->m_valored;
 }
 
-void remove_hp(Field* fd, CardStatus& status, unsigned dmg)
+void remove_hp(Field* fd, CardStatus* status, unsigned dmg)
 {
-    assert(status.m_hp > 0);
-    _DEBUG_MSG(2, "%s takes %u damage\n", status_description(&status).c_str(), dmg);
-    status.m_hp = safe_minus(status.m_hp, dmg);
-    if(status.m_hp == 0)
+    assert(status->m_hp > 0);
+    _DEBUG_MSG(2, "%s takes %u damage\n", status_description(status).c_str(), dmg);
+    status->m_hp = safe_minus(status->m_hp, dmg);
+    if(status->m_hp == 0)
     {
-        _DEBUG_MSG(1, "%s dies\n", status_description(&status).c_str());
-        if (status.m_player == 1)
+        _DEBUG_MSG(1, "%s dies\n", status_description(status).c_str());
+        // Assume only assaults get reaping effect
+        if(fd->bg_skill.id == reaping && status->m_card->m_type == CardType::assault)
+        {
+            fd->killed_with_on_death.push_back(status);
+        }
+        if (status->m_player == 1)
         {
             fd->n_player_kills += 1;
         }
@@ -675,7 +699,7 @@ void turn_end_phase(Field* fd)
             if(poison_dmg > 0)
             {
                 _DEBUG_MSG(1, "%s takes poison damage %u\n", status_description(&status).c_str(), poison_dmg);
-                remove_hp(fd, status, poison_dmg);
+                remove_hp(fd, &status, poison_dmg);
             }
 #if 0
             // not need to fade out in own turn in TU
@@ -723,6 +747,8 @@ void turn_end_phase(Field* fd)
         }
     }
 #endif
+    prepend_bge_reaping(fd);
+    resolve_skill(fd);
     remove_dead(fd->tap->assaults);
     remove_dead(fd->tap->structures);
     remove_dead(fd->tip->assaults);
@@ -819,7 +845,7 @@ struct PerformAttack
                     // perform_skill_counter
                     unsigned counter_dmg(counter_damage(fd, att_status, def_status));
                     _DEBUG_MSG(1, "%s takes %u counter damage from %s\n", status_description(att_status).c_str(), counter_dmg, status_description(def_status).c_str());
-                    remove_hp(fd, *att_status, counter_dmg);
+                    remove_hp(fd, att_status, counter_dmg);
                 }
                 unsigned berserk_value = att_status->skill<berserk>();
                 if(berserk_value > 0 && skill_check<berserk>(fd, att_status, nullptr))
@@ -837,6 +863,8 @@ struct PerformAttack
             }
             do_leech<def_cardtype>();
         }
+        prepend_bge_reaping(fd);
+        resolve_skill(fd);
     }
 
     template<enum CardType::CardType>
@@ -883,7 +911,7 @@ struct PerformAttack
     template<enum CardType::CardType>
     void attack_damage()
     {
-        remove_hp(fd, *def_status, att_dmg);
+        remove_hp(fd, def_status, att_dmg);
         killed_by_attack = def_status->m_hp == 0;
     }
 
@@ -1039,7 +1067,7 @@ inline bool skill_predicate<overload>(Field* fd, CardStatus* src, CardStatus* ds
 template<>
 inline bool skill_predicate<rally>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
-    return can_attack(dst) && is_active(dst) && !has_attacked(dst);
+    return can_attack(dst) && (fd->tapi == dst->m_player ? is_active(dst) && !has_attacked(dst) : is_active_next_turn(dst));
 }
 
 template<>
@@ -1097,14 +1125,14 @@ inline void perform_skill<rally>(Field* fd, CardStatus* src, CardStatus* dst, co
 template<>
 inline void perform_skill<siege>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
-    remove_hp(fd, *dst, s.x);
+    remove_hp(fd, dst, s.x);
 }
 
 template<>
 inline void perform_skill<strike>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
     unsigned strike_dmg = safe_minus(s.x + dst->m_enfeebled, src->m_overloaded ? 0 : dst->protected_value());
-    remove_hp(fd, *dst, strike_dmg);
+    remove_hp(fd, dst, strike_dmg);
 }
 
 template<>
@@ -1270,6 +1298,7 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src_status, const Ski
     {
         check_and_perform_skill<skill_id>(fd, src_status, c, s, ! src_status->m_overloaded);
     }
+    prepend_bge_reaping(fd);
 }
 
 template<Skill skill_id>

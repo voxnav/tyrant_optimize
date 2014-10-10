@@ -1079,15 +1079,24 @@ enum Operation {
     debuguntil
 };
 //------------------------------------------------------------------------------
+extern void(*skill_table[num_skills])(Field*, CardStatus* src_status, const SkillSpec&);
 void print_available_effects()
 {
-    std::cout << "Available effects besides \"<skill> X\":" << std::endl;
-    for(int i(1); i < Effect::num_effects; ++ i)
+    std::cout << "Available effects (case-insensitive):\n"
+        "  Enfeeble all X\n"
+        "  Heal all X\n"
+        "  Protect all X\n"
+        "  Rally all X\n"
+        "  Siege all X\n"
+        "  Strike all X\n"
+        "  Weaken all X\n"
+        "  Enhance all <skill> X, where <skill> is either of Armor, Berserk, Corrosive, Counter, Enfeeble, Evade, Heal, Inhibit, Leech, Pierce, Poison, Protect, Rally, Siege, Strike, Weaken\n"
+        "  Reaping X\n";
+    for (int i(1); i < Effect::num_effects; ++ i)
     {
-        std::cout << i << " \"" << effect_names[i] << "\"" << std::endl;
+        std::cout << "  " << effect_names[i] << "\n";
     }
 }
-
 void usage(int argc, char** argv)
 {
     std::cout << "Tyrant Unleashed Optimizer (TUO) " << TYRANT_OPTIMIZER_VERSION << "\n"
@@ -1103,7 +1112,7 @@ void usage(int argc, char** argv)
         "  example: \'fear:0.2;slowroll:0.8\' means fear is the defense deck 20% of the time, while slowroll is the defense deck 80% of the time.\n"
         "\n"
         "Flags:\n"
-        "  -e <effect>: set the battleground effect. effect is automatically set when applicable.\n"
+        "  -e \"<effect>\": set the battleground effect. effect is automatically set when applicable.\n"
         "  -r: the attack deck is played in order instead of randomly (respects the 3 cards drawn limit).\n"
         "  -s: use surge (default is fight).\n"
         "  -t <num>: set the number of threads, default is 4.\n"
@@ -1130,7 +1139,6 @@ void usage(int argc, char** argv)
 }
 
 std::string skill_description(const Cards& cards, const SkillSpec& s);
-extern void(*skill_table[num_skills])(Field*, CardStatus* src_status, const SkillSpec&);
 
 int main(int argc, char** argv)
 {
@@ -1440,7 +1448,7 @@ int main(int argc, char** argv)
 
         opt_bg_skill.id = skill_name_to_id(tokens[0], false);
         unsigned skill_index = 1;
-        if (skill_table[opt_bg_skill.id] != nullptr)
+        if (skill_table[opt_bg_skill.id] != nullptr || (BEGIN_BGE_SKILL < opt_bg_skill.id && opt_bg_skill.id < END_BGE_SKILL))
         {
             try
             {
