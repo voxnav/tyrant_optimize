@@ -5,7 +5,6 @@
 	<raid>
 		<id>1</id>
 		<name>Apocalypse</name>
-		<health>25000</health>
 		<commander>1373</commander>
 		<levels>26</levels>
 		<deck>
@@ -31,7 +30,6 @@
 	<raid>
 		<id>2</id>
 		<name>Jotun Max</name>
-		<health>25000</health>
 		<commander>1413</commander>
 		<levels>26</levels>
 		<deck>

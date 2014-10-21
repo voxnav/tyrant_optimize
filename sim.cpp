@@ -95,7 +95,6 @@ inline void CardStatus::set(const Card& card)
     m_poisoned = 0;
     m_protected = 0;
     m_rallied = 0;
-    m_valored = false;
     m_weakened = 0;
 
     std::memset(m_enhanced_value, 0, sizeof m_enhanced_value);
@@ -259,6 +258,7 @@ void resolve_skill(Field* fd)
 }
 //------------------------------------------------------------------------------
 bool attack_phase(Field* fd);
+bool check_and_perform_valor(Field* fd, CardStatus* src_status);
 void evaluate_skills(Field* fd, CardStatus* status, const std::vector<SkillSpec>& skills)
 {
     assert(status);
@@ -315,6 +315,10 @@ struct PlayCard
         status->m_index = storage->size() - 1;
         status->m_player = fd->tapi;
         _DEBUG_MSG(1, "%s plays %s %u [%s]\n", status_description(&fd->tap->commander).c_str(), cardtype_names[type].c_str(), static_cast<unsigned>(storage->size() - 1), card_description(fd->cards, card).c_str());
+        if (status->m_delay == 0)
+        {
+            check_and_perform_valor(fd, status);
+        }
     }
 };
 // assault
@@ -341,7 +345,6 @@ inline bool can_be_healed(CardStatus* c) { return(c->m_hp > 0 && c->m_hp < c->m_
 //------------------------------------------------------------------------------
 void turn_start_phase(Field* fd);
 void turn_end_phase(Field* fd);
-bool check_and_perform_valor(Field* fd, CardStatus* src_status);
 // return value : (raid points) -> attacker wins, 0 -> defender wins
 Results<uint64_t> play(Field* fd)
 {
@@ -439,7 +442,6 @@ Results<uint64_t> play(Field* fd)
             }
             else
             {
-                check_and_perform_valor(fd, current_status);
                 unsigned num_actions(1);
                 for(unsigned action_index(0); action_index < num_actions; ++action_index)
                 {
@@ -553,12 +555,6 @@ inline bool skill_check<leech>(Field* fd, CardStatus* c, CardStatus* ref)
     return(can_be_healed(c));
 }
 
-template<>
-inline bool skill_check<valor>(Field* fd, CardStatus* c, CardStatus* ref)
-{
-    return !c->m_valored;
-}
-
 void remove_hp(Field* fd, CardStatus* status, unsigned dmg)
 {
     assert(status->m_hp > 0);
@@ -568,7 +564,7 @@ void remove_hp(Field* fd, CardStatus* status, unsigned dmg)
     {
         _DEBUG_MSG(1, "%s dies\n", status_description(status).c_str());
         // Assume only assaults get reaping effect
-        if(fd->bg_skill.id == reaping && status->m_card->m_type == CardType::assault)
+        if(fd->bg_skill.id == reaping && status->m_card->m_type != CardType::commander)
         {
             fd->killed_with_on_death.push_back(status);
         }
@@ -595,21 +591,21 @@ inline void add_hp(Field* fd, CardStatus* target, unsigned v)
 {
     target->m_hp = std::min(target->m_hp + v, target->m_card->m_health);
 }
-void cooldown_skills(CardStatus & status)
+void cooldown_skills(CardStatus * status)
 {
-    for (const auto & ss : status.m_card->m_skills)
+    for (const auto & ss : status->m_card->m_skills)
     {
-        if (status.m_skill_cd[ss.id] > 0)
+        if (status->m_skill_cd[ss.id] > 0)
         {
-            _DEBUG_MSG(2, "%s reduces timer (%u) of skill %s\n", status_description(&status).c_str(), status.m_skill_cd[ss.id], skill_names[ss.id].c_str());
-            -- status.m_skill_cd[ss.id];
+            _DEBUG_MSG(2, "%s reduces timer (%u) of skill %s\n", status_description(status).c_str(), status->m_skill_cd[ss.id], skill_names[ss.id].c_str());
+            -- status->m_skill_cd[ss.id];
         }
     }
 }
 void turn_start_phase(Field* fd)
 {
     // Active player's commander card:
-    cooldown_skills(fd->tap->commander);
+    cooldown_skills(&fd->tap->commander);
     // Active player's assault cards:
     // update index
     // reduce delay; reduce skill cooldown
@@ -619,14 +615,21 @@ void turn_start_phase(Field* fd)
             index < end;
             ++index)
         {
-            CardStatus& status(assaults[index]);
-            status.m_index = index;
-            if(status.m_delay > 0)
+            CardStatus * status = &assaults[index];
+            status->m_index = index;
+            if(status->m_delay > 0)
             {
-                _DEBUG_MSG(1, "%s reduces its timer\n", status_description(&status).c_str());
-                -- status.m_delay;
+                _DEBUG_MSG(1, "%s reduces its timer\n", status_description(status).c_str());
+                -- status->m_delay;
+                if (status->m_delay == 0)
+                {
+                    check_and_perform_valor(fd, status);
+                }
             }
-            cooldown_skills(status);
+            else
+            {
+                cooldown_skills(status);
+            }
         }
     }
     // Active player's structure cards:
@@ -638,14 +641,17 @@ void turn_start_phase(Field* fd)
             index < end;
             ++index)
         {
-            CardStatus& status(structures[index]);
-            status.m_index = index;
-            if(status.m_delay > 0)
+            CardStatus * status = &structures[index];
+            status->m_index = index;
+            if(status->m_delay > 0)
             {
-                _DEBUG_MSG(1, "%s reduces its timer\n", status_description(&status).c_str());
-                --status.m_delay;
+                _DEBUG_MSG(1, "%s reduces its timer\n", status_description(status).c_str());
+                --status->m_delay;
             }
-            cooldown_skills(status);
+            else
+            {
+                cooldown_skills(status);
+            }
         }
     }
     // Defending player's assault cards:
@@ -1241,7 +1247,6 @@ bool check_and_perform_valor(Field* fd, CardStatus* src_status)
     unsigned valor_value = src_status->skill<valor>();
     if (valor_value > 0 && skill_check<valor>(fd, src_status, nullptr))
     {
-        src_status->m_valored = true;
         unsigned opponent_player = opponent(src_status->m_player);
         const CardStatus * dst_status = fd->players[opponent_player]->assaults.size() > src_status->m_index ?
             &fd->players[opponent_player]->assaults[src_status->m_index] :
