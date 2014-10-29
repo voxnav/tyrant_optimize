@@ -26,6 +26,8 @@ std::string skill_names[Skill::num_skills] =
     "Flurry", "Pierce", "Valor",
     // Damage-Dependant:
     "Berserk", "Inhibit", "Leech", "Poison",
+    // Triggered:
+    "Legion",
     // Pseudo-Skill for BGE:
     "<Error>",
     "Reaping",

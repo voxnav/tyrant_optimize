@@ -499,7 +499,7 @@ Results<uint64_t> play(Field* fd)
         ++fd->turn;
     }
     unsigned raid_damage = 15 + fd->n_player_kills - (10 * fd->players[1]->commander.m_hp / fd->players[1]->commander.m_card->m_health);
-    unsigned brawl_score = 50 + fd->n_player_kills * 2 - fd->turn / 2;  // Note that turn is +1, which is intentional
+    unsigned brawl_score = 70 - (p1_size - fd->n_player_kills) * 2 - fd->turn / 2;  // Note that turn is +1, which is intentional
     // you lose
     if(fd->players[0]->commander.m_hp == 0)
     {

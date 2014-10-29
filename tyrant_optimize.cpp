@@ -287,7 +287,7 @@ FinalResults<long double> compute_score(const EvaluatedResults& results, std::ve
     long double max_possible = 100;
     switch (optimization_mode)
     {
-    case OptimizationMode::brawl: max_possible = 60; break;
+    case OptimizationMode::brawl: max_possible = 70; break;
     default: max_possible = 100; break;
     }
     for(unsigned index(0); index < results.first.size(); ++index)
@@ -552,7 +552,7 @@ void thread_evaluate(boost::barrier& main_barrier,
                     long double max_possible = 100;
                     switch (optimization_mode)
                     {
-                    case OptimizationMode::brawl: max_possible = 60; break;
+                    case OptimizationMode::brawl: max_possible = 70; break;
                     default: max_possible = 100; break;
                     }
                     // Get a loose (better than no) upper bound. TODO: Improve it.

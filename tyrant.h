@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "2.2.1"
+#define TYRANT_OPTIMIZER_VERSION "2.3.0"
 
 #include <string>
 #include <sstream>
@@ -42,6 +42,8 @@ enum Skill
     flurry, pierce, valor,
     // Damage-Dependant:
     berserk, inhibit, leech, poison,
+    // Triggered:
+    legion,
     // Pseudo-Skill for BGE:
     BEGIN_BGE_SKILL,
     reaping,
