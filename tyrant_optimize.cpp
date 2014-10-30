@@ -296,7 +296,7 @@ void claim_cards(const std::vector<const Card*> & card_list)
             owned_cards[card->m_id] += num_to_claim;
             if (debug_print >= 0)
             {
-                std::cerr << "WARNING: " << card->m_name << " is in your initial deck but not in owned cards: adding " << num_to_claim << " to owned card list.\n";
+                std::cerr << "WARNING: Need extra " << num_to_claim << " " << card->m_name << " to build your initial deck: adding to owned card list.\n";
             }
         }
     }
