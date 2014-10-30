@@ -48,4 +48,25 @@
 		</deck>
 	</raid>
 
+	<raid>
+		<id>3</id>
+		<name>Forsaken Horde</name>
+		<commander>1523</commander>
+		<levels>26</levels>
+		<deck>
+			<always_include>
+				<card>12051</card>
+				<card>12051</card>
+				<card>12061</card>
+				<card>12061</card>
+				<card>12071</card>
+				<card>12071</card>
+				<card>12081</card>
+				<card>12081</card>
+				<card>12091</card>
+				<card>12091</card>
+			</always_include>
+		</deck>
+	</raid>
+
 </root>
