@@ -16,6 +16,7 @@ public:
     unsigned m_health;
     unsigned m_id;
     unsigned m_level;
+    unsigned m_fusion_level;
     std::string m_name;
     unsigned m_rarity;
     unsigned m_set;
@@ -36,6 +37,7 @@ public:
         m_health(0),
         m_id(0),
         m_level(1),
+        m_fusion_level(0),
         m_name(""),
         m_rarity(1),
         m_set(0),

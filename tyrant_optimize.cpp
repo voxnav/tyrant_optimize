@@ -52,6 +52,8 @@ namespace {
     long double target_score{100};
     long double min_increment_of_score{0};
     long double confidence_level{0.99};
+    bool use_top_level_card{false};
+    bool use_fused_card_level{0};
     bool show_ci{false};
     bool show_stdev{false};
     bool use_harmonic_mean{false};
@@ -195,11 +197,31 @@ bool adjust_deck(Deck * deck, const signed from_slot, const signed to_slot, cons
     }
     bool is_random = deck->strategy == DeckStrategy::random;
     std::vector<const Card *> cards = deck->cards;
-    deck->cards.clear();
-    deck->cards.emplace_back(card);
-    cards_in.emplace_back(is_random ? -1 : to_slot, card);
+    card = card->m_top_level_card;
     {
-        // try to add commander into the deck, defuse/downgrade it if necessary
+        // try to add new card into the deck, unfuse/downgrade it if necessary
+        std::stack<const Card *> candidate_cards;
+        candidate_cards.emplace(card);
+        while (! candidate_cards.empty())
+        {
+            const Card* card_in = candidate_cards.top();
+            candidate_cards.pop();
+            deck->cards.clear();
+            deck->cards.emplace_back(card_in);
+            deck_cost = get_deck_cost(deck);
+            if (use_top_level_card || deck_cost <= fund)
+            { break; }
+            for (auto recipe_it : card_in->m_recipe_cards)
+            { candidate_cards.emplace(recipe_it.first); }
+        }
+        if (deck_cost > fund)
+        {
+            return false;
+        }
+        cards_in.emplace_back(is_random ? -1 : to_slot, deck->cards[0]);
+    }
+    {
+        // try to add commander into the deck, unfuse/downgrade it if necessary
         std::stack<const Card *> candidate_cards;
         const Card * old_commander = deck->commander;
         candidate_cards.emplace(deck->commander);
@@ -229,7 +251,7 @@ bool adjust_deck(Deck * deck, const signed from_slot, const signed to_slot, cons
     { std::shuffle(cards.begin(), cards.end(), re); }
     for (signed i = 0; i < (signed)cards.size(); ++ i)
     {
-        // try to add cards[i] into the deck, defuse/downgrade it if necessary
+        // try to add cards[i] into the deck, unfuse/downgrade it if necessary
         auto saved_cards = deck->cards;
         auto in_it = deck->cards.end() - (i < to_slot);
         in_it = deck->cards.insert(in_it, nullptr);
@@ -801,10 +823,12 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
         std::shuffle(non_commander_cards.begin(), non_commander_cards.end(), re);
         for(const Card* card_candidate: non_commander_cards)
         {
+            if (card_candidate && card_candidate->m_fusion_level < use_fused_card_level)
+            { continue; }
             d1->commander = best_commander;
             d1->cards = best_cards;
             if (card_candidate ?
-                    (slot_i < best_cards.size() && card_candidate->m_name == best_cards[slot_i]->m_name) // Omega -> Omega
+                    (slot_i < best_cards.size() && card_candidate->m_name == best_cards[slot_i]->m_name)    // Omega -> Omega
                     :
                     (slot_i == best_cards.size()))  // void -> void
             { continue; }
@@ -951,6 +975,8 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
         std::shuffle(non_commander_cards.begin(), non_commander_cards.end(), re);
         for(const Card* card_candidate: non_commander_cards)
         {
+            if (card_candidate && card_candidate->m_fusion_level < use_fused_card_level)
+            { continue; }
             // Various checks to check if the card is accepted
             assert(!card_candidate || card_candidate->m_type != CardType::commander);
             for(unsigned to_slot(card_candidate ? 0 : best_cards.size() - 1); to_slot < best_cards.size() + (from_slot < best_cards.size() ? 0 : 1); ++to_slot)
@@ -1300,6 +1326,12 @@ int main(int argc, char** argv)
         else if(strcmp(argv[argIndex], "enemy:exact-ordered") == 0)
         {
             opt_enemy_strategy = DeckStrategy::exact_ordered;
+        }
+        else if (strcmp(argv[argIndex], "endgame") == 0)
+        {
+            use_top_level_card = true;
+            use_fused_card_level = atoi(argv[argIndex+1]);
+            argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "threads") == 0 || strcmp(argv[argIndex], "-t") == 0)
         {

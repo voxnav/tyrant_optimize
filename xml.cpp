@@ -163,10 +163,12 @@ void parse_card_node(Cards& all_cards, Card* card, xml_node<>* card_node)
     xml_node<>* set_node(card_node->first_node("set"));
     int set(set_node ? atoi(set_node->value()) : card->m_set);
     xml_node<>* level_node(card_node->first_node("level"));
+    xml_node<>* fusion_level_node(card_node->first_node("fusion_level"));
     if (id_node) { card->m_base_id = card->m_id = atoi(id_node->value()); }
     else if (card_id_node) { card->m_id = atoi(card_id_node->value()); }
     if (name_node) { card->m_name = name_node->value(); }
     if (level_node) { card->m_level = atoi(level_node->value()); }
+    if (fusion_level_node) { card->m_fusion_level = atoi(fusion_level_node->value()); }
     if (id_node)
     {
         if (card->m_id < 1000)
