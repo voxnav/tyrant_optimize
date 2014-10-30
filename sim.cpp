@@ -345,7 +345,6 @@ inline bool can_be_healed(CardStatus* c) { return(c->m_hp > 0 && c->m_hp < c->m_
 //------------------------------------------------------------------------------
 void turn_start_phase(Field* fd);
 void turn_end_phase(Field* fd);
-void evaluate_legion(Field* fd);
 // return value : (raid points) -> attacker wins, 0 -> defender wins
 Results<uint64_t> play(Field* fd)
 {
@@ -414,10 +413,6 @@ Results<uint64_t> play(Field* fd)
             fd->skill_queue.emplace_back(&fd->tap->commander, fd->bg_skill);
             resolve_skill(fd);
         }
-
-        // Evaluate Legion skill
-        fd->current_phase = Field::legion_phase;
-        evaluate_legion(fd);
 
         // Evaluate commander
         fd->current_phase = Field::commander_phase;
@@ -765,39 +760,6 @@ void turn_end_phase(Field* fd)
     remove_dead(fd->tip->assaults);
     remove_dead(fd->tip->structures);
 }
-void evaluate_legion(Field* fd)
-{
-    // NOT Honor progenitors
-    auto& assaults = fd->tap->assaults;
-    for(fd->current_ci = 0; fd->current_ci < assaults.size(); ++fd->current_ci)
-    {
-        CardStatus* status(&assaults[fd->current_ci]);
-        unsigned legion_base = status->skill<legion>();
-        if(legion_base == 0)
-        {
-            continue;
-        }
-        unsigned legion_size(0);
-        legion_size += status->m_index > 0 && assaults[status->m_index - 1].m_hp > 0 && assaults[status->m_index - 1].m_faction == status->m_faction;
-        legion_size += status->m_index + 1 < assaults.size() && assaults[status->m_index + 1].m_hp > 0 && assaults[status->m_index + 1].m_faction == status->m_faction;
-        if(legion_size == 0)
-        {
-            continue;
-        }
-        // skill_check<legion>
-        bool do_rally = status->m_hp > 0 && (fd->tapi == status->m_player ? is_active(status) : is_active_next_turn(status));
-        if (!do_rally)
-        {
-            continue;
-        }
-        unsigned legion_value = legion_base * legion_size;
-        _DEBUG_MSG(1, "%s activates Legion %u, rallied by %u\n", status_description(status).c_str(), legion_base, legion_value);
-        if(do_rally)
-        {
-            status->m_rallied += legion_value;
-        }
-    }
-}
 //---------------------- $50 attack by assault card implementation -------------
 // Counter damage dealt to the attacker (att) by defender (def)
 // pre-condition: only valid if m_card->m_counter > 0
@@ -919,6 +881,24 @@ struct PerformAttack
         att_dmg = pre_modifier_dmg;
         std::string desc;
         // enhance damage
+        unsigned legion_base = att_status->skill<legion>();
+        if (legion_base > 0)
+        {
+            auto & assaults = fd->tap->assaults;
+            unsigned legion_size = 0;
+            legion_size += att_status->m_index > 0 && assaults[att_status->m_index - 1].m_hp > 0 && assaults[att_status->m_index - 1].m_faction == att_status->m_faction;
+            legion_size += att_status->m_index + 1 < assaults.size() && assaults[att_status->m_index + 1].m_hp > 0 && assaults[att_status->m_index + 1].m_faction == att_status->m_faction;
+            if (legion_size > 0)
+            {
+                // skill_check<legion>
+                if (att_status->m_hp > 0 && is_active(att_status))
+                {
+                    unsigned legion_value = legion_base * legion_size;
+                    if (debug_print > 0) { desc += "+" + to_string(legion_value) + "(legion)"; }
+                    att_dmg += legion_value;
+                }
+            }
+        }
         if(def_status->m_enfeebled > 0)
         {
             if(debug_print > 0) { desc += "+" + to_string(def_status->m_enfeebled) + "(enfeebled)"; }
