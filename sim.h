@@ -154,6 +154,7 @@ struct CardStatus
     unsigned m_inhibited;
     bool m_jammed;
     bool m_overloaded;
+    unsigned m_paybacked;
     unsigned m_poisoned;
     unsigned m_protected;
     unsigned m_rallied;

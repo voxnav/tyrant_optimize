@@ -20,7 +20,7 @@ std::string skill_names[Skill::num_skills] =
     "<Error>",
     // Defensive:
     "<Error>",
-    "Armor", "Corrosive", "Counter", "Evade", "Wall",
+    "Armor", "Corrosive", "Counter", "Evade", "Payback", "Wall",
     "<Error>",
     // Combat-Modifier:
     "Flurry", "Pierce", "Valor",

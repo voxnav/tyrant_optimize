@@ -92,6 +92,7 @@ inline void CardStatus::set(const Card& card)
     m_inhibited = 0;
     m_jammed = false;
     m_overloaded = false;
+    m_paybacked = 0;
     m_poisoned = 0;
     m_protected = 0;
     m_rallied = 0;
@@ -555,6 +556,12 @@ inline bool skill_check<leech>(Field* fd, CardStatus* c, CardStatus* ref)
     return(can_be_healed(c));
 }
 
+template<>
+inline bool skill_check<payback>(Field* fd, CardStatus* c, CardStatus* ref)
+{
+    return(ref->m_card->m_type == CardType::assault && ref->m_hp > 0);
+}
+
 void remove_hp(Field* fd, CardStatus* status, unsigned dmg)
 {
     assert(status->m_hp > 0);
@@ -733,6 +740,7 @@ void turn_end_phase(Field* fd)
             status.m_protected = 0;
             // so far only useful in Defending turn
             status.m_evaded = 0;
+            status.m_paybacked = 0;
             std::memset(status.m_enhanced_value, 0, sizeof status.m_enhanced_value);
         }
     }
@@ -1317,9 +1325,19 @@ template<Skill skill_id>
 void perform_targetted_hostile_fast(Field* fd, CardStatus* src_status, const SkillSpec& s)
 {
     select_targets<skill_id>(fd, src_status, s);
-    for (CardStatus * c: fd->selection_array)
+    for (CardStatus * dst_status: fd->selection_array)
     {
-        check_and_perform_skill<skill_id>(fd, src_status, c, s, ! src_status->m_overloaded);
+        if (check_and_perform_skill<skill_id>(fd, src_status, dst_status, s, ! src_status->m_overloaded))
+        {
+            // Payback
+            if(dst_status->m_paybacked < dst_status->skill<payback>() && skill_check<payback>(fd, dst_status, src_status) &&
+                    skill_predicate<skill_id>(fd, src_status, src_status, s) && skill_check<skill_id>(fd, src_status, dst_status))
+            {
+                ++ dst_status->m_paybacked;
+                _DEBUG_MSG(1, "%s Payback %s on %s\n", status_description(dst_status).c_str(), skill_short_description(s).c_str(), status_description(src_status).c_str());
+                perform_skill<skill_id>(fd, dst_status, src_status, s);
+            }
+        }
     }
     prepend_bge_reaping(fd);
 }

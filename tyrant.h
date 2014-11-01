@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "2.3.1"
+#define TYRANT_OPTIMIZER_VERSION "2.4.0"
 
 #include <string>
 #include <sstream>
@@ -36,7 +36,7 @@ enum Skill
     END_ACTIVATION_HELPFUL,
     // Defensive:
     BEGIN_DEFENSIVE,
-    armor, corrosive, counter, evade, wall,
+    armor, corrosive, counter, evade, payback, wall,
     END_DEFENSIVE,
     // Combat-Modifier:
     flurry, pierce, valor,
