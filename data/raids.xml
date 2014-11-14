@@ -69,4 +69,25 @@
 		</deck>
 	</raid>
 
+	<raid>
+		<id>4</id>
+		<name>Oluth</name>
+		<commander>1545</commander>
+		<levels>26</levels>
+		<deck>
+			<always_include>
+				<card>12294</card>
+				<card>12294</card>
+				<card>12304</card>
+				<card>12304</card>
+				<card>12314</card>
+				<card>12314</card>
+				<card>12324</card>
+				<card>12324</card>
+				<card>12334</card>
+				<card>12334</card>
+			</always_include>
+		</deck>
+	</raid>
+
 </root>
