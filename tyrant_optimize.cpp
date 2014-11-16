@@ -1700,6 +1700,7 @@ int main(int argc, char** argv)
                     min_deck_len = max_deck_len = your_deck->cards.size();
                 }
                 fund = 0;
+                debug_print = -1;
                 owned_cards.clear();
                 claim_cards({your_deck->commander});
                 claim_cards(your_deck->cards);
