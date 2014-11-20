@@ -1,9 +1,9 @@
-MAIN := tu_optimize
+MAIN := tuo
 SRCS := $(wildcard *.cpp)
 OBJS := $(patsubst %.cpp,obj/%.o,$(SRCS))
 INCS := $(wildcard *.h)
 
-CPPFLAGS := -Wall -Werror -std=gnu++11 -O3 -I/usr/local/include -Wno-deprecated-register
+CPPFLAGS := -Wall -Werror -std=gnu++11 -O3 -I/usr/local/include -Wno-deprecated-register -DNDEBUG
 LDFLAGS := -lboost_system-mt -lboost_thread-mt -lboost_filesystem-mt -lboost_regex-mt -L/usr/local/lib
 
 all: $(MAIN)

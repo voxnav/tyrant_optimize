@@ -30,7 +30,7 @@ std::string skill_names[Skill::num_skills] =
     "Legion",
     // Pseudo-Skill for BGE:
     "<Error>",
-    "Reaping",
+    "Bloodlust", "Reaping",
     "<Error>",
 };
 

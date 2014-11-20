@@ -217,6 +217,7 @@ public:
     OptimizationMode optimization_mode;
     const Effect effect;
     SkillSpec bg_skill;
+    unsigned bloodlust_value;
     // With the introduction of on death skills, a single skill can trigger arbitrary many skills.
     // They are stored in this, and cleared after all have been performed.
     std::deque<std::tuple<CardStatus*, SkillSpec>> skill_queue;

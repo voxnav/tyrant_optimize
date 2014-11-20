@@ -432,6 +432,7 @@ Results<uint64_t> play(Field* fd)
         }
         // Evaluate assaults
         fd->current_phase = Field::assaults_phase;
+        fd->bloodlust_value = 0;
         for(fd->current_ci = 0; !fd->end && fd->current_ci < fd->tap->assaults.size(); ++fd->current_ci)
         {
             // ca: current assault
@@ -452,8 +453,15 @@ Results<uint64_t> play(Field* fd)
                     // Attack
                     if(can_attack(current_status))
                     {
-                        attacked = attack_phase(fd) || attacked;
-                        if(__builtin_expect(fd->end, false)) { break; }
+                        if (attack_phase(fd) && !attacked)
+                        {
+                            attacked = true;
+                            if (__builtin_expect(fd->end, false)) { break; }
+                            if (fd->bg_skill.id == bloodlust)
+                            {
+                                fd->bloodlust_value += fd->bg_skill.x;
+                            }
+                        }
                     }
                     else
                     {
@@ -906,6 +914,11 @@ struct PerformAttack
                     att_dmg += legion_value;
                 }
             }
+        }
+        if (fd->bloodlust_value > 0)
+        {
+            if (debug_print > 0) { desc += "+" + to_string(fd->bloodlust_value) + "(bloodlust)"; }
+            att_dmg += fd->bloodlust_value;
         }
         if(def_status->m_enfeebled > 0)
         {

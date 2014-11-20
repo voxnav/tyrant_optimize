@@ -46,7 +46,7 @@ enum Skill
     legion,
     // Pseudo-Skill for BGE:
     BEGIN_BGE_SKILL,
-    reaping,
+    bloodlust, reaping, 
     END_BGE_SKILL,
     num_skills
 };
