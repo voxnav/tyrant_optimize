@@ -444,6 +444,7 @@ Results<uint64_t> play(Field* fd)
             }
             else
             {
+                fd->assault_bloodlusted = false;
                 unsigned num_actions(1);
                 for(unsigned action_index(0); action_index < num_actions; ++action_index)
                 {
@@ -457,10 +458,6 @@ Results<uint64_t> play(Field* fd)
                         {
                             attacked = true;
                             if (__builtin_expect(fd->end, false)) { break; }
-                            if (fd->bg_skill.id == bloodlust)
-                            {
-                                fd->bloodlust_value += fd->bg_skill.x;
-                            }
                         }
                     }
                     else
@@ -838,10 +835,10 @@ struct PerformAttack
     {}
 
     template<enum CardType::CardType def_cardtype>
-    void op()
+    unsigned op()
     {
         unsigned pre_modifier_dmg = attack_power(att_status);
-        if(pre_modifier_dmg == 0) { return; }
+        if(pre_modifier_dmg == 0) { return 0; }
 
         // Evaluation order:
         // modify damage
@@ -855,11 +852,9 @@ struct PerformAttack
         if(att_dmg > 0)
         {
             attack_damage<def_cardtype>();
-            if(__builtin_expect(fd->end, false)) { return; }
+            if(__builtin_expect(fd->end, false)) { return att_dmg; }
             damage_dependant_pre_oa<def_cardtype>();
-        }
-        if(att_dmg > 0)
-        {
+
             if(att_status->m_hp > 0)
             {
                 if(def_status->has_skill<counter>() && skill_check<counter>(fd, def_status, att_status))
@@ -887,6 +882,7 @@ struct PerformAttack
         }
         prepend_bge_reaping(fd);
         resolve_skill(fd);
+        return att_dmg;
     }
 
     template<enum CardType::CardType>
@@ -1004,16 +1000,16 @@ void PerformAttack::do_leech<CardType::assault>()
 }
 
 // General attack phase by the currently evaluated assault, taking into accounts exotic stuff such as flurry,swipe,etc.
-void attack_commander(Field* fd, CardStatus* att_status)
+unsigned attack_commander(Field* fd, CardStatus* att_status)
 {
     CardStatus* def_status{select_first_enemy_wall(fd)}; // defending wall
     if(def_status != nullptr)
     {
-        PerformAttack{fd, att_status, def_status}.op<CardType::structure>();
+        return PerformAttack{fd, att_status, def_status}.op<CardType::structure>();
     }
     else
     {
-        PerformAttack{fd, att_status, &fd->tip->commander}.op<CardType::commander>();
+        return PerformAttack{fd, att_status, &fd->tip->commander}.op<CardType::commander>();
     }
 }
 // Return true if actually attacks
@@ -1026,14 +1022,21 @@ bool attack_phase(Field* fd)
         return false;
     }
 
+    unsigned att_dmg = 0;
     if (alive_assault(def_assaults, fd->current_ci))
     {
-        PerformAttack{fd, att_status, &fd->tip->assaults[fd->current_ci]}.op<CardType::assault>();
+        att_dmg = PerformAttack{fd, att_status, &fd->tip->assaults[fd->current_ci]}.op<CardType::assault>();
     }
     else
     {
         // might be blocked by walls
-        attack_commander(fd, att_status);
+        att_dmg = attack_commander(fd, att_status);
+    }
+
+    if (att_dmg > 0 && !fd->assault_bloodlusted && fd->bg_skill.id == bloodlust)
+    {
+        fd->bloodlust_value += fd->bg_skill.x;
+        fd->assault_bloodlusted = true;
     }
 
     return true;

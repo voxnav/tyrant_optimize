@@ -217,12 +217,13 @@ public:
     OptimizationMode optimization_mode;
     const Effect effect;
     SkillSpec bg_skill;
-    unsigned bloodlust_value;
     // With the introduction of on death skills, a single skill can trigger arbitrary many skills.
     // They are stored in this, and cleared after all have been performed.
     std::deque<std::tuple<CardStatus*, SkillSpec>> skill_queue;
     std::vector<CardStatus*> killed_with_on_death;
     unsigned n_player_kills;
+    bool assault_bloodlusted;
+    unsigned bloodlust_value;
     enum phase
     {
         playcard_phase,
@@ -250,7 +251,9 @@ public:
         optimization_mode(optimization_mode_),
         effect(effect_),
         bg_skill(bg_skill_),
-        n_player_kills(0)
+        n_player_kills(0),
+        assault_bloodlusted(false),
+        bloodlust_value(0)
     {
     }
 
