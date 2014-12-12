@@ -308,7 +308,7 @@ unsigned read_custom_decks(Decks& decks, Cards& all_cards, std::string filename)
                 continue;
             }
             std::string deck_name;
-            auto deck_string_iter = read_token(deck_string.begin(), deck_string.end(), [](char c){return(strchr(":", c));}, deck_name);
+            auto deck_string_iter = read_token(deck_string.begin(), deck_string.end(), [](char c){return(strchr(":,", c));}, deck_name);
             if(deck_string_iter == deck_string.end() || deck_name.empty())
             {
                 std::cerr << "Error in custom deck file " << filename << " at line " << num_line << ", could not read the deck name.\n";
