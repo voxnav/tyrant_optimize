@@ -54,6 +54,10 @@ struct FinalResults
     result_type wins;
     result_type draws;
     result_type losses;
+	//MDJ
+	result_type wins2;
+	result_type draws2;
+	result_type losses2;
     result_type points;
     result_type sq_points;
     result_type points_lower_bound;

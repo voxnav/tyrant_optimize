@@ -95,12 +95,14 @@ enum gamemode_t
     surge,
 };
 
+//MDJ
 enum class OptimizationMode
 {
     notset,
     winrate,
     defense,
     war,
+	totalwar,
     brawl,
     raid,
 };
