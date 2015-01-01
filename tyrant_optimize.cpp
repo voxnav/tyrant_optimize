@@ -109,13 +109,7 @@ Deck* find_deck(Decks& decks, const Cards& all_cards, std::string deck_name)
     decks.decks.push_back(Deck{all_cards});
     Deck* deck = &decks.decks.back();
     deck->set(deck_name);
-    try
-    {
-        deck->resolve();
-    }
-    catch (std::exception & e)
-    {
-    }
+    deck->resolve();
     return(deck);
 }
 //---------------------- $80 deck optimization ---------------------------------
