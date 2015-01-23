@@ -115,4 +115,31 @@
 		</deck>
 	</raid>
 
+	<raid>
+		<id>6</id>
+		<name>Karkinos</name>
+		<commander>1620</commander>
+		<levels>26</levels>
+		<deck>
+			<always_include>
+				<card>8353</card>
+				<card>8363</card>
+				<card>14167</card>
+				<card>14177</card>
+				<card>14187</card>
+				<card>14197</card>
+				<card>14207</card>
+			</always_include>
+			<card_pool amount="3">
+				<card>8353</card>
+				<card>8363</card>
+				<card>14167</card>
+				<card>14177</card>
+				<card>14187</card>
+				<card>14197</card>
+				<card>14207</card>
+			</card_pool>
+		</deck>
+	</raid>
+
 </root>
