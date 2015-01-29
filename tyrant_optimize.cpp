@@ -20,6 +20,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <unordered_map>
 #include <set>
 #include <stack>
 #include <tuple>
@@ -60,6 +61,8 @@ namespace {
     bool show_stdev{false};
     bool use_harmonic_mean{false};
 }
+
+typedef std::unordered_map<const Card*, unsigned> Requirement;
 
 using namespace std::placeholders;
 //------------------------------------------------------------------------------
@@ -283,6 +286,28 @@ bool adjust_deck(Deck * deck, const signed from_slot, const signed to_slot, cons
     }
     deck_cost = get_deck_cost(deck);
     return !cards_in.empty() || !cards_out.empty();
+}
+
+bool check_requirements(const Deck* deck, const Requirement & requirement)
+{
+    if (requirement.empty())
+    {
+        return true;
+    }
+    Requirement num_cards;
+    num_cards[deck->commander] = 1;
+    for (auto card: deck->cards)
+    {
+        ++ num_cards[card];
+    }
+    for (auto it: requirement)
+    {
+        if (num_cards[it.first] < it.second)
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 void claim_cards(const std::vector<const Card*> & card_list)
@@ -898,7 +923,7 @@ void print_deck_inline(const unsigned deck_cost, const FinalResults<long double>
     std::cout << std::endl;
 }
 //------------------------------------------------------------------------------
-void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d1, Process& proc, std::map<signed, char> card_marks)
+void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d1, Process& proc, Requirement requirement)
 {
 	//MDJ
 	EvaluatedResults zero_results;
@@ -955,7 +980,7 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
         {
             continue;
         }
-        if(!card_marks.count(-1))
+        if (requirement.count(best_commander) == 0)
         {
             for(const Card* commander_candidate: proc.cards.player_commanders)
             {
@@ -969,7 +994,8 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
                 cards_out.emplace_back(-1, best_commander);
                 cards_out = {{-1, best_commander}};
                 d1->commander = commander_candidate;
-                if (! adjust_deck(d1, -1, -1, nullptr, fund, re, deck_cost, cards_out, cards_in))
+                if (! adjust_deck(d1, -1, -1, nullptr, fund, re, deck_cost, cards_out, cards_in) ||
+                        ! check_requirements(d1, requirement))
                 { continue; }
                 auto && cur_deck = d1->hash();
                 auto && emplace_rv = evaluated_decks.insert({cur_deck, zero_results});
@@ -1018,7 +1044,8 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
                 d1->cards.erase(d1->cards.begin() + slot_i);
             }
             if (! adjust_deck(d1, slot_i, slot_i, card_candidate, fund, re, deck_cost, cards_out, cards_in) ||
-                    d1->cards.size() < min_deck_len)
+                    d1->cards.size() < min_deck_len ||
+                    ! check_requirements(d1, requirement))
             { continue; }
             auto && cur_deck = d1->hash();
             auto && emplace_rv = evaluated_decks.insert({cur_deck, zero_results});
@@ -1057,7 +1084,7 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
     print_deck_inline(get_deck_cost(d1), best_score, d1);
 }
 //------------------------------------------------------------------------------
-void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations, Deck* d1, Process& proc, std::map<signed, char> card_marks)
+void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations, Deck* d1, Process& proc, Requirement requirement)
 {
 	//MDJ
 	EvaluatedResults zero_results;
@@ -1114,7 +1141,7 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
         {
             continue;
         }
-        if(!card_marks.count(-1))
+        if (requirement.count(best_commander) == 0)
         {
             for(const Card* commander_candidate: proc.cards.player_commanders)
             {
@@ -1129,7 +1156,8 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
                 cards_out.clear();
                 cards_out.emplace_back(-1, best_commander);
                 d1->commander = commander_candidate;
-                if (! adjust_deck(d1, -1, -1, nullptr, fund, re, deck_cost, cards_out, cards_in))
+                if (! adjust_deck(d1, -1, -1, nullptr, fund, re, deck_cost, cards_out, cards_in) ||
+                    ! check_requirements(d1, requirement))
                 { continue; }
                 auto && cur_deck = d1->hash();
                 auto && emplace_rv = evaluated_decks.insert({cur_deck, zero_results});
@@ -1182,7 +1210,8 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
                     d1->cards.erase(d1->cards.begin() + from_slot);
                 }
                 if (! adjust_deck(d1, from_slot, to_slot, card_candidate, fund, re, deck_cost, cards_out, cards_in) ||
-                        d1->cards.size() < min_deck_len)
+                        d1->cards.size() < min_deck_len ||
+                        ! check_requirements(d1, requirement))
                 { continue; }
                 auto && cur_deck = d1->hash();
                 auto && emplace_rv = evaluated_decks.insert({cur_deck, zero_results});
@@ -1726,6 +1755,7 @@ int main(int argc, char** argv)
 
 	//MDJ
     Deck* your_deck{nullptr};
+    Requirement requirement;
     std::vector<Deck*> enemy_decks;
     std::vector<long double> enemy_decks_factors;
 
@@ -1785,7 +1815,16 @@ int main(int argc, char** argv)
     }
     if (opt_keep_commander)
     {
-        your_deck->card_marks[-1] = '!';
+        requirement[your_deck->commander] = 1;
+    }
+    for (auto && card_mark: your_deck->card_marks)
+    {
+        auto && card = your_deck->cards[card_mark.first];
+        auto mark = card_mark.second;
+        if (mark == '!')
+        {
+            requirement[card] += 1;
+        }
     }
 
     for(auto deck_parsed: deck_list_parsed)
@@ -1893,12 +1932,12 @@ int main(int argc, char** argv)
                 switch (opt_your_strategy)
                 {
                 case DeckStrategy::random:
-                    hill_climbing(std::get<0>(op), std::get<1>(op), your_deck, p, your_deck->card_marks);
+                    hill_climbing(std::get<0>(op), std::get<1>(op), your_deck, p, requirement);
                     break;
 //                case DeckStrategy::ordered:
 //                case DeckStrategy::exact_ordered:
                 default:
-                    hill_climbing_ordered(std::get<0>(op), std::get<1>(op), your_deck, p, your_deck->card_marks);
+                    hill_climbing_ordered(std::get<0>(op), std::get<1>(op), your_deck, p, requirement);
                     break;
                 }
                 break;
@@ -1915,7 +1954,7 @@ int main(int argc, char** argv)
                 owned_cards.clear();
                 claim_cards({your_deck->commander});
                 claim_cards(your_deck->cards);
-                hill_climbing_ordered(std::get<0>(op), std::get<1>(op), your_deck, p, your_deck->card_marks);
+                hill_climbing_ordered(std::get<0>(op), std::get<1>(op), your_deck, p, requirement);
                 break;
             }
             case debug: {
