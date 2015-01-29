@@ -1753,6 +1753,14 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    if (your_deck->cards.size() > max_deck_len)
+    {
+        your_deck->shrink(max_deck_len);
+        if (debug_print >= 0)
+        {
+            std::cerr << "WARNING: Too many cards in your deck. Trimmed.\n";
+        }
+    }
     your_deck->strategy = opt_your_strategy;
     if (!opt_forts.empty())
     {

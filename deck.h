@@ -114,6 +114,7 @@ public:
     }
     void set(const std::string& deck_string_);
     void resolve();
+    void shrink(const unsigned deck_len);
     void set_given_hand(const std::string& deck_string_);
     void set_forts(const std::string& deck_string_);
 

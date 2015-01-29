@@ -339,6 +339,14 @@ void Deck::resolve()
     deck_string.clear();
 }
 
+void Deck::shrink(const unsigned deck_len)
+{
+    if (cards.size() > deck_len)
+    {
+        cards.resize(deck_len);
+    }
+}
+
 void Deck::set_given_hand(const std::string& deck_string)
 {
     auto && id_marks = string_to_ids(all_cards, deck_string, "hand");
