@@ -44,6 +44,8 @@
 namespace {
     gamemode_t gamemode{fight};
     OptimizationMode optimization_mode{OptimizationMode::notset};
+	//MDJ
+	std::string opt_forts, opt_enemy_forts;
     std::map<unsigned, unsigned> owned_cards;
     bool use_owned_cards{true};
     unsigned min_deck_len{1};
@@ -305,51 +307,116 @@ void claim_cards(const std::vector<const Card*> & card_list)
 //------------------------------------------------------------------------------
 FinalResults<long double> compute_score(const EvaluatedResults& results, std::vector<long double>& factors)
 {
-    FinalResults<long double> final{0, 0, 0, 0, 0, 0, 0, results.second};
+    FinalResults<long double> final{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, results.second};
     long double max_possible = 100;
     switch (optimization_mode)
     {
     case OptimizationMode::brawl: max_possible = 70; break;
     default: max_possible = 100; break;
     }
-    for(unsigned index(0); index < results.first.size(); ++index)
-    {
-        final.wins += results.first[index].wins * factors[index];
-        final.draws += results.first[index].draws * factors[index];
-        final.losses += results.first[index].losses * factors[index];
-        auto lower_bound = boost::math::binomial_distribution<>::find_lower_bound_on_p(results.second, results.first[index].points / max_possible, 1 - confidence_level) * max_possible;
-        auto upper_bound = boost::math::binomial_distribution<>::find_upper_bound_on_p(results.second, results.first[index].points / max_possible, 1 - confidence_level) * max_possible;
-        if(use_harmonic_mean)
-        {
-            final.points += factors[index] / results.first[index].points;
-            final.points_lower_bound += factors[index] / lower_bound;
-            final.points_upper_bound += factors[index] / upper_bound;
-        }
-        else
-        {
-            final.points += results.first[index].points * factors[index];
-            final.points_lower_bound += lower_bound * factors[index];
-            final.points_upper_bound += upper_bound * factors[index];
-        }
-        final.sq_points += results.first[index].sq_points * factors[index] * factors[index];
-    }
-    long double factor_sum = std::accumulate(factors.begin(), factors.end(), 0.);
-    final.wins /= factor_sum * (long double)results.second;
-    final.draws /= factor_sum * (long double)results.second;
-    final.losses /= factor_sum * (long double)results.second;
-    if(use_harmonic_mean)
-    {
-        final.points = factor_sum / ((long double)results.second * final.points);
-        final.points_lower_bound = factor_sum / final.points_lower_bound;
-        final.points_upper_bound = factor_sum / final.points_upper_bound;
-    }
-    else
-    {
-        final.points /= factor_sum * (long double)results.second;
-        final.points_lower_bound /= factor_sum;
-        final.points_upper_bound /= factor_sum;
-    }
-    final.sq_points /= factor_sum * factor_sum * (long double)results.second;
+	if (optimization_mode == OptimizationMode::totalwar) //Double results
+	{
+		for (unsigned index(0); index < results.first.size(); ++index)
+		{
+			//MDJ (evens are offense and odds are defense)
+			unsigned findex = 0;
+			if (index % 2 == 0)
+			{
+				final.wins += results.first[index].wins * factors[findex];
+				final.draws += results.first[index].draws * factors[findex];
+				final.losses += results.first[index].losses * factors[findex];
+			}
+			else
+			{
+				final.wins2 += results.first[index].wins * factors[findex];
+				final.draws2 += results.first[index].draws * factors[findex];
+				final.losses2 += results.first[index].losses * factors[findex];
+			}
+			auto lower_bound = boost::math::binomial_distribution<>::find_lower_bound_on_p(results.second, results.first[index].points / max_possible, 1 - confidence_level) * max_possible;
+			auto upper_bound = boost::math::binomial_distribution<>::find_upper_bound_on_p(results.second, results.first[index].points / max_possible, 1 - confidence_level) * max_possible;
+			if (use_harmonic_mean)
+			{
+				final.points += factors[findex] / results.first[index].points;
+				final.points_lower_bound += factors[findex] / lower_bound;
+				final.points_upper_bound += factors[findex] / upper_bound;
+			}
+			else
+			{
+				final.points += results.first[index].points * factors[findex];
+				final.points_lower_bound += lower_bound * factors[findex];
+				final.points_upper_bound += upper_bound * factors[findex];
+			}
+			final.sq_points += results.first[index].sq_points * factors[findex] * factors[findex];
+		}
+		long double factor_sum = std::accumulate(factors.begin(), factors.end(), 0.);
+		final.wins /= factor_sum * (long double)results.second;
+		final.draws /= factor_sum * (long double)results.second;
+		final.losses /= factor_sum * (long double)results.second;
+		final.wins2 /= factor_sum * (long double)results.second;
+		final.draws2 /= factor_sum * (long double)results.second;
+		final.losses2 /= factor_sum * (long double)results.second;
+		//MDJ Twice the results if two sets of sims
+		long double total_results = results.second;
+		if (optimization_mode == OptimizationMode::totalwar)
+		{
+			total_results *= 2;
+		}
+		if (use_harmonic_mean)
+		{
+			final.points = factor_sum / (total_results * final.points);
+			final.points_lower_bound = factor_sum / final.points_lower_bound;
+			final.points_upper_bound = factor_sum / final.points_upper_bound;
+		}
+		else
+		{
+			final.points /= factor_sum * total_results;
+			final.points_lower_bound /= factor_sum;
+			final.points_upper_bound /= factor_sum;
+		}
+		//std::cout << "OWins/ODraws/OLosses/DWins/DDraws/DLosses/Score:" << final.wins << "/" << final.draws << "/" << final.losses << "/" << final.wins2 << "/" << final.draws2 << "/" << final.losses2 << "/" << final.points;
+		final.sq_points /= factor_sum * factor_sum * total_results;
+	}
+	else //No double results
+	{
+		for (unsigned index(0); index < results.first.size(); ++index)
+		{
+			final.wins += results.first[index].wins * factors[index];
+			final.draws += results.first[index].draws * factors[index];
+			final.losses += results.first[index].losses * factors[index];
+			auto lower_bound = boost::math::binomial_distribution<>::find_lower_bound_on_p(results.second, results.first[index].points / max_possible, 1 - confidence_level) * max_possible;
+			auto upper_bound = boost::math::binomial_distribution<>::find_upper_bound_on_p(results.second, results.first[index].points / max_possible, 1 - confidence_level) * max_possible;
+			if (use_harmonic_mean)
+			{
+				final.points += factors[index] / results.first[index].points;
+				final.points_lower_bound += factors[index] / lower_bound;
+				final.points_upper_bound += factors[index] / upper_bound;
+			}
+			else
+			{
+				final.points += results.first[index].points * factors[index];
+				final.points_lower_bound += lower_bound * factors[index];
+				final.points_upper_bound += upper_bound * factors[index];
+			}
+			final.sq_points += results.first[index].sq_points * factors[index] * factors[index];
+		}
+		long double factor_sum = std::accumulate(factors.begin(), factors.end(), 0.);
+		final.wins /= factor_sum * (long double)results.second;
+		final.draws /= factor_sum * (long double)results.second;
+		final.losses /= factor_sum * (long double)results.second;
+		if (use_harmonic_mean)
+		{
+			final.points = factor_sum / ((long double)results.second * final.points);
+			final.points_lower_bound = factor_sum / final.points_lower_bound;
+			final.points_upper_bound = factor_sum / final.points_upper_bound;
+		}
+		else
+		{
+			final.points /= factor_sum * (long double)results.second;
+			final.points_lower_bound /= factor_sum;
+			final.points_upper_bound /= factor_sum;
+		}
+		final.sq_points /= factor_sum * factor_sum * (long double)results.second;
+	}
     return final;
 }
 //------------------------------------------------------------------------------
@@ -422,6 +489,59 @@ struct SimulationData
             Field fd(re, cards, your_hand, *enemy_hand, gamemode, optimization_mode, effect != Effect::none ? effect : enemy_hand->deck->effect, bg_skill);
             Results<uint64_t> result(play(&fd));
             res.emplace_back(result);
+			//MDJ
+			if (optimization_mode == OptimizationMode::totalwar)
+			{
+				if (!opt_enemy_forts.empty())
+				{
+					try
+					{
+						your_hand.deck->set_forts(opt_enemy_forts + ",");
+					}
+					catch (const std::runtime_error& e)
+					{
+						std::cerr << "Error: ef " << opt_enemy_forts << ": " << e.what() << std::endl;
+					}
+				}
+				if (!opt_forts.empty())
+				{
+					try
+					{
+							enemy_hand->deck->set_forts(opt_forts + ",");
+					}
+					catch (const std::runtime_error& e)
+					{
+						std::cerr << "Error: yf " << opt_forts << ": " << e.what() << std::endl;
+					}
+				}
+				your_hand.reset(re);
+				enemy_hand->reset(re);
+				Field fd1(re, cards, your_hand, *enemy_hand, gamemode_t::fight, OptimizationMode::defense, effect != Effect::none ? effect : enemy_hand->deck->effect, bg_skill);
+				Results<uint64_t> result1(play(&fd1));
+				res.emplace_back(result1);
+				if (!opt_forts.empty())
+				{
+					try
+					{
+						your_hand.deck->set_forts(opt_forts + ",");
+					}
+					catch (const std::runtime_error& e)
+					{
+						std::cerr << "Error: yf " << opt_forts << ": " << e.what() << std::endl;
+					}
+				}
+				if (!opt_enemy_forts.empty())
+				{
+					try
+					{
+							enemy_hand->deck->set_forts(opt_enemy_forts + ",");
+					}
+					catch (const std::runtime_error& e)
+					{
+						std::cerr << "Error: ef " << opt_enemy_forts << ": " << e.what() << std::endl;
+					}
+				}
+			}
         }
         return(res);
     }
@@ -540,6 +660,7 @@ void thread_evaluate(boost::barrier& main_barrier,
             else
             {
                 --thread_num_iterations; //!
+				//MDJ
                 shared_mutex.unlock(); //>>>>
                 std::vector<Results<uint64_t>> result{sim.evaluate()};
                 shared_mutex.lock(); //<<<<
@@ -621,27 +742,74 @@ void print_score_info(const EvaluatedResults& results, std::vector<long double>&
 void print_results(const EvaluatedResults& results, std::vector<long double>& factors)
 {
     auto final = compute_score(results, factors);
+	//MDJ
+	if (optimization_mode == OptimizationMode::totalwar)
+	{
+		std::cout << "Offense win%: " << final.wins * 100.0 << " (";
+		for (unsigned index(0); index < results.first.size(); index = index+2)
+		{
+			std::cout << results.first[index].wins << " ";
+		}
+		std::cout << "/ " << results.second << ")" << std::endl;
 
-    std::cout << "win%: " << final.wins * 100.0 << " (";
-    for(const auto & val: results.first)
-    {
-        std::cout << val.wins << " ";
-    }
-    std::cout << "/ " << results.second << ")" << std::endl;
+		std::cout << "Offense stall%: " << final.draws * 100.0 << " (";
+		for (unsigned index(0); index < results.first.size(); index = index + 2)
+		{
+			std::cout << results.first[index].draws << " ";
+		}
+		std::cout << "/ " << results.second << ")" << std::endl;
 
-    std::cout << "stall%: " << final.draws * 100.0 << " (";
-    for(const auto & val: results.first)
-    {
-        std::cout << val.draws << " ";
-    }
-    std::cout << "/ " << results.second << ")" << std::endl;
+		std::cout << "Offense loss%: " << final.losses * 100.0 << " (";
+		for (unsigned index(0); index < results.first.size(); index = index + 2)
+		{
+			std::cout << results.first[index].losses << " ";
+		}
+		std::cout << "/ " << results.second << ")" << std::endl;
 
-    std::cout << "loss%: " << final.losses * 100.0 << " (";
-    for(const auto & val: results.first)
-    {
-        std::cout << val.losses << " ";
-    }
-    std::cout << "/ " << results.second << ")" << std::endl;
+		std::cout << "Defense win%: " << final.wins2 * 100.0 << " (";
+		for (unsigned index(1); index < results.first.size(); index = index + 2)
+		{
+			std::cout << results.first[index].wins << " ";
+		}
+		std::cout << "/ " << results.second << ")" << std::endl;
+
+		std::cout << "Defense stall%: " << final.draws2 * 100.0 << " (";
+		for (unsigned index(1); index < results.first.size(); index = index + 2)
+		{
+			std::cout << results.first[index].draws << " ";
+		}
+		std::cout << "/ " << results.second << ")" << std::endl;
+
+		std::cout << "Defense loss%: " << final.losses2 * 100.0 << " (";
+		for (unsigned index(1); index < results.first.size(); index = index + 2)
+		{
+			std::cout << results.first[index].losses << " ";
+		}
+		std::cout << "/ " << results.second << ")" << std::endl;
+	}
+	else
+	{
+		std::cout << "win%: " << final.wins * 100.0 << " (";
+		for (const auto & val : results.first)
+		{
+			std::cout << val.wins << " ";
+		}
+		std::cout << "/ " << results.second << ")" << std::endl;
+
+		std::cout << "stall%: " << final.draws * 100.0 << " (";
+		for (const auto & val : results.first)
+		{
+			std::cout << val.draws << " ";
+		}
+		std::cout << "/ " << results.second << ")" << std::endl;
+
+		std::cout << "loss%: " << final.losses * 100.0 << " (";
+		for (const auto & val : results.first)
+		{
+			std::cout << val.losses << " ";
+		}
+		std::cout << "/ " << results.second << ")" << std::endl;
+	}
 
     switch(optimization_mode)
     {
@@ -692,7 +860,10 @@ void print_deck_inline(const unsigned deck_cost, const FinalResults<long double>
             break;
         case OptimizationMode::defense:
             std::cout << "(" << score.draws * 100.0 << "% stall) ";
-            break;
+            break;			
+		case OptimizationMode::totalwar:
+			std::cout << "(Offense: " << score.wins * 100 << "% win, Defense: " << (score.wins2 + score.draws2) * 100 << "% win/stall) ";
+			break;
         default:
             break;
     }
@@ -729,13 +900,21 @@ void print_deck_inline(const unsigned deck_cost, const FinalResults<long double>
 //------------------------------------------------------------------------------
 void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d1, Process& proc, std::map<signed, char> card_marks)
 {
-    EvaluatedResults zero_results{EvaluatedResults::first_type(proc.enemy_decks.size()), 0};
+	//MDJ
+	EvaluatedResults zero_results;
+	if (optimization_mode == OptimizationMode::totalwar)
+	{
+		zero_results = { EvaluatedResults::first_type(proc.enemy_decks.size() * 2), 0 };
+	}
+	else{
+		zero_results = { EvaluatedResults::first_type(proc.enemy_decks.size()), 0 };
+	}
     auto best_deck = d1->hash();
     std::map<std::string, EvaluatedResults> evaluated_decks{{best_deck, zero_results}};
     EvaluatedResults & results = proc.evaluate(num_min_iterations, evaluated_decks.begin()->second);
     print_score_info(results, proc.factors);
     auto current_score = compute_score(results, proc.factors);
-    auto best_score = current_score;
+	auto best_score = current_score;
     // Non-commander cards
     auto non_commander_cards = proc.cards.player_assaults;
     non_commander_cards.insert(non_commander_cards.end(), proc.cards.player_structures.begin(), proc.cards.player_structures.end());
@@ -800,8 +979,8 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
                     skipped_simulations += prev_results.second;
                 }
                 // Evaluate new deck
-                auto compare_results = proc.compare(best_score.n_sims, prev_results, best_score);
-                current_score = compute_score(compare_results, proc.factors);
+				auto compare_results = proc.compare(best_score.n_sims, prev_results, best_score);
+				current_score = compute_score(compare_results, proc.factors);
                 // Is it better ?
                 if (current_score.points > best_score.points + min_increment_of_score)
                 {
@@ -880,7 +1059,15 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
 //------------------------------------------------------------------------------
 void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations, Deck* d1, Process& proc, std::map<signed, char> card_marks)
 {
-    EvaluatedResults zero_results{EvaluatedResults::first_type(proc.enemy_decks.size()), 0};
+	//MDJ
+	EvaluatedResults zero_results;
+	if (optimization_mode == OptimizationMode::totalwar)
+	{
+		zero_results = { EvaluatedResults::first_type(proc.enemy_decks.size() * 2), 0 };
+	}
+	else{
+		zero_results = { EvaluatedResults::first_type(proc.enemy_decks.size()), 0 };
+	}
     auto best_deck = d1->hash();
     std::map<std::string, EvaluatedResults> evaluated_decks{{best_deck, zero_results}};
     EvaluatedResults & results = proc.evaluate(num_min_iterations, evaluated_decks.begin()->second);
@@ -1182,7 +1369,8 @@ int main(int argc, char** argv)
     unsigned opt_num_threads(4);
     DeckStrategy::DeckStrategy opt_your_strategy(DeckStrategy::random);
     DeckStrategy::DeckStrategy opt_enemy_strategy(DeckStrategy::random);
-    std::string opt_forts, opt_enemy_forts;
+	//MDJ
+    //std::string opt_forts, opt_enemy_forts;
     std::string opt_hand, opt_enemy_hand;
     std::vector<std::string> opt_owned_cards_str_list;
     std::vector<std::string> opt_custom_cards_str_list;
@@ -1264,6 +1452,12 @@ int main(int argc, char** argv)
             gamemode = fight;
             optimization_mode = OptimizationMode::defense;
         }
+		//MDJ
+		else if (strcmp(argv[argIndex], "tw") == 0)
+		{
+			gamemode = surge;
+			optimization_mode = OptimizationMode::totalwar;
+		}
         // Others
         else if (strcmp(argv[argIndex], "keep-commander") == 0 || strcmp(argv[argIndex], "-c") == 0)
         {
@@ -1530,6 +1724,7 @@ int main(int argc, char** argv)
     std::string enemy_deck_list{argv[2]};
     auto && deck_list_parsed = parse_deck_list(enemy_deck_list, decks);
 
+	//MDJ
     Deck* your_deck{nullptr};
     std::vector<Deck*> enemy_decks;
     std::vector<long double> enemy_decks_factors;
@@ -1587,7 +1782,7 @@ int main(int argc, char** argv)
 
     for(auto deck_parsed: deck_list_parsed)
     {
-        Deck* enemy_deck{nullptr};
+		Deck* enemy_deck{nullptr};
         try
         {
             enemy_deck = find_deck(decks, all_cards, deck_parsed.first);
@@ -1672,8 +1867,16 @@ int main(int argc, char** argv)
         {
             switch(std::get<2>(op))
             {
-            case simulate: {
-                EvaluatedResults results{EvaluatedResults::first_type(enemy_decks.size()), 0};
+			case simulate: {
+				//MDJ
+				EvaluatedResults results;
+				if (optimization_mode == OptimizationMode::totalwar)
+				{
+					results = { EvaluatedResults::first_type(enemy_decks.size() * 2), 0 };
+				}
+				else{
+					results = { EvaluatedResults::first_type(enemy_decks.size()), 0 };
+				}		
                 results = p.evaluate(std::get<0>(op), results);
                 print_results(results, p.factors);
                 break;

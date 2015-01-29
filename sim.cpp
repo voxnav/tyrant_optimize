@@ -532,7 +532,8 @@ Results<uint64_t> play(Field* fd)
         _DEBUG_MSG(1, "Stall after %u turns.\n", turn_limit);
         switch (fd->optimization_mode)
         {
-        case OptimizationMode::defense: return {1, 1, 0, 100, 0};
+			//MDJ: Bug returning a win and a loss in defense mode?
+        case OptimizationMode::defense: return {0, 1, 0, 100, 0};
         case OptimizationMode::raid: return {0, 1, 0, raid_damage, 0};
         case OptimizationMode::brawl: return {0, 1, 0, 5, 0};
         default: return {0, 1, 0, 0, 0};
