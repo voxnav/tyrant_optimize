@@ -1101,6 +1101,10 @@ inline bool skill_predicate<overload>(Field* fd, CardStatus* src, CardStatus* ds
     }
     for (const auto & s: dst->m_card->m_skills)
     {
+        if (dst->m_skill_cd[s.id] > 0)
+        {
+            continue;
+        }
         if (BEGIN_ACTIVATION_HARMFUL < s.id && s.id < END_ACTIVATION_HARMFUL)
         {
             return true;

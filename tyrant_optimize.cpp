@@ -319,7 +319,7 @@ FinalResults<long double> compute_score(const EvaluatedResults& results, std::ve
 		for (unsigned index(0); index < results.first.size(); ++index)
 		{
 			//MDJ (evens are offense and odds are defense)
-			unsigned findex = 0;
+			unsigned findex = index / 2;
 			if (index % 2 == 0)
 			{
 				final.wins += results.first[index].wins * factors[findex];
