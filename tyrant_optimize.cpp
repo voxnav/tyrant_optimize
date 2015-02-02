@@ -1792,14 +1792,6 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    if (your_deck->cards.size() > max_deck_len)
-    {
-        your_deck->shrink(max_deck_len);
-        if (debug_print >= 0)
-        {
-            std::cerr << "WARNING: Too many cards in your deck. Trimmed.\n";
-        }
-    }
     your_deck->strategy = opt_your_strategy;
     if (!opt_forts.empty())
     {
@@ -1910,6 +1902,19 @@ int main(int argc, char** argv)
     {
         claim_cards({your_deck->commander});
         claim_cards(your_deck->cards);
+    }
+
+    // shrink any oversized deck to maximum of 10 cards + commander
+    // NOTE: do this AFTER the call to claim_cards so that passing an initial deck of >10 cards
+    //       can be used as a "shortcut" for adding them to owned cards. Also this allows climb
+    //       to figure out which are the best 10, rather than restricting climb to the first 10.
+    if (your_deck->cards.size() > max_deck_len)
+    {
+        your_deck->shrink(max_deck_len);
+        if (debug_print >= 0)
+        {
+            std::cerr << "WARNING: Too many cards in your deck. Trimmed.\n";
+        }
     }
 
     if (debug_print >= 0)
