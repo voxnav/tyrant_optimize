@@ -424,10 +424,31 @@ Results<uint64_t> play(Field* fd)
         fd->current_phase = Field::structures_phase;
         for(fd->current_ci = 0; !fd->end && fd->current_ci < fd->tap->structures.size(); ++fd->current_ci)
         {
-            CardStatus& current_status(fd->tap->structures[fd->current_ci]);
-            if(current_status.m_delay == 0 && current_status.m_hp > 0)
+            CardStatus* current_status(&fd->tap->structures[fd->current_ci]);
+            if(!is_active(current_status) || !can_act(current_status))
             {
-                evaluate_skills(fd, &current_status, current_status.m_card->m_skills);
+                _DEBUG_MSG(2, "Structure %s cannot take action.\n", status_description(current_status).c_str());
+            }
+            else
+            {
+                unsigned num_actions(1);
+                for(unsigned action_index(0); action_index < num_actions; ++action_index)
+                {
+                    evaluate_skills(fd, current_status, current_status->m_card->m_skills);
+                    // Flurry
+                    if (can_act(current_status) && fd->tip->commander.m_hp > 0 && current_status->has_skill<flurry>() && current_status->m_skill_cd[flurry] == 0)
+                    {
+                        _DEBUG_MSG(1, "%s activates Flurry\n", status_description(current_status).c_str());
+                        num_actions = 2;
+                        for (const auto & ss : current_status->m_card->m_skills)
+                        {
+                            if (ss.id == flurry)
+                            {
+                                current_status->m_skill_cd[flurry] = ss.c;
+                            }
+                        }
+                    }
+                }
             }
         }
         // Evaluate assaults
