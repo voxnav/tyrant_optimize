@@ -56,7 +56,7 @@ namespace {
     long double min_increment_of_score{0};
     long double confidence_level{0.99};
     bool use_top_level_card{false};
-    bool use_fused_card_level{0};
+    unsigned use_fused_card_level{0};
     bool show_ci{false};
     bool show_stdev{false};
     bool use_harmonic_mean{false};
@@ -268,7 +268,7 @@ bool adjust_deck(Deck * deck, const signed from_slot, const signed to_slot, cons
             candidate_cards.pop();
             *in_it = card_in;
             deck_cost = get_deck_cost(deck);
-            if (deck_cost <= fund)
+            if (use_top_level_card || deck_cost <= fund)
             { break; }
             for (auto recipe_it : card_in->m_recipe_cards)
             { candidate_cards.emplace(recipe_it.first); }
@@ -1028,7 +1028,7 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
         std::shuffle(non_commander_cards.begin(), non_commander_cards.end(), re);
         for(const Card* card_candidate: non_commander_cards)
         {
-            if (card_candidate && card_candidate->m_fusion_level < use_fused_card_level)
+            if (card_candidate && (card_candidate->m_fusion_level < use_fused_card_level || (use_top_level_card && card_candidate->m_level < card_candidate->m_top_level_card->m_level)))
             { continue; }
             d1->commander = best_commander;
             d1->cards = best_cards;
@@ -1190,7 +1190,7 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
         std::shuffle(non_commander_cards.begin(), non_commander_cards.end(), re);
         for(const Card* card_candidate: non_commander_cards)
         {
-            if (card_candidate && card_candidate->m_fusion_level < use_fused_card_level)
+            if (card_candidate && (card_candidate->m_fusion_level < use_fused_card_level || (use_top_level_card && card_candidate->m_level < card_candidate->m_top_level_card->m_level)))
             { continue; }
             // Various checks to check if the card is accepted
             assert(!card_candidate || card_candidate->m_type != CardType::commander);
