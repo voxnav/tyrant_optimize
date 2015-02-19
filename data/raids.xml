@@ -138,4 +138,29 @@
 		</deck>
 	</raid>
 
+	<raid>
+		<id>7</id>
+		<name>Brood Mother</name>
+		<commander>1652</commander>
+		<levels>26</levels>
+		<deck>
+			<always_include>
+				<card>14810</card>
+				<card>14820</card>
+				<card>14830</card>
+				<card>14840</card>
+				<card>14850</card>
+				<card>14860</card>
+			</always_include>
+			<card_pool amount="4">
+				<card>14810</card>
+				<card>14820</card>
+				<card>14830</card>
+				<card>14840</card>
+				<card>14850</card>
+				<card>14860</card>
+			</card_pool>
+		</deck>
+	</raid>
+
 </root>
