@@ -1819,7 +1819,7 @@ int main(int argc, char** argv)
     }
     for (auto && card_mark: your_deck->card_marks)
     {
-        auto && card = your_deck->cards[card_mark.first];
+        auto && card = card_mark.first < 0 ? your_deck->commander : your_deck->cards[card_mark.first];
         auto mark = card_mark.second;
         if (mark == '!')
         {
