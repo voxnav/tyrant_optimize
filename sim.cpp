@@ -527,7 +527,7 @@ Results<uint64_t> play(Field* fd)
     }
     unsigned raid_damage = 15 + fd->n_player_kills - (10 * fd->players[1]->commander.m_hp / fd->players[1]->commander.m_card->m_health);
     unsigned brawl_score = 70 - (p1_size - fd->n_player_kills) * 2 - fd->turn / 2;  // Note that turn is +1, which is intentional
-    unsigned campaign_score = 100 - (std::min(10u, fd->turn / 2) - fd->players[0]->assaults.size() - fd->players[0]->structures.size()) * 10;  // ditto
+    unsigned campaign_score = 100 - (std::min(p0_size, fd->turn / 2) - fd->players[0]->assaults.size() - fd->players[0]->structures.size()) * 10;  // ditto
     // you lose
     if(fd->players[0]->commander.m_hp == 0)
     {
