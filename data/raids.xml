@@ -171,15 +171,16 @@
 		<levels>3</levels>
 		<deck>
 			<always_include>
-				<card>8287</card>
-				<card>7358</card>
-				<card>6869</card>
-				<card>5420</card>
+				<card>4358</card>
+				<card>4616</card>
 				<card>5026</card>
+				<card>5420</card>
+				<card>6869</card>
+				<card>7143</card>
+				<card>8287</card>
 				<card>11029</card>
 				<card>14342</card>
-				<card>7143</card>
-				<card>4616</card>
+				<card>14894</card>
 			</always_include>
 		</deck>
 	</campaign>
@@ -191,14 +192,16 @@
 		<levels>3</levels>
 		<deck>
 			<always_include>
-				<card>6081</card>
-				<card>5319</card>
-				<card>14894</card>
-				<card>6769</card>
 				<card>4153</card>
-				<card>14083</card>
+				<card>4232</card>
+				<card>4495</card>
+				<card>5319</card>
 				<card>5641</card>
-				<card>14342</card>
+				<card>6081</card>
+				<card>6769</card>
+				<card>11613</card>
+				<card>14083</card>
+				<card>14894</card>
 			</always_include>
 		</deck>
 	</campaign>
@@ -210,15 +213,16 @@
 		<levels>3</levels>
 		<deck>
 			<always_include>
-				<card>4153</card>
-				<card>13920</card>
-				<card>12994</card>
-				<card>11613</card>
+				<card>2227</card>
 				<card>5896</card>
-				<card>12470</card>
 				<card>11613</card>
-				<card>14894</card>
+				<card>11613</card>
 				<card>11859</card>
+				<card>12470</card>
+				<card>12994</card>
+				<card>13398</card>
+				<card>13920</card>
+				<card>14894</card>
 			</always_include>
 		</deck>
 	</campaign>
@@ -230,14 +234,16 @@
 		<levels>3</levels>
 		<deck>
 			<always_include>
-				<card>11511</card>
-				<card>4640</card>
-				<card>14888</card>
-				<card>14702</card>
-				<card>6004</card>
-				<card>14396</card>
 				<card>4555</card>
+				<card>4640</card>
+				<card>6004</card>
+				<card>6004</card>
+				<card>8329</card>
+				<card>11511</card>
 				<card>13012</card>
+				<card>14396</card>
+				<card>14702</card>
+				<card>14888</card>
 			</always_include>
 		</deck>
 	</campaign>
@@ -250,14 +256,15 @@
 		<deck>
 			<always_include>
 				<card>4370</card>
-				<card>5784</card>
-				<card>6615</card>
-				<card>13782</card>
 				<card>5044</card>
+				<card>5784</card>
 				<card>5992</card>
-				<card>14888</card>
+				<card>6615</card>
+				<card>7509</card>
 				<card>7971</card>
 				<card>12778</card>
+				<card>13782</card>
+				<card>14888</card>
 			</always_include>
 		</deck>
 	</campaign>
@@ -269,15 +276,14 @@
 		<levels>3</levels>
 		<deck>
 			<always_include>
-				<card>10884</card>
-				<card>13638</card>
-				<card>12778</card>
-				<card>12326</card>
-				<card>14053</card>
-				<card>8305</card>
-				<card>11102</card>
 				<card>4555</card>
-				<card>7047</card>
+				<card>8305</card>
+				<card>10884</card>
+				<card>11102</card>
+				<card>12778</card>
+				<card>13236</card>
+				<card>13638</card>
+				<card>14053</card>
 				<card>14888</card>
 			</always_include>
 		</deck>
@@ -290,16 +296,16 @@
 		<levels>3</levels>
 		<deck>
 			<always_include>
+				<card>7065</card>
 				<card>7293</card>
 				<card>8241</card>
 				<card>11511</card>
 				<card>12204</card>
-				<card>14894</card>
-				<card>7065</card>
 				<card>12482</card>
-				<card>14888</card>
-				<card>13999</card>
 				<card>13764</card>
+				<card>13999</card>
+				<card>14888</card>
+				<card>14894</card>
 			</always_include>
 		</deck>
 	</campaign>
