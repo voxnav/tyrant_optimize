@@ -752,6 +752,7 @@ void print_score_info(const EvaluatedResults& results, std::vector<long double>&
         switch(optimization_mode)
         {
             case OptimizationMode::raid:
+            case OptimizationMode::campaign:
             case OptimizationMode::brawl:
             case OptimizationMode::war:
                 std::cout << val.points << " ";
@@ -839,6 +840,7 @@ void print_results(const EvaluatedResults& results, std::vector<long double>& fa
     switch(optimization_mode)
     {
         case OptimizationMode::raid:
+        case OptimizationMode::campaign:
         case OptimizationMode::brawl:
         case OptimizationMode::war:
             std::cout << "score: " << final.points << " (";
@@ -870,6 +872,7 @@ void print_deck_inline(const unsigned deck_cost, const FinalResults<long double>
     switch(optimization_mode)
     {
         case OptimizationMode::raid:
+        case OptimizationMode::campaign:
         case OptimizationMode::brawl:
         case OptimizationMode::war:
             std::cout << "(" << score.wins * 100 << "% win, " << score.draws * 100 << "% stall";
@@ -1401,6 +1404,7 @@ int main(int argc, char** argv)
 	//MDJ
     //std::string opt_forts, opt_enemy_forts;
     std::string opt_hand, opt_enemy_hand;
+    std::string opt_vip;
     std::vector<std::string> opt_owned_cards_str_list;
     std::vector<std::string> opt_custom_cards_str_list;
     bool opt_do_optimization(false);
@@ -1451,6 +1455,11 @@ int main(int argc, char** argv)
             optimization_mode = OptimizationMode::raid;
         }
         // Mode Package
+        else if (strcmp(argv[argIndex], "campaign") == 0)
+        {
+            gamemode = surge;
+            optimization_mode = OptimizationMode::campaign;
+        }
         else if (strcmp(argv[argIndex], "pvp") == 0)
         {
             gamemode = fight;
@@ -1600,6 +1609,11 @@ int main(int argc, char** argv)
         else if(strcmp(argv[argIndex], "+v") == 0)
         {
             ++ debug_print;
+        }
+        else if(strcmp(argv[argIndex], "vip") == 0)
+        {
+            opt_vip = argv[argIndex + 1];
+            argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "hand") == 0)  // set initial hand for test
         {
@@ -1756,6 +1770,7 @@ int main(int argc, char** argv)
 	//MDJ
     Deck* your_deck{nullptr};
     Requirement requirement;
+    Requirement vip_cards;
     std::vector<Deck*> enemy_decks;
     std::vector<long double> enemy_decks_factors;
 
@@ -1806,6 +1821,15 @@ int main(int argc, char** argv)
     }
     try
     {
+        your_deck->set_vip_cards(opt_vip);
+    }
+    catch(const std::runtime_error& e)
+    {
+        std::cerr << "Error: vip " << opt_vip << ": " << e.what() << std::endl;
+        return 0;
+    }
+    try
+    {
         your_deck->set_given_hand(opt_hand);
     }
     catch(const std::runtime_error& e)
@@ -1850,6 +1874,11 @@ int main(int argc, char** argv)
             if (enemy_deck->decktype == DeckType::raid)
             {
                 optimization_mode = OptimizationMode::raid;
+            }
+            else if (enemy_deck->decktype == DeckType::campaign)
+            {
+                gamemode = surge;
+                optimization_mode = OptimizationMode::campaign;
             }
             else
             {

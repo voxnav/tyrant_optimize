@@ -41,7 +41,7 @@ std::string rarity_names[6]{"", "common", "rare", "epic", "legendary", "vindicat
 unsigned upgrade_cost[]{0, 5, 15, 30, 75, 150};
 unsigned salvaging_income[][7]{{}, {0, 1, 2, 5}, {0, 5, 10, 15, 20}, {0, 20, 25, 30, 40, 50, 65}, {0, 40, 45, 60, 75, 100, 125}, {0, 80, 85, 100, 125, 175, 250}};
 
-std::string decktype_names[DeckType::num_decktypes]{"Deck", "Mission", "Raid", "Quest", "Custom Deck", };
+std::string decktype_names[DeckType::num_decktypes]{"Deck", "Mission", "Raid", "Campaign", "Quest", "Custom Deck", };
 
 std::string effect_names[Effect::num_effects] = {
     "None",

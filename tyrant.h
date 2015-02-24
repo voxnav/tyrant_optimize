@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "2.4.5"
+#define TYRANT_OPTIMIZER_VERSION "2.5.0"
 
 #include <string>
 #include <sstream>
@@ -73,6 +73,7 @@ enum DeckType {
     deck,
     mission,
     raid,
+    campaign,
     quest,
     custom_deck,
     num_decktypes
@@ -105,6 +106,7 @@ enum class OptimizationMode
 	totalwar,
     brawl,
     raid,
+    campaign,
 };
 
 struct true_ {};

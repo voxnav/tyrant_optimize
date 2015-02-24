@@ -347,6 +347,15 @@ void Deck::shrink(const unsigned deck_len)
     }
 }
 
+void Deck::set_vip_cards(const std::string& deck_string)
+{
+    auto && id_marks = string_to_ids(all_cards, deck_string, "vip");
+    for (const auto & cid : id_marks.first)
+    {
+        vip_cards.insert(cid);
+    }
+}
+
 void Deck::set_given_hand(const std::string& deck_string)
 {
     auto && id_marks = string_to_ids(all_cards, deck_string, "hand");

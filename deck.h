@@ -5,6 +5,7 @@
 #include <list>
 #include <map>
 #include <random>
+#include <set>
 #include <vector>
 #include "tyrant.h"
 #include "card.h"
@@ -64,6 +65,7 @@ public:
     unsigned mission_req;
 
     std::string deck_string;
+    std::set<unsigned> vip_cards;
     std::vector<unsigned> given_hand;
     std::vector<const Card*> fort_cards;
 
@@ -115,6 +117,7 @@ public:
     void set(const std::string& deck_string_);
     void resolve();
     void shrink(const unsigned deck_len);
+    void set_vip_cards(const std::string& deck_string_);
     void set_given_hand(const std::string& deck_string_);
     void set_forts(const std::string& deck_string_);
 

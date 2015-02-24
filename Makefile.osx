@@ -3,8 +3,8 @@ SRCS := $(wildcard *.cpp)
 OBJS := $(patsubst %.cpp,obj/%.o,$(SRCS))
 INCS := $(wildcard *.h)
 
-CPPFLAGS := -Wall -Werror -std=gnu++11 -O3 -I/usr/local/include -Wno-deprecated-register -DNDEBUG
-LDFLAGS := -lboost_system-mt -lboost_thread-mt -lboost_filesystem-mt -lboost_regex-mt -L/usr/local/lib
+CPPFLAGS := -Wall -Werror -std=c++11 -stdlib=libc++ -O3 -I/usr/local/include -Wno-deprecated-register -DNDEBUG
+LDFLAGS := -lboost_system-mt -lboost_thread-mt -lboost_filesystem-mt -lboost_regex-mt -L/usr/local/lib -Bstatic
 
 all: $(MAIN)
 

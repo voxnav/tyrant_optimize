@@ -408,6 +408,18 @@ void read_raids(Decks& decks, const Cards& all_cards, std::string filename)
         std::string deck_name{name_node->value()};
         read_deck(decks, all_cards, raid_node, "effect", DeckType::raid, id, deck_name);
     }
+
+    for(xml_node<>* campaign_node = root->first_node("campaign");
+        campaign_node;
+        campaign_node = campaign_node->next_sibling("campaign"))
+    {
+        xml_node<>* id_node(campaign_node->first_node("id"));
+        assert(id_node);
+        unsigned id(id_node ? atoi(id_node->value()) : 0);
+        xml_node<>* name_node(campaign_node->first_node("name"));
+        std::string deck_name{name_node->value()};
+        read_deck(decks, all_cards, campaign_node, "effect", DeckType::campaign, id, deck_name);
+    }
 }
 
 //------------------------------------------------------------------------------

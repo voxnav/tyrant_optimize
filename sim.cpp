@@ -527,6 +527,7 @@ Results<uint64_t> play(Field* fd)
     }
     unsigned raid_damage = 15 + fd->n_player_kills - (10 * fd->players[1]->commander.m_hp / fd->players[1]->commander.m_card->m_health);
     unsigned brawl_score = 70 - (p1_size - fd->n_player_kills) * 2 - fd->turn / 2;  // Note that turn is +1, which is intentional
+    unsigned campaign_score = 100 - (std::min(10u, fd->turn / 2) - fd->players[0]->assaults.size() - fd->players[0]->structures.size()) * 10;  // ditto
     // you lose
     if(fd->players[0]->commander.m_hp == 0)
     {
@@ -545,6 +546,7 @@ Results<uint64_t> play(Field* fd)
         switch (fd->optimization_mode)
         {
         case OptimizationMode::brawl: return {1, 0, 0, brawl_score, 0};
+        case OptimizationMode::campaign: return {1, 0, 0, campaign_score, 0};
         default: return {1, 0, 0, 100, 0};
         }
     }
@@ -553,7 +555,6 @@ Results<uint64_t> play(Field* fd)
         _DEBUG_MSG(1, "Stall after %u turns.\n", turn_limit);
         switch (fd->optimization_mode)
         {
-			//MDJ: Bug returning a win and a loss in defense mode?
         case OptimizationMode::defense: return {0, 1, 0, 100, 0};
         case OptimizationMode::raid: return {0, 1, 0, raid_damage, 0};
         case OptimizationMode::brawl: return {0, 1, 0, 5, 0};
@@ -605,6 +606,12 @@ void remove_hp(Field* fd, CardStatus* status, unsigned dmg)
         if (status->m_player == 1)
         {
             fd->n_player_kills += 1;
+        }
+        if (status->m_player == 0 && fd->players[0]->deck->vip_cards.count(status->m_card->m_id))
+        {
+            _DEBUG_MSG(1, "%s dies\n", status_description(status).c_str());
+            fd->players[0]->commander.m_hp = 0;
+            fd->end = true;
         }
     }
 }
@@ -823,7 +830,7 @@ inline bool alive_assault(Storage<CardStatus>& assaults, unsigned index)
 
 void remove_commander_hp(Field* fd, CardStatus& status, unsigned dmg, bool count_points)
 {
-    assert(status.m_hp > 0);
+    //assert(status.m_hp > 0);
     assert(status.m_card->m_type == CardType::commander);
     _DEBUG_MSG(2, "%s takes %u damage\n", status_description(&status).c_str(), dmg);
     status.m_hp = safe_minus(status.m_hp, dmg);
