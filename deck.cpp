@@ -308,7 +308,7 @@ void Deck::set(const std::vector<unsigned>& ids, const std::map<signed, char> &m
             }
             else
             {
-                throw std::runtime_error("While constructing a deck: two commanders detected (" + card->m_name + " and " + commander->m_name + ")");
+                std::cerr << "WARNING: Ignoring additional commander " << card->m_name << " (" << commander->m_name << " already in deck)\n";
             }
         }
         else
