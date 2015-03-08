@@ -46,7 +46,7 @@ struct Results
     }
 };
 
-typedef std::pair<std::vector<Results<uint64_t>>, unsigned> EvaluatedResults;
+typedef std::pair<std::vector<Results<int64_t>>, unsigned> EvaluatedResults;
 
 template<typename result_type>
 struct FinalResults
@@ -198,7 +198,6 @@ public:
     CardStatus commander;
     Storage<CardStatus> assaults;
     Storage<CardStatus> structures;
-    unsigned available_summons;
 };
 //------------------------------------------------------------------------------
 // struct Field is the data model of a battle:

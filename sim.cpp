@@ -143,7 +143,7 @@ std::string card_description(const Cards& cards, const Card* c)
         assert(false);
         break;
     }
-    if(c->m_rarity == 4) { desc += " legendary"; }
+    if(c->m_rarity >= 4) { desc += " " + rarity_names[c->m_rarity]; }
     if(c->m_faction != allfactions) { desc += " " + faction_names[c->m_faction]; }
     for(auto& skill: c->m_skills) { desc += ", " + skill_description(cards, skill); }
     return(desc);
@@ -356,7 +356,6 @@ Results<uint64_t> play(Field* fd)
     fd->tap = fd->players[fd->tapi];
     fd->tip = fd->players[fd->tipi];
     fd->end = false;
-    fd->n_player_kills = 0;
 
     // Play fortresses
     for (unsigned _ = 0; _ < 2; ++ _)
@@ -368,15 +367,6 @@ Results<uint64_t> play(Field* fd)
         std::swap(fd->tapi, fd->tipi);
         std::swap(fd->tap, fd->tip);
     }
-
-#if 0
-    // ANP: Last decision point is second-to-last card played.
-    fd->points_since_last_decision = 0;
-#endif
-    unsigned p0_size = fd->players[0]->deck->cards.size();
-    unsigned p1_size = fd->players[1]->deck->cards.size();
-    fd->players[0]->available_summons = 29 + p0_size;
-    fd->players[1]->available_summons = 29 + p1_size;
 
     while(__builtin_expect(fd->turn <= turn_limit && !fd->end, true))
     {
@@ -525,9 +515,8 @@ Results<uint64_t> play(Field* fd)
         std::swap(fd->tap, fd->tip);
         ++fd->turn;
     }
-    unsigned raid_damage = 15 + fd->n_player_kills - (10 * fd->players[1]->commander.m_hp / fd->players[1]->commander.m_card->m_health);
-    unsigned brawl_score = 70 - (p1_size - fd->n_player_kills) * 2 - fd->turn / 2;  // Note that turn is +1, which is intentional
-    unsigned campaign_score = 100 - (std::min(p0_size, fd->turn / 2) - fd->players[0]->assaults.size() - fd->players[0]->structures.size()) * 10;  // ditto
+    const auto & p = fd->players;
+    unsigned raid_damage = 15 + (std::min<unsigned>(p[1]->deck->cards.size(), (fd->turn + 1) / 2) - p[1]->assaults.size() - p[1]->structures.size()) - (10 * p[1]->commander.m_hp / p[1]->commander.m_card->m_health);
     // you lose
     if(fd->players[0]->commander.m_hp == 0)
     {
@@ -545,8 +534,20 @@ Results<uint64_t> play(Field* fd)
         _DEBUG_MSG(1, "You win.\n");
         switch (fd->optimization_mode)
         {
-        case OptimizationMode::brawl: return {1, 0, 0, brawl_score, 0};
-        case OptimizationMode::campaign: return {1, 0, 0, campaign_score, 0};
+        case OptimizationMode::brawl:
+            {
+                unsigned brawl_score = 57
+                    - (10 * (p[0]->commander.m_card->m_health - p[0]->commander.m_hp) / p[0]->commander.m_card->m_health)
+                    + (p[0]->assaults.size() + p[0]->structures.size() + p[0]->deck->shuffled_cards.size())
+                    - (p[1]->assaults.size() + p[1]->structures.size() + p[1]->deck->shuffled_cards.size())
+                    - fd->turn / 4;
+                return {1, 0, 0, brawl_score, 0};
+            }
+        case OptimizationMode::campaign:
+            {
+                unsigned campaign_score = 100 - (std::min<unsigned>(p[0]->deck->cards.size(), (fd->turn + 1) / 2) - p[0]->assaults.size() - p[0]->structures.size()) * 10;
+                return {1, 0, 0, campaign_score, 0};
+            }
         default: return {1, 0, 0, 100, 0};
         }
     }
@@ -602,10 +603,6 @@ void remove_hp(Field* fd, CardStatus* status, unsigned dmg)
         if(fd->bg_skill.id == reaping && status->m_card->m_type != CardType::commander)
         {
             fd->killed_with_on_death.push_back(status);
-        }
-        if (status->m_player == 1)
-        {
-            fd->n_player_kills += 1;
         }
         if (status->m_player == 0 && fd->players[0]->deck->vip_cards.count(status->m_card->m_id))
         {
@@ -834,14 +831,6 @@ void remove_commander_hp(Field* fd, CardStatus& status, unsigned dmg, bool count
     assert(status.m_card->m_type == CardType::commander);
     _DEBUG_MSG(2, "%s takes %u damage\n", status_description(&status).c_str(), dmg);
     status.m_hp = safe_minus(status.m_hp, dmg);
-    // ANP: If commander is enemy's, player gets points equal to damage.
-    // Points are awarded for overkill, so it is correct to simply add dmg.
-    if(count_points && status.m_player == 1)
-    {
-#if 0
-        fd->points_since_last_decision += dmg;
-#endif
-    }
     if(status.m_hp == 0)
     {
         _DEBUG_MSG(1, "%s dies\n", status_description(&status).c_str());

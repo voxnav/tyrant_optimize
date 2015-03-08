@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "2.5.1"
+#define TYRANT_OPTIMIZER_VERSION "2.5.2"
 
 #include <string>
 #include <sstream>
@@ -107,7 +107,11 @@ enum class OptimizationMode
     brawl,
     raid,
     campaign,
+    num_optimization_mode
 };
+
+extern signed min_possible_score[(size_t)OptimizationMode::num_optimization_mode];
+extern signed max_possible_score[(size_t)OptimizationMode::num_optimization_mode];
 
 struct true_ {};
 

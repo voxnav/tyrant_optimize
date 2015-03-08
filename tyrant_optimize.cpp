@@ -333,12 +333,7 @@ void claim_cards(const std::vector<const Card*> & card_list)
 FinalResults<long double> compute_score(const EvaluatedResults& results, std::vector<long double>& factors)
 {
     FinalResults<long double> final{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, results.second};
-    long double max_possible = 100;
-    switch (optimization_mode)
-    {
-    case OptimizationMode::brawl: max_possible = 70; break;
-    default: max_possible = 100; break;
-    }
+    long double max_possible = max_possible_score[(size_t)optimization_mode];
 	if (optimization_mode == OptimizationMode::totalwar) //Double results
 	{
 		for (unsigned index(0); index < results.first.size(); ++index)
@@ -717,12 +712,7 @@ void thread_evaluate(boost::barrier& main_barrier,
                         score_accum = thread_score_local[0];
                     }
                     bool compare_stop(false);
-                    long double max_possible = 100;
-                    switch (optimization_mode)
-                    {
-                    case OptimizationMode::brawl: max_possible = 70; break;
-                    default: max_possible = 100; break;
-                    }
+                    long double max_possible = max_possible_score[(size_t)optimization_mode];
                     // Get a loose (better than no) upper bound. TODO: Improve it.
                     compare_stop = (boost::math::binomial_distribution<>::find_upper_bound_on_p(thread_total_local, score_accum / max_possible, 1 - confidence_level) * max_possible <
                             thread_best_results->points + min_increment_of_score);

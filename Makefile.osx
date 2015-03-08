@@ -8,7 +8,7 @@ LDFLAGS := -lboost_system-mt -lboost_thread-mt -lboost_filesystem-mt -lboost_reg
 
 all: $(MAIN)
 
-obj/%.o: %.cpp ${INCS} obj
+obj/%.o: %.cpp ${INCS}
 	$(CXX) $(CPPFLAGS) -o $@ -c $<
 
 $(MAIN): $(OBJS)
