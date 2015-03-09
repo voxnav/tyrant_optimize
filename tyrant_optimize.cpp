@@ -51,6 +51,7 @@ namespace {
     bool use_owned_cards{true};
     unsigned min_deck_len{1};
     unsigned max_deck_len{10};
+    unsigned freezed_cards{0};
     unsigned fund{0};
     long double target_score{100};
     long double min_increment_of_score{0};
@@ -1102,8 +1103,12 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
     bool deck_has_been_improved = true;
     unsigned long skipped_simulations = 0;
     std::vector<std::pair<signed, const Card *>> cards_out, cards_in;
-    for(unsigned from_slot(0), dead_slot(0); ; from_slot = (from_slot + 1) % std::min<unsigned>(max_deck_len, d1->cards.size() + 1))
+    for(unsigned from_slot(freezed_cards), dead_slot(freezed_cards); ; from_slot = (from_slot + 1) % std::min<unsigned>(max_deck_len, d1->cards.size() + 1))
     {
+        if (from_slot < freezed_cards)
+        {
+            continue;
+        }
         if(deck_has_been_improved)
         {
             dead_slot = from_slot;
@@ -1181,7 +1186,7 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
             { continue; }
             // Various checks to check if the card is accepted
             assert(!card_candidate || card_candidate->m_type != CardType::commander);
-            for(unsigned to_slot(card_candidate ? 0 : best_cards.size() - 1); to_slot < best_cards.size() + (from_slot < best_cards.size() ? 0 : 1); ++to_slot)
+            for(unsigned to_slot(card_candidate ? freezed_cards : best_cards.size() - 1); to_slot < best_cards.size() + (from_slot < best_cards.size() ? 0 : 1); ++to_slot)
             {
                 d1->commander = best_commander;
                 d1->cards = best_cards;
@@ -1488,6 +1493,11 @@ int main(int argc, char** argv)
         else if (strcmp(argv[argIndex], "effect") == 0 || strcmp(argv[argIndex], "-e") == 0)
         {
             opt_effect = argv[argIndex + 1];
+            argIndex += 1;
+        }
+        else if (strcmp(argv[argIndex], "freeze") == 0 || strcmp(argv[argIndex], "-F") == 0)
+        {
+            freezed_cards = atoi(argv[argIndex + 1]);
             argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "-L") == 0)
@@ -1906,6 +1916,7 @@ int main(int argc, char** argv)
             std::cerr << "WARNING: Too many cards in your deck. Trimmed.\n";
         }
     }
+    freezed_cards = std::min<unsigned>(freezed_cards, your_deck->cards.size());
 
     if (debug_print >= 0)
     {
