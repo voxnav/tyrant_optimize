@@ -2,6 +2,7 @@
 
 <root>
 
+	<!--
 	<raid>
 		<id>1</id>
 		<name>Apocalypse</name>
@@ -162,8 +163,9 @@
 			</card_pool>
 		</deck>
 	</raid>
+	-->
 
-
+	<!--
 	<campaign>
 		<id>1</id>
 		<name>Tartarus Vanguard 1</name>
@@ -307,6 +309,469 @@
 				<card>13999</card>
 				<card>14888</card>
 				<card>14894</card>
+			</always_include>
+		</deck>
+	</campaign>
+	-->
+
+	<campaign>
+		<id>211</id>
+		<name>Brim101</name>
+		<name>Brimstone Normal 1</name>
+		<commander>1358</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4060</card>
+				<card>5737</card>
+				<card>8402</card>
+				<card>12704</card>
+				<card>12879</card>
+				<card>15065</card>
+				<card>15065</card>
+				<card>15074</card>
+				<card>15134</card>
+				<card>15151</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>212</id>
+		<name>Brim102</name>
+		<name>Brimstone Normal 2</name>
+		<commander>1358</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4060</card>
+				<card>8402</card>
+				<card>12704</card>
+				<card>12879</card>
+				<card>14082</card>
+				<card>15065</card>
+				<card>15065</card>
+				<card>15071</card>
+				<card>15134</card>
+				<card>15151</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>213</id>
+		<name>Brim103</name>
+		<name>Brimstone Normal 3</name>
+		<commander>1681</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4060</card>
+				<card>8402</card>
+				<card>12704</card>
+				<card>12879</card>
+				<card>14082</card>
+				<card>15065</card>
+				<card>15065</card>
+				<card>15071</card>
+				<card>15134</card>
+				<card>15151</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>214</id>
+		<name>Brim104</name>
+		<name>Brimstone Normal 4</name>
+		<commander>1032</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4060</card>
+				<card>5737</card>
+				<card>8402</card>
+				<card>12704</card>
+				<card>12879</card>
+				<card>15065</card>
+				<card>15065</card>
+				<card>15074</card>
+				<card>15134</card>
+				<card>15151</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>215</id>
+		<name>Brim105</name>
+		<name>Brimstone Normal 5</name>
+		<commander>1032</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4811</card>
+				<card>8065</card>
+				<card>11004</card>
+				<card>12601</card>
+				<card>13325</card>
+				<card>15037</card>
+				<card>15065</card>
+				<card>15071</card>
+				<card>15071</card>
+				<card>15151</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>216</id>
+		<name>Brim106</name>
+		<name>Brimstone Normal 6</name>
+		<commander>1687</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4811</card>
+				<card>8286</card>
+				<card>11312</card>
+				<card>11642</card>
+				<card>11948</card>
+				<card>12607</card>
+				<card>15065</card>
+				<card>15071</card>
+				<card>15071</card>
+				<card>15151</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>217</id>
+		<name>Brim107</name>
+		<name>Brimstone Normal 7</name>
+		<commander>1692</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7688</card>
+				<card>8286</card>
+				<card>10174</card>
+				<card>12391</card>
+				<card>14299</card>
+				<card>14959</card>
+				<card>15065</card>
+				<card>15071</card>
+				<card>15151</card>
+				<card>15151</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>221</id>
+		<name>Brim201</name>
+		<name>Brimstone Heroic 1</name>
+		<commander>1360</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>5743</card>
+				<card>8408</card>
+				<card>10180</card>
+				<card>10860</card>
+				<card>12710</card>
+				<card>15067</card>
+				<card>15067</card>
+				<card>15073</card>
+				<card>15153</card>
+				<card>15197</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>222</id>
+		<name>Brim202</name>
+		<name>Brimstone Heroic 2</name>
+		<commander>1360</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7688</card>
+				<card>8408</card>
+				<card>10180</card>
+				<card>12710</card>
+				<card>14088</card>
+				<card>15067</card>
+				<card>15067</card>
+				<card>15073</card>
+				<card>15153</card>
+				<card>15197</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>223</id>
+		<name>Brim203</name>
+		<name>Brimstone Heroic 3</name>
+		<commander>1683</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4158</card>
+				<card>7688</card>
+				<card>8408</card>
+				<card>12710</card>
+				<card>12885</card>
+				<card>14088</card>
+				<card>15067</card>
+				<card>15067</card>
+				<card>15073</card>
+				<card>15153</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>224</id>
+		<name>Brim204</name>
+		<name>Brimstone Heroic 4</name>
+		<commander>1034</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7148</card>
+				<card>7688</card>
+				<card>8071</card>
+				<card>11010</card>
+				<card>13331</card>
+				<card>15043</card>
+				<card>15067</card>
+				<card>15073</card>
+				<card>15073</card>
+				<card>15153</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>225</id>
+		<name>Brim205</name>
+		<name>Brimstone Heroic 5</name>
+		<commander>1034</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>5743</card>
+				<card>7148</card>
+				<card>8071</card>
+				<card>11954</card>
+				<card>12607</card>
+				<card>15043</card>
+				<card>15067</card>
+				<card>15073</card>
+				<card>15073</card>
+				<card>15153</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>226</id>
+		<name>Brim206</name>
+		<name>Brimstone Heroic 6</name>
+		<commander>1689</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>8292</card>
+				<card>10180</card>
+				<card>11648</card>
+				<card>12397</card>
+				<card>14088</card>
+				<card>14971</card>
+				<card>15067</card>
+				<card>15073</card>
+				<card>15073</card>
+				<card>15153</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>227</id>
+		<name>Brim207</name>
+		<name>Brimstone Heroic 7</name>
+		<commander>1697</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7688</card>
+				<card>8292</card>
+				<card>10180</card>
+				<card>11618</card>
+				<card>12397</card>
+				<card>14971</card>
+				<card>15067</card>
+				<card>15073</card>
+				<card>15153</card>
+				<card>15153</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>231</id>
+		<name>Brim301</name>
+		<name>Brimstone Mythic 1</name>
+		<commander>1360</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>5749</card>
+				<card>8408</card>
+				<card>10048</card>
+				<card>10186</card>
+				<card>10438</card>
+				<card>15068</card>
+				<card>15068</card>
+				<card>15074</card>
+				<card>15156</card>
+				<card>15197</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>232</id>
+		<name>Brim302</name>
+		<name>Brimstone Mythic 2</name>
+		<commander>1360</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>8408</card>
+				<card>10186</card>
+				<card>10438</card>
+				<card>10871</card>
+				<card>11498</card>
+				<card>12710</card>
+				<card>15068</card>
+				<card>15068</card>
+				<card>15074</card>
+				<card>15156</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>233</id>
+		<name>Brim303</name>
+		<name>Brimstone Mythic 3</name>
+		<commander>1685</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7694</card>
+				<card>8408</card>
+				<card>10186</card>
+				<card>11408</card>
+				<card>12891</card>
+				<card>14094</card>
+				<card>15068</card>
+				<card>15068</card>
+				<card>15074</card>
+				<card>15156</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>234</id>
+		<name>Brim304</name>
+		<name>Brimstone Mythic 4</name>
+		<commander>1034</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>5749</card>
+				<card>8071</card>
+				<card>10048</card>
+				<card>10438</card>
+				<card>11016</card>
+				<card>13337</card>
+				<card>15068</card>
+				<card>15074</card>
+				<card>15074</card>
+				<card>15156</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>235</id>
+		<name>Brim305</name>
+		<name>Brimstone Mythic 5</name>
+		<commander>1034</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7148</card>
+				<card>7694</card>
+				<card>8071</card>
+				<card>11960</card>
+				<card>12891</card>
+				<card>14305</card>
+				<card>15068</card>
+				<card>15074</card>
+				<card>15074</card>
+				<card>15156</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>236</id>
+		<name>Brim306</name>
+		<name>Brimstone Mythic 6</name>
+		<commander>1691</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7382</card>
+				<card>7694</card>
+				<card>8292</card>
+				<card>10186</card>
+				<card>10734</card>
+				<card>14971</card>
+				<card>15068</card>
+				<card>15074</card>
+				<card>15074</card>
+				<card>15156</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>237</id>
+		<name>Brim307</name>
+		<name>Brimstone Mythic 7</name>
+		<commander>1697</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7382</card>
+				<card>8292</card>
+				<card>10186</card>
+				<card>11618</card>
+				<card>12397</card>
+				<card>14743</card>
+				<card>15068</card>
+				<card>15074</card>
+				<card>15156</card>
+				<card>15156</card>
 			</always_include>
 		</deck>
 	</campaign>

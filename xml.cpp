@@ -334,13 +334,16 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, const ch
     deck->set(commander_card, always_cards, some_cards, reward_cards, mission_req);
 
     // upgrade cards for full-level missions/raids
-    deck->commander = deck->commander->m_top_level_card;
-    for (auto && card: deck->cards)
-    { card = card->m_top_level_card; }
-    for (auto && pool: deck->raid_cards)
+    if (max_level > 1)
     {
-        for (auto && card: pool.second)
+        deck->commander = deck->commander->m_top_level_card;
+        for (auto && card: deck->cards)
         { card = card->m_top_level_card; }
+        for (auto && pool: deck->raid_cards)
+        {
+            for (auto && card: pool.second)
+            { card = card->m_top_level_card; }
+        }
     }
 
     decks.by_name[base_deck_name] = deck;
@@ -416,9 +419,13 @@ void read_raids(Decks& decks, const Cards& all_cards, std::string filename)
         xml_node<>* id_node(campaign_node->first_node("id"));
         assert(id_node);
         unsigned id(id_node ? atoi(id_node->value()) : 0);
-        xml_node<>* name_node(campaign_node->first_node("name"));
-        std::string deck_name{name_node->value()};
-        read_deck(decks, all_cards, campaign_node, "effect", DeckType::campaign, id, deck_name);
+        for (auto && name_node = campaign_node->first_node("name");
+            name_node;
+            name_node = campaign_node->next_sibling("name"))
+        {
+            std::string deck_name{name_node->value()};
+            read_deck(decks, all_cards, campaign_node, "effect", DeckType::campaign, id, name_node->value());
+        }
     }
 }
 
