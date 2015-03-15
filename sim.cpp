@@ -258,26 +258,70 @@ void resolve_skill(Field* fd)
     }
 }
 //------------------------------------------------------------------------------
+inline bool has_attacked(CardStatus* c) { return(c->m_step == CardStep::attacked); }
+inline bool is_jammed(CardStatus* c) { return(c->m_jammed); }
+inline bool is_active(CardStatus* c) { return(c->m_delay == 0); }
+inline bool is_active_next_turn(CardStatus* c) { return(c->m_delay <= 1); }
+inline bool can_act(CardStatus* c) { return(c->m_hp > 0 && !is_jammed(c)); }
+inline bool can_attack(CardStatus* c) { return(can_act(c)); }
+// Can be healed / repaired
+inline bool can_be_healed(CardStatus* c) { return(c->m_hp > 0 && c->m_hp < c->m_card->m_health); }
+//------------------------------------------------------------------------------
 bool attack_phase(Field* fd);
 bool check_and_perform_valor(Field* fd, CardStatus* src_status);
-void evaluate_skills(Field* fd, CardStatus* status, const std::vector<SkillSpec>& skills)
+template <enum CardType::CardType type>
+void evaluate_skills(Field* fd, CardStatus* status, const std::vector<SkillSpec>& skills, bool* attacked=nullptr)
 {
     assert(status);
-    assert(fd->skill_queue.size() == 0);
-    for(auto& ss: skills)
+    unsigned num_actions(1);
+    for (unsigned action_index(0); action_index < num_actions; ++ action_index)
     {
-        if (skill_table[ss.id] == nullptr)
+        assert(fd->skill_queue.size() == 0);
+        for (auto & ss: skills)
         {
-            continue;
+            if (skill_table[ss.id] == nullptr)
+            {
+                continue;
+            }
+            if (status->m_skill_cd[ss.id] > 0)
+            {
+                continue;
+            }
+            _DEBUG_MSG(2, "Evaluating %s skill %s\n", status_description(status).c_str(), skill_description(fd->cards, ss).c_str());
+            fd->skill_queue.emplace_back(status, ss);
+            resolve_skill(fd);
+            if(__builtin_expect(fd->end, false)) { break; }
         }
-        if (status->m_skill_cd[ss.id] > 0)
+        if (type == CardType::assault)
         {
-            continue;
+            // no commander-killing skill yet // if(__builtin_expect(fd->end, false)) { break; }
+            // Attack
+            if (can_attack(status))
+            {
+                if (attack_phase(fd) && !*attacked)
+                {
+                    *attacked = true;
+                    if (__builtin_expect(fd->end, false)) { break; }
+                }
+            }
+            else
+            {
+                _DEBUG_MSG(2, "Assault %s cannot take attack.\n", status_description(status).c_str());
+            }
         }
-        _DEBUG_MSG(2, "Evaluating %s skill %s\n", status_description(status).c_str(), skill_description(fd->cards, ss).c_str());
-        fd->skill_queue.emplace_back(status, ss);
-        resolve_skill(fd);
-        if(__builtin_expect(fd->end, false)) { break; }
+        // Flurry
+        if (can_act(status) && fd->tip->commander.m_hp > 0 && status->has_skill<flurry>() && status->m_skill_cd[flurry] == 0)
+        {
+            _DEBUG_MSG(1, "%s activates Flurry\n", status_description(status).c_str());
+            num_actions = 2;
+            for (const auto & ss : skills)
+            {
+                if (ss.id == flurry)
+                {
+                    status->m_skill_cd[flurry] = ss.c;
+                }
+            }
+        }
     }
 }
 
@@ -334,15 +378,6 @@ void PlayCard::setStorage<CardType::structure>()
 {
     storage = &fd->tap->structures;
 }
-//------------------------------------------------------------------------------
-inline bool has_attacked(CardStatus* c) { return(c->m_step == CardStep::attacked); }
-inline bool is_jammed(CardStatus* c) { return(c->m_jammed); }
-inline bool is_active(CardStatus* c) { return(c->m_delay == 0); }
-inline bool is_active_next_turn(CardStatus* c) { return(c->m_delay <= 1); }
-inline bool can_act(CardStatus* c) { return(c->m_hp > 0 && !is_jammed(c)); }
-inline bool can_attack(CardStatus* c) { return(can_act(c)); }
-// Can be healed / repaired
-inline bool can_be_healed(CardStatus* c) { return(c->m_hp > 0 && c->m_hp < c->m_card->m_health); }
 //------------------------------------------------------------------------------
 void turn_start_phase(Field* fd);
 void turn_end_phase(Field* fd);
@@ -407,7 +442,7 @@ Results<uint64_t> play(Field* fd)
 
         // Evaluate commander
         fd->current_phase = Field::commander_phase;
-        evaluate_skills(fd, &fd->tap->commander, fd->tap->commander.m_card->m_skills);
+        evaluate_skills<CardType::commander>(fd, &fd->tap->commander, fd->tap->commander.m_card->m_skills);
         if(__builtin_expect(fd->end, false)) { break; }
 
         // Evaluate structures
@@ -421,24 +456,7 @@ Results<uint64_t> play(Field* fd)
             }
             else
             {
-                unsigned num_actions(1);
-                for(unsigned action_index(0); action_index < num_actions; ++action_index)
-                {
-                    evaluate_skills(fd, current_status, current_status->m_card->m_skills);
-                    // Flurry
-                    if (can_act(current_status) && fd->tip->commander.m_hp > 0 && current_status->has_skill<flurry>() && current_status->m_skill_cd[flurry] == 0)
-                    {
-                        _DEBUG_MSG(1, "%s activates Flurry\n", status_description(current_status).c_str());
-                        num_actions = 2;
-                        for (const auto & ss : current_status->m_card->m_skills)
-                        {
-                            if (ss.id == flurry)
-                            {
-                                current_status->m_skill_cd[flurry] = ss.c;
-                            }
-                        }
-                    }
-                }
+                evaluate_skills<CardType::structure>(fd, current_status, current_status->m_card->m_skills);
             }
         }
         // Evaluate assaults
@@ -456,39 +474,8 @@ Results<uint64_t> play(Field* fd)
             else
             {
                 fd->assault_bloodlusted = false;
-                unsigned num_actions(1);
-                for(unsigned action_index(0); action_index < num_actions; ++action_index)
-                {
-                    // Evaluate skills
-                    evaluate_skills(fd, current_status, current_status->m_card->m_skills);
-                    // no commander-killing skill yet // if(__builtin_expect(fd->end, false)) { break; }
-                    // Attack
-                    if(can_attack(current_status))
-                    {
-                        if (attack_phase(fd) && !attacked)
-                        {
-                            attacked = true;
-                            if (__builtin_expect(fd->end, false)) { break; }
-                        }
-                    }
-                    else
-                    {
-                        _DEBUG_MSG(2, "Assault %s cannot take attack.\n", status_description(current_status).c_str());
-                    }
-                    // Flurry
-                    if (can_act(current_status) && fd->tip->commander.m_hp > 0 && current_status->has_skill<flurry>() && current_status->m_skill_cd[flurry] == 0)
-                    {
-                        _DEBUG_MSG(1, "%s activates Flurry\n", status_description(current_status).c_str());
-                        num_actions = 2;
-                        for (const auto & ss : current_status->m_card->m_skills)
-                        {
-                            if (ss.id == flurry)
-                            {
-                                current_status->m_skill_cd[flurry] = ss.c;
-                            }
-                        }
-                    }
-                }
+                evaluate_skills<CardType::assault>(fd, current_status, current_status->m_card->m_skills, &attacked);
+                if (__builtin_expect(fd->end, false)) { break; }
             }
             if (current_status->m_corroded_rate > 0)
             {
