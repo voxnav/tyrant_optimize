@@ -2,7 +2,6 @@
 
 <root>
 
-	<!--
 	<raid>
 		<id>1</id>
 		<name>Apocalypse</name>
@@ -163,9 +162,7 @@
 			</card_pool>
 		</deck>
 	</raid>
-	-->
 
-	<!--
 	<campaign>
 		<id>1</id>
 		<name>Tartarus Vanguard 1</name>
@@ -312,7 +309,6 @@
 			</always_include>
 		</deck>
 	</campaign>
-	-->
 
 	<campaign>
 		<id>211</id>
@@ -604,7 +600,7 @@
 		<id>227</id>
 		<name>Brim207</name>
 		<name>Brimstone Heroic 7</name>
-		<commander>1697</commander>
+		<commander>1694</commander>
 		<levels>1</levels>
 		<deck>
 			<always_include>

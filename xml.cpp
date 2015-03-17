@@ -421,9 +421,8 @@ void read_raids(Decks& decks, const Cards& all_cards, std::string filename)
         unsigned id(id_node ? atoi(id_node->value()) : 0);
         for (auto && name_node = campaign_node->first_node("name");
             name_node;
-            name_node = campaign_node->next_sibling("name"))
+            name_node = name_node->next_sibling("name"))
         {
-            std::string deck_name{name_node->value()};
             read_deck(decks, all_cards, campaign_node, "effect", DeckType::campaign, id, name_node->value());
         }
     }
