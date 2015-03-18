@@ -163,6 +163,31 @@
 		</deck>
 	</raid>
 
+	<raid>
+		<id>8</id>
+		<name>Lernaean Hydra</name>
+		<commander>1698</commander>
+		<levels>26</levels>
+		<deck>
+			<always_include>
+				<card>8548</card>
+				<card>15480</card>
+				<card>15490</card>
+				<card>15500</card>
+				<card>15510</card>
+				<card>15520</card>
+			</always_include>
+			<card_pool amount="4">
+				<card>8548</card>
+				<card>15480</card>
+				<card>15490</card>
+				<card>15500</card>
+				<card>15510</card>
+				<card>15520</card>
+			</card_pool>
+		</deck>
+	</raid>
+
 	<campaign>
 		<id>1</id>
 		<name>Tartarus Vanguard 1</name>

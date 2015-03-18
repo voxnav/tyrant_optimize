@@ -51,7 +51,7 @@ public:
         std::memset(m_skill_value, 0, sizeof m_skill_value);
     }
 
-    void add_skill(Skill id, unsigned x, Faction y, unsigned n, unsigned c, Skill s, bool all);
+    void add_skill(Skill id, unsigned x, Faction y, unsigned n, unsigned c, Skill s, Skill s2, bool all);
     const Card* upgraded() const { return this == m_top_level_card ? this : m_used_for_cards.begin()->first; }
 };
 

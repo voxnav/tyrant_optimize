@@ -148,7 +148,7 @@ void Cards::organize()
 }
 
 // class Card
-void Card::add_skill(Skill id, unsigned x, Faction y, unsigned n, unsigned c, Skill s, bool all)
+void Card::add_skill(Skill id, unsigned x, Faction y, unsigned n, unsigned c, Skill s, Skill s2, bool all)
 {
     for(auto it = m_skills.begin(); it != m_skills.end(); ++ it)
     {
@@ -158,7 +158,7 @@ void Card::add_skill(Skill id, unsigned x, Faction y, unsigned n, unsigned c, Sk
             break;
         }
     }
-    m_skills.push_back({id, x, y, n, c, s, all});
+    m_skills.push_back({id, x, y, n, c, s, s2, all});
     m_skill_value[id] = x ? x : n ? n : 1;
 }
 

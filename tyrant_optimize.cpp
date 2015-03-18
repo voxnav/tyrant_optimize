@@ -1401,7 +1401,7 @@ int main(int argc, char** argv)
     std::vector<std::tuple<unsigned, unsigned, Operation>> opt_todo;
     std::string opt_effect;
     enum Effect opt_effect_id(Effect::none);
-    SkillSpec opt_bg_skill{no_skill, 0, allfactions, 0, 0, no_skill, false};
+    SkillSpec opt_bg_skill{no_skill, 0, allfactions, 0, 0, no_skill, no_skill, false};
 
     for(int argIndex = 3; argIndex < argc; ++argIndex)
     {

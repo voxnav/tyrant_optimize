@@ -164,6 +164,8 @@ struct CardStatus
     unsigned m_rallied;
     unsigned m_weakened;
 
+    signed m_primary_skill_offset[num_skills];
+    signed m_evolved_skill_offset[num_skills];
     unsigned m_enhanced_value[num_skills];
     unsigned m_skill_cd[num_skills];
 
@@ -172,9 +174,9 @@ struct CardStatus
     void set(const Card* card);
     void set(const Card& card);
     std::string description() const;
+    inline unsigned skill_base_value(Skill skill_id) const;
+    unsigned skill(Skill skill_id) const;
     bool has_skill(Skill skill_id) const;
-    template<Skill skill_id> bool has_skill() const;
-    template<Skill skill_id> unsigned skill() const;
     unsigned enhanced(Skill skill) const;
     unsigned protected_value() const;
 };

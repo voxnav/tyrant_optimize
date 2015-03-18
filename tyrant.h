@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "2.5.4"
+#define TYRANT_OPTIMIZER_VERSION "2.6.0"
 
 #include <string>
 #include <sstream>
@@ -32,11 +32,11 @@ enum Skill
     enfeeble, jam, siege, strike, weaken, 
     END_ACTIVATION_HARMFUL,
     BEGIN_ACTIVATION_HELPFUL,
-    enhance, heal, overload, protect, rally, 
+    enhance, evolve, heal, overload, protect, rally,
     END_ACTIVATION_HELPFUL,
     // Defensive:
     BEGIN_DEFENSIVE,
-    armor, corrosive, counter, evade, payback, wall,
+    armor, avenge, corrosive, counter, evade, payback, refresh, wall,
     END_DEFENSIVE,
     // Combat-Modifier:
     flurry, pierce, valor,
@@ -143,6 +143,7 @@ struct SkillSpec
     unsigned n;
     unsigned c;
     Skill s;
+    Skill s2;
     bool all;
 };
 

@@ -85,10 +85,10 @@ unsigned node_value(xml_node<>* skill, const char* attribute, unsigned default_v
     return value_node ? atoi(value_node->value()) : default_value;
 }
 
-Skill skill_target_skill(xml_node<>* skill)
+Skill skill_target_skill(xml_node<>* skill, const char* attribute)
 {
     Skill s(no_skill);
-    xml_attribute<>* x(skill->first_attribute("s"));
+    xml_attribute<>* x(skill->first_attribute(attribute));
     if(x)
     {
        s = skill_name_to_id(x->value());
@@ -213,9 +213,10 @@ void parse_card_node(Cards& all_cards, Card* card, xml_node<>* card_node)
         auto y = skill_faction(skill_node);
         auto n = node_value(skill_node, "n", 0);
         auto c = node_value(skill_node, "c", 0);
-        auto s = skill_target_skill(skill_node);
+        auto s = skill_target_skill(skill_node, "s");
+        auto s2 = skill_target_skill(skill_node, "s2");
         bool all(skill_node->first_attribute("all"));
-        card->add_skill(skill_id, x, y, n, c, s, all);
+        card->add_skill(skill_id, x, y, n, c, s, s2, all);
     }
     all_cards.cards.push_back(card);
     Card * top_card = card;

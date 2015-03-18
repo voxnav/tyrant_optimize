@@ -16,11 +16,11 @@ std::string skill_names[Skill::num_skills] =
     "Enfeeble", "Jam", "Siege", "Strike", "Weaken",
     "<Error>",
     "<Error>",
-    "Enhance", "Heal", "Overload", "Protect", "Rally",
+    "Enhance", "Evolve", "Heal", "Overload", "Protect", "Rally",
     "<Error>",
     // Defensive:
     "<Error>",
-    "Armor", "Corrosive", "Counter", "Evade", "Payback", "Wall",
+    "Armor", "Avenge", "Corrosive", "Counter", "Evade", "Payback", "Refresh", "Wall",
     "<Error>",
     // Combat-Modifier:
     "Flurry", "Pierce", "Valor",

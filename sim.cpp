@@ -42,26 +42,24 @@ inline void Field::print_selection_array()
 #endif
 }
 //------------------------------------------------------------------------------
+inline unsigned CardStatus::skill_base_value(Skill skill_id) const
+{
+    return m_card->m_skill_value[skill_id + m_primary_skill_offset[skill_id]];
+}
+//------------------------------------------------------------------------------
+inline unsigned CardStatus::skill(Skill skill_id) const
+{
+    return skill_base_value(skill_id) + enhanced(skill_id);
+}
+//------------------------------------------------------------------------------
 inline bool CardStatus::has_skill(Skill skill_id) const
 {
-    return m_card->m_skill_value[skill_id];
+    return skill_base_value(skill_id);
 }
 //------------------------------------------------------------------------------
-template<Skill skill_id>
-inline bool CardStatus::has_skill() const
+inline unsigned CardStatus::enhanced(Skill skill_id) const
 {
-    return m_card->m_skill_value[skill_id];
-}
-//------------------------------------------------------------------------------
-template<Skill skill_id>
-inline unsigned CardStatus::skill() const
-{
-    return m_card->m_skill_value[skill_id] + enhanced(skill_id);
-}
-//------------------------------------------------------------------------------
-inline unsigned CardStatus::enhanced(Skill skill) const
-{
-    return m_enhanced_value[skill];
+    return m_enhanced_value[skill_id + m_primary_skill_offset[skill_id]];
 }
 //------------------------------------------------------------------------------
 inline unsigned CardStatus::protected_value() const
@@ -98,6 +96,8 @@ inline void CardStatus::set(const Card& card)
     m_rallied = 0;
     m_weakened = 0;
 
+    std::memset(m_primary_skill_offset, 0, sizeof m_primary_skill_offset);
+    std::memset(m_evolved_skill_offset, 0, sizeof m_evolved_skill_offset);
     std::memset(m_enhanced_value, 0, sizeof m_enhanced_value);
     std::memset(m_skill_cd, 0, sizeof m_skill_cd);
 }
@@ -113,6 +113,7 @@ std::string skill_description(const Cards& cards, const SkillSpec& s)
        (s.all ? " all" : s.n == 0 ? "" : std::string(" ") + to_string(s.n)) +
        (s.y == allfactions ? "" : std::string(" ") + faction_names[s.y]) +
        (s.s == no_skill ? "" : std::string(" ") + skill_names[s.s]) +
+       (s.s2 == no_skill ? "" : std::string(" ") + skill_names[s.s2]) +
        (s.x == 0 || s.x == s.n ? "" : std::string(" ") + to_string(s.x)) +
        (s.c == 0 ? "" : std::string(" every ") + to_string(s.c));
 }
@@ -121,6 +122,7 @@ std::string skill_short_description(const SkillSpec& s)
     // NOTE: not support summon
     return skill_names[s.id] +
         (s.s == no_skill ? "" : std::string(" ") + skill_names[s.s]) +
+        (s.s2 == no_skill ? "" : std::string(" ") + skill_names[s.s2]) +
         (s.x == 0 ? "" : std::string(" ") + to_string(s.x));
 }
 //------------------------------------------------------------------------------
@@ -213,6 +215,13 @@ inline unsigned opponent(unsigned player)
     return((player + 1) % 2);
 }
 //------------------------------------------------------------------------------
+SkillSpec apply_evolve(const SkillSpec& s, signed offset)
+{
+    SkillSpec evolved_s = s;
+    evolved_s.id = static_cast<Skill>(evolved_s.id + offset);
+    return(evolved_s);
+}
+//------------------------------------------------------------------------------
 SkillSpec apply_enhance(const SkillSpec& s, unsigned enhanced_value)
 {
     SkillSpec enahnced_s = s;
@@ -229,8 +238,8 @@ void prepend_bge_reaping(Field* fd)
     std::vector<std::tuple<CardStatus*, SkillSpec>> od_skills;
     for(auto status: fd->killed_with_on_death)
     {
-        SkillSpec ss_heal{heal, fd->bg_skill.x, allfactions, 0, 0, no_skill, true,};
-        SkillSpec ss_rally{rally, fd->bg_skill.x, allfactions, 0, 0, no_skill, true,};
+        SkillSpec ss_heal{heal, fd->bg_skill.x, allfactions, 0, 0, no_skill, no_skill, true,};
+        SkillSpec ss_rally{rally, fd->bg_skill.x, allfactions, 0, 0, no_skill, no_skill, true,};
         _DEBUG_MSG(2, "Preparing %s skill %s and %s\n", status_description(status).c_str(), skill_description(fd->cards, ss_heal).c_str(), skill_description(fd->cards, ss_rally).c_str());
         od_skills.emplace_back(status, ss_heal);
         od_skills.emplace_back(status, ss_rally);
@@ -246,14 +255,16 @@ void resolve_skill(Field* fd)
     {
         auto skill_instance(fd->skill_queue.front());
         auto& status(std::get<0>(skill_instance));
-        const auto& skill(std::get<1>(skill_instance));
+        const auto& ss(std::get<1>(skill_instance));
         fd->skill_queue.pop_front();
         if (!status->m_jammed)
         {
-            unsigned enhanced_value = status->enhanced(skill.id);
-            auto& enhanced_s = enhanced_value > 0 ? apply_enhance(skill, enhanced_value) : skill;
+            signed evolved_offset = status->m_evolved_skill_offset[ss.id];
+            auto& evolved_s = status->m_evolved_skill_offset[ss.id] != 0 ? apply_evolve(ss, evolved_offset) : ss;
+            unsigned enhanced_value = status->enhanced(evolved_s.id);
+            auto& enhanced_s = enhanced_value > 0 ? apply_enhance(evolved_s, enhanced_value) : evolved_s;
             auto& modified_s = enhanced_s;
-            skill_table[skill.id](fd, status, modified_s);
+            skill_table[modified_s.id](fd, status, modified_s);
         }
     }
 }
@@ -279,6 +290,7 @@ void evaluate_skills(Field* fd, CardStatus* status, const std::vector<SkillSpec>
         assert(fd->skill_queue.size() == 0);
         for (auto & ss: skills)
         {
+            // check if activation skill, assuming activation skills can be evolved from only activation skills
             if (skill_table[ss.id] == nullptr)
             {
                 continue;
@@ -294,7 +306,6 @@ void evaluate_skills(Field* fd, CardStatus* status, const std::vector<SkillSpec>
         }
         if (type == CardType::assault)
         {
-            // no commander-killing skill yet // if(__builtin_expect(fd->end, false)) { break; }
             // Attack
             if (can_attack(status))
             {
@@ -310,15 +321,16 @@ void evaluate_skills(Field* fd, CardStatus* status, const std::vector<SkillSpec>
             }
         }
         // Flurry
-        if (can_act(status) && fd->tip->commander.m_hp > 0 && status->has_skill<flurry>() && status->m_skill_cd[flurry] == 0)
+        if (can_act(status) && fd->tip->commander.m_hp > 0 && status->has_skill(flurry) && status->m_skill_cd[flurry] == 0)
         {
             _DEBUG_MSG(1, "%s activates Flurry\n", status_description(status).c_str());
             num_actions = 2;
             for (const auto & ss : skills)
             {
-                if (ss.id == flurry)
+                Skill evolved_skill_id = static_cast<Skill>(ss.id + status->m_evolved_skill_offset[ss.id]);
+                if (evolved_skill_id == flurry)
                 {
-                    status->m_skill_cd[flurry] = ss.c;
+                    status->m_skill_cd[ss.id] = ss.c;
                 }
             }
         }
@@ -578,6 +590,12 @@ inline bool skill_check<payback>(Field* fd, CardStatus* c, CardStatus* ref)
     return(ref->m_card->m_type == CardType::assault && ref->m_hp > 0);
 }
 
+template<>
+inline bool skill_check<refresh>(Field* fd, CardStatus* c, CardStatus* ref)
+{
+    return(can_be_healed(c));
+}
+
 void remove_hp(Field* fd, CardStatus* status, unsigned dmg)
 {
     assert(status->m_hp > 0);
@@ -726,6 +744,12 @@ void turn_end_phase(Field* fd)
             status.m_weakened = 0;
             status.m_step = CardStep::none;
             status.m_inhibited = 0;
+            unsigned refresh_value = status.skill(refresh);
+            if (refresh_value > 0 && skill_check<refresh>(fd, &status, nullptr))
+            {
+                _DEBUG_MSG(1, "%s refreshes %u health\n", status_description(&status).c_str(), refresh_value);
+                add_hp(fd, &status, refresh_value);
+            }
             unsigned poison_dmg = safe_minus(status.m_poisoned + (status.m_poisoned ? status.m_enfeebled : 0), status.protected_value());
             if(poison_dmg > 0)
             {
@@ -760,6 +784,8 @@ void turn_end_phase(Field* fd)
             status.m_evaded = 0;
             status.m_paybacked = 0;
             std::memset(status.m_enhanced_value, 0, sizeof status.m_enhanced_value);
+            std::memset(status.m_primary_skill_offset, 0, sizeof status.m_primary_skill_offset);
+            std::memset(status.m_evolved_skill_offset, 0, sizeof status.m_evolved_skill_offset);
         }
     }
     // Defending player's structure cards:
@@ -792,14 +818,14 @@ void turn_end_phase(Field* fd)
 inline unsigned counter_damage(Field* fd, CardStatus* att, CardStatus* def)
 {
     assert(att->m_card->m_type == CardType::assault);
-    return(safe_minus(def->skill<counter>() + att->m_enfeebled, att->protected_value()));
+    return(safe_minus(def->skill(counter) + att->m_enfeebled, att->protected_value()));
 }
 inline CardStatus* select_first_enemy_wall(Field* fd)
 {
     for(unsigned i(0); i < fd->tip->structures.size(); ++i)
     {
         CardStatus& c(fd->tip->structures[i]);
-        if(c.has_skill<wall>() && c.m_hp > 0 && skill_check<wall>(fd, &c, nullptr))
+        if(c.has_skill(wall) && c.m_hp > 0 && skill_check<wall>(fd, &c, nullptr))
         {
             return(&c);
         }
@@ -862,20 +888,20 @@ struct PerformAttack
 
             if(att_status->m_hp > 0)
             {
-                if(def_status->has_skill<counter>() && skill_check<counter>(fd, def_status, att_status))
+                if(def_status->has_skill(counter) && skill_check<counter>(fd, def_status, att_status))
                 {
                     // perform_skill_counter
                     unsigned counter_dmg(counter_damage(fd, att_status, def_status));
                     _DEBUG_MSG(1, "%s takes %u counter damage from %s\n", status_description(att_status).c_str(), counter_dmg, status_description(def_status).c_str());
                     remove_hp(fd, att_status, counter_dmg);
                 }
-                unsigned berserk_value = att_status->skill<berserk>();
+                unsigned berserk_value = att_status->skill(berserk);
                 if(berserk_value > 0 && skill_check<berserk>(fd, att_status, nullptr))
                 {
                     // perform_skill_berserk
                     att_status->m_berserk += berserk_value;
                 }
-                unsigned corrosive_value = def_status->skill<corrosive>();
+                unsigned corrosive_value = def_status->skill(corrosive);
                 if (corrosive_value > att_status->m_corroded_rate && skill_check<corrosive>(fd, def_status, att_status))
                 {
                     // perform_skill_corrosive
@@ -898,7 +924,7 @@ struct PerformAttack
         att_dmg = pre_modifier_dmg;
         std::string desc;
         // enhance damage
-        unsigned legion_base = att_status->skill<legion>();
+        unsigned legion_base = att_status->skill(legion);
         if (legion_base > 0)
         {
             auto & assaults = fd->tap->assaults;
@@ -929,7 +955,7 @@ struct PerformAttack
         // prevent damage
         std::string reduced_desc;
         unsigned reduced_dmg(0);
-        unsigned armor_value = def_status->skill<armor>();
+        unsigned armor_value = def_status->skill(armor);
         if(armor_value > 0)
         {
             if(debug_print > 0) { reduced_desc += to_string(armor_value) + "(armor)"; }
@@ -940,10 +966,10 @@ struct PerformAttack
             if(debug_print > 0) { reduced_desc += (reduced_desc.empty() ? "" : "+") + to_string(def_status->protected_value()) + "(protected)"; }
             reduced_dmg += def_status->protected_value();
         }
-        if(reduced_dmg > 0 && att_status->skill<pierce>() > 0)
+        if(reduced_dmg > 0 && att_status->skill(pierce) > 0)
         {
-            if(debug_print > 0) { reduced_desc += "-" + to_string(att_status->skill<pierce>()) + "(pierce)"; }
-            reduced_dmg = safe_minus(reduced_dmg, att_status->skill<pierce>());
+            if(debug_print > 0) { reduced_desc += "-" + to_string(att_status->skill(pierce)) + "(pierce)"; }
+            reduced_dmg = safe_minus(reduced_dmg, att_status->skill(pierce));
         }
         att_dmg = safe_minus(att_dmg, reduced_dmg);
         if(debug_print > 0)
@@ -977,14 +1003,14 @@ void PerformAttack::attack_damage<CardType::commander>()
 template<>
 void PerformAttack::damage_dependant_pre_oa<CardType::assault>()
 {
-    unsigned poison_value = att_status->skill<poison>();
+    unsigned poison_value = att_status->skill(poison);
     if(poison_value > def_status->m_poisoned && skill_check<poison>(fd, att_status, def_status))
     {
         // perform_skill_poison
         _DEBUG_MSG(1, "%s poisons %s by %u\n", status_description(att_status).c_str(), status_description(def_status).c_str(), poison_value);
         def_status->m_poisoned = poison_value;
     }
-    unsigned inhibit_value = att_status->skill<inhibit>();
+    unsigned inhibit_value = att_status->skill(inhibit);
     if (inhibit_value > def_status->m_inhibited && skill_check<inhibit>(fd, att_status, def_status))
     {
         // perform_skill_inhibit
@@ -996,7 +1022,7 @@ void PerformAttack::damage_dependant_pre_oa<CardType::assault>()
 template<>
 void PerformAttack::do_leech<CardType::assault>()
 {
-    unsigned leech_value = std::min(att_dmg, att_status->skill<leech>());
+    unsigned leech_value = std::min(att_dmg, att_status->skill(leech));
     if(leech_value > 0 && skill_check<leech>(fd, att_status, nullptr))
     {
         _DEBUG_MSG(1, "%s leeches %u health\n", status_description(att_status).c_str(), leech_value);
@@ -1078,6 +1104,12 @@ inline bool skill_predicate<enhance>(Field* fd, CardStatus* src, CardStatus* dst
 }
 
 template<>
+inline bool skill_predicate<evolve>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
+{
+    return dst->has_skill(s.s) && !dst->has_skill(s.s2) && ((BEGIN_DEFENSIVE < s.s2 && s.s2 < END_DEFENSIVE) || is_active(dst));
+}
+
+template<>
 inline bool skill_predicate<heal>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 { return(can_be_healed(dst)); }
 
@@ -1103,17 +1135,18 @@ inline bool skill_predicate<overload>(Field* fd, CardStatus* src, CardStatus* ds
             break;
         }
     }
-    for (const auto & s: dst->m_card->m_skills)
+    for (const auto & ss: dst->m_card->m_skills)
     {
-        if (dst->m_skill_cd[s.id] > 0)
+        if (dst->m_skill_cd[ss.id] > 0)
         {
             continue;
         }
-        if (BEGIN_ACTIVATION_HARMFUL < s.id && s.id < END_ACTIVATION_HARMFUL)
+        Skill evolved_skill_id = static_cast<Skill>(ss.id + dst->m_evolved_skill_offset[ss.id]);
+        if (BEGIN_ACTIVATION_HARMFUL < evolved_skill_id && evolved_skill_id < END_ACTIVATION_HARMFUL)
         {
             return true;
         }
-        if (has_inhibited_unit && (/* s.id == enhance ||*/ s.id == heal || /*s.id == overload ||*/ s.id == protect || s.id == rally))
+        if (has_inhibited_unit && (evolved_skill_id == heal || evolved_skill_id == protect || evolved_skill_id == rally))
         {
             return true;
         }
@@ -1146,7 +1179,18 @@ inline void perform_skill<enfeeble>(Field* fd, CardStatus* src, CardStatus* dst,
 template<>
 inline void perform_skill<enhance>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
-    dst->m_enhanced_value[s.s] += s.x;
+    dst->m_enhanced_value[s.s + dst->m_primary_skill_offset[s.s]] += s.x;
+}
+
+template<>
+inline void perform_skill<evolve>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
+{
+    auto primary_s1 = dst->m_primary_skill_offset[s.s] + s.s;
+    auto primary_s2 = dst->m_primary_skill_offset[s.s2] + s.s2;
+    dst->m_primary_skill_offset[s.s] = primary_s2 - s.s;
+    dst->m_primary_skill_offset[s.s2] = primary_s1 - s.s2;
+    dst->m_evolved_skill_offset[primary_s1] = s.s2 - primary_s1;
+    dst->m_evolved_skill_offset[primary_s2] = s.s - primary_s2;
 }
 
 template<>
@@ -1244,6 +1288,9 @@ template<> std::vector<CardStatus*>& skill_targets<enfeeble>(Field* fd, CardStat
 template<> std::vector<CardStatus*>& skill_targets<enhance>(Field* fd, CardStatus* src_status)
 { return(skill_targets_allied_assault(fd, src_status)); }
 
+template<> std::vector<CardStatus*>& skill_targets<evolve>(Field* fd, CardStatus* src_status)
+{ return(skill_targets_allied_assault(fd, src_status)); }
+
 template<> std::vector<CardStatus*>& skill_targets<heal>(Field* fd, CardStatus* src_status)
 { return(skill_targets_allied_assault(fd, src_status)); }
 
@@ -1274,7 +1321,7 @@ bool check_and_perform_skill(Field* fd, CardStatus* src_status, CardStatus* dst_
     if(skill_check<skill_id>(fd, src_status, dst_status))
     {
         if (is_evadable &&
-                dst_status->m_evaded < dst_status->skill<evade>() &&
+                dst_status->m_evaded < dst_status->skill(evade) &&
                 skill_check<evade>(fd, dst_status, src_status))
         {
             ++ dst_status->m_evaded;
@@ -1295,7 +1342,7 @@ bool check_and_perform_skill(Field* fd, CardStatus* src_status, CardStatus* dst_
 
 bool check_and_perform_valor(Field* fd, CardStatus* src_status)
 {
-    unsigned valor_value = src_status->skill<valor>();
+    unsigned valor_value = src_status->skill(valor);
     if (valor_value > 0 && skill_check<valor>(fd, src_status, nullptr))
     {
         unsigned opponent_player = opponent(src_status->m_player);
@@ -1355,7 +1402,7 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src_status, const Ski
         if (check_and_perform_skill<skill_id>(fd, src_status, dst_status, s, ! src_status->m_overloaded))
         {
             // Payback
-            if(dst_status->m_paybacked < dst_status->skill<payback>() && skill_check<payback>(fd, dst_status, src_status) &&
+            if(dst_status->m_paybacked < dst_status->skill(payback) && skill_check<payback>(fd, dst_status, src_status) &&
                     skill_predicate<skill_id>(fd, src_status, src_status, s) && skill_check<skill_id>(fd, src_status, dst_status))
             {
                 ++ dst_status->m_paybacked;
@@ -1389,6 +1436,7 @@ void fill_skill_table()
     memset(skill_table, 0, sizeof skill_table);
     skill_table[enfeeble] = perform_targetted_hostile_fast<enfeeble>;
     skill_table[enhance] = perform_targetted_allied_fast<enhance>;
+    skill_table[evolve] = perform_targetted_allied_fast<evolve>;
     skill_table[heal] = perform_targetted_allied_fast<heal>;
     skill_table[jam] = perform_targetted_hostile_fast<jam>;
     skill_table[overload] = perform_targetted_allied_fast<overload>;
