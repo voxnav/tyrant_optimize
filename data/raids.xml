@@ -172,18 +172,15 @@
 			<always_include>
 				<card>8548</card>
 				<card>15480</card>
-				<card>15490</card>
-				<card>15500</card>
-				<card>15510</card>
-				<card>15520</card>
-			</always_include>
-			<card_pool amount="4">
 				<card>15480</card>
 				<card>15490</card>
 				<card>15500</card>
+				<card>15500</card>
+				<card>15510</card>
 				<card>15510</card>
 				<card>15520</card>
-			</card_pool>
+				<card>15520</card>
+			</always_include>
 		</deck>
 	</raid>
 
