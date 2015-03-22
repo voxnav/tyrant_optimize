@@ -85,8 +85,8 @@ inline void CardStatus::set(const Card& card)
     m_berserk = 0;
     m_corroded_rate = 0;
     m_corroded_weakened = 0;
-    m_evaded = 0;
     m_enfeebled = 0;
+    m_evaded = 0;
     m_inhibited = 0;
     m_jammed = false;
     m_overloaded = false;
@@ -193,6 +193,13 @@ std::string CardStatus::description() const
     if(m_poisoned > 0) { desc += ", poisoned " + to_string(m_poisoned); }
     if(m_protected > 0) { desc += ", protected " + to_string(m_protected); }
 //    if(m_step != CardStep::none) { desc += ", Step " + to_string(static_cast<int>(m_step)); }
+    for (const auto & ss: m_card->m_skills)
+    {
+        std::string skill_desc;
+        if (m_evolved_skill_offset[ss.id] != 0) { skill_desc += "->" + skill_names[ss.id + m_evolved_skill_offset[ss.id]]; }
+        if (m_enhanced_value[ss.id] != 0) { skill_desc += " +" + to_string(m_enhanced_value[ss.id]); }
+        if (!skill_desc.empty()) { desc += ", " + skill_names[ss.id] + skill_desc; }
+    }
     desc += "]";
     return(desc);
 }
@@ -724,49 +731,7 @@ void turn_start_phase(Field* fd)
 }
 void turn_end_phase(Field* fd)
 {
-    // Active player's assault cards:
-    // remove jam, rally, weaken
-    // apply poison damage
-    {
-        auto& assaults(fd->tap->assaults);
-        for(unsigned index(0), end(assaults.size());
-            index < end;
-            ++index)
-        {
-            CardStatus& status(assaults[index]);
-            if (status.m_hp <= 0)
-            {
-                continue;
-            }
-            status.m_jammed = false;
-            status.m_overloaded = false;
-            status.m_rallied = 0;
-            status.m_weakened = 0;
-            status.m_step = CardStep::none;
-            status.m_inhibited = 0;
-            unsigned refresh_value = status.skill(refresh);
-            if (refresh_value > 0 && skill_check<refresh>(fd, &status, nullptr))
-            {
-                _DEBUG_MSG(1, "%s refreshes %u health\n", status_description(&status).c_str(), refresh_value);
-                add_hp(fd, &status, refresh_value);
-            }
-            unsigned poison_dmg = safe_minus(status.m_poisoned + (status.m_poisoned ? status.m_enfeebled : 0), status.protected_value());
-            if(poison_dmg > 0)
-            {
-                _DEBUG_MSG(1, "%s takes poison damage %u\n", status_description(&status).c_str(), poison_dmg);
-                remove_hp(fd, &status, poison_dmg);
-            }
-#if 0
-            // not need to fade out in own turn in TU
-            status.m_enfeebled = 0;
-#endif
-        }
-    }
-    // Active player's structure cards:
-    // nothing so far
-
-    // Defending player's assault cards:
-    // remove enfeeble, protect
+    // Inactive player's assault cards:
     {
         auto& assaults(fd->tip->assaults);
         for(unsigned index(0), end(assaults.size());
@@ -780,17 +745,14 @@ void turn_end_phase(Field* fd)
             }
             status.m_enfeebled = 0;
             status.m_protected = 0;
-            // so far only useful in Defending turn
-            status.m_evaded = 0;
-            status.m_paybacked = 0;
-            std::memset(status.m_enhanced_value, 0, sizeof status.m_enhanced_value);
             std::memset(status.m_primary_skill_offset, 0, sizeof status.m_primary_skill_offset);
             std::memset(status.m_evolved_skill_offset, 0, sizeof status.m_evolved_skill_offset);
+            std::memset(status.m_enhanced_value, 0, sizeof status.m_enhanced_value);
+            status.m_evaded = 0;  // so far only useful in Inactive turn
+            status.m_paybacked = 0;  // ditto
         }
     }
-    // Defending player's structure cards:
-    // nothing so far
-#if 0
+    // Inactive player's structure cards:
     {
         auto& structures(fd->tip->structures);
         for(unsigned index(0), end(structures.size());
@@ -802,9 +764,46 @@ void turn_end_phase(Field* fd)
             {
                 continue;
             }
+            status.m_evaded = 0;  // so far only useful in Inactive turn
         }
     }
-#endif
+
+    // Active player's assault cards:
+    {
+        auto& assaults(fd->tap->assaults);
+        for(unsigned index(0), end(assaults.size());
+            index < end;
+            ++index)
+        {
+            CardStatus& status(assaults[index]);
+            if (status.m_hp <= 0)
+            {
+                continue;
+            }
+            unsigned refresh_value = status.skill(refresh);
+            if (refresh_value > 0 && skill_check<refresh>(fd, &status, nullptr))
+            {
+                _DEBUG_MSG(1, "%s refreshes %u health\n", status_description(&status).c_str(), refresh_value);
+                add_hp(fd, &status, refresh_value);
+            }
+            unsigned poison_dmg = safe_minus(status.m_poisoned + (status.m_poisoned ? status.m_enfeebled : 0), status.protected_value());
+            if(poison_dmg > 0)
+            {
+                _DEBUG_MSG(1, "%s takes poison damage %u\n", status_description(&status).c_str(), poison_dmg);
+                remove_hp(fd, &status, poison_dmg);
+            }
+            // end of the opponent's next turn for enemy units
+            status.m_jammed = false;
+            status.m_rallied = 0;
+            status.m_weakened = 0;
+            status.m_inhibited = 0;
+            status.m_overloaded = false;
+            status.m_step = CardStep::none;
+        }
+    }
+    // Active player's structure cards:
+    // nothing so far
+
     prepend_bge_reaping(fd);
     resolve_skill(fd);
     remove_dead(fd->tap->assaults);

@@ -153,8 +153,8 @@ struct CardStatus
     unsigned m_berserk;
     unsigned m_corroded_rate;
     unsigned m_corroded_weakened;
-    unsigned m_evaded;
     unsigned m_enfeebled;
+    unsigned m_evaded;
     unsigned m_inhibited;
     bool m_jammed;
     bool m_overloaded;
