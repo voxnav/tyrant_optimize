@@ -147,10 +147,11 @@ struct CardStatus
     unsigned m_player;
     unsigned m_delay;
     Faction m_faction;
+    unsigned m_attack;
     unsigned m_hp;
+    unsigned m_max_hp;
     CardStep m_step;
 
-    unsigned m_berserk;
     unsigned m_corroded_rate;
     unsigned m_corroded_weakened;
     unsigned m_enfeebled;
@@ -225,7 +226,7 @@ public:
     // With the introduction of on death skills, a single skill can trigger arbitrary many skills.
     // They are stored in this, and cleared after all have been performed.
     std::deque<std::tuple<CardStatus*, SkillSpec>> skill_queue;
-    std::vector<CardStatus*> killed_with_on_death;
+    std::vector<CardStatus*> killed_units;
     unsigned n_player_kills;
     bool assault_bloodlusted;
     unsigned bloodlust_value;

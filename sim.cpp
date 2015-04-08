@@ -79,10 +79,10 @@ inline void CardStatus::set(const Card& card)
     m_player = 0;
     m_delay = card.m_delay;
     m_faction = card.m_faction;
-    m_hp = card.m_health;
+    m_attack = card.m_attack;
+    m_hp = m_max_hp = card.m_health;
     m_step = CardStep::none;
 
-    m_berserk = 0;
     m_corroded_rate = 0;
     m_corroded_weakened = 0;
     m_enfeebled = 0;
@@ -104,7 +104,7 @@ inline void CardStatus::set(const Card& card)
 //------------------------------------------------------------------------------
 inline int attack_power(const CardStatus* att)
 {
-    return(safe_minus(att->m_card->m_attack + att->m_berserk + att->m_rallied, att->m_weakened + att->m_corroded_weakened));
+    return(safe_minus(att->m_card->m_attack + att->m_rallied, att->m_weakened + att->m_corroded_weakened));
 }
 //------------------------------------------------------------------------------
 std::string skill_description(const Cards& cards, const SkillSpec& s)
@@ -165,10 +165,9 @@ std::string CardStatus::description() const
     switch(m_card->m_type)
     {
     case CardType::assault:
-        desc += " att:" + to_string(m_card->m_attack);
+        desc += " att:" + to_string(m_attack);
         {
             std::string att_desc;
-            if(m_berserk > 0) { att_desc += "+" + to_string(m_berserk) + "(berserk)"; }
             if(m_rallied > 0) { att_desc += "+" + to_string(m_rallied) + "(rallied)"; }
             if(m_weakened > 0) { att_desc += "-" + to_string(m_weakened) + "(weakened)"; }
             if(m_corroded_weakened > 0) { att_desc += "-" + to_string(m_corroded_weakened) + "(corroded)"; }
@@ -236,23 +235,51 @@ SkillSpec apply_enhance(const SkillSpec& s, unsigned enhanced_value)
     return(enahnced_s);
 }
 //------------------------------------------------------------------------------
-void prepend_bge_reaping(Field* fd)
+void prepend_on_death(Field* fd)
 {
-    if (fd->bg_skill.id != reaping)
-    {
-        return;
-    }
     std::vector<std::tuple<CardStatus*, SkillSpec>> od_skills;
-    for(auto status: fd->killed_with_on_death)
+    for (auto status: fd->killed_units)
     {
-        SkillSpec ss_heal{heal, fd->bg_skill.x, allfactions, 0, 0, no_skill, no_skill, true,};
-        SkillSpec ss_rally{rally, fd->bg_skill.x, allfactions, 0, 0, no_skill, no_skill, true,};
-        _DEBUG_MSG(2, "Preparing %s skill %s and %s\n", status_description(status).c_str(), skill_description(fd->cards, ss_heal).c_str(), skill_description(fd->cards, ss_rally).c_str());
-        od_skills.emplace_back(status, ss_heal);
-        od_skills.emplace_back(status, ss_rally);
+        // avenge
+        if (status->m_card->m_type == CardType::assault)
+        {
+            auto & assaults = fd->players[status->m_player]->assaults;
+            if (status->m_index > 0)
+            {
+                auto left_status = &assaults[status->m_index - 1];
+                unsigned avenge_value = left_status->skill(avenge);
+                if (left_status->m_hp > 0 && avenge_value > 0)
+                {
+                    _DEBUG_MSG(1, "%s activates Avenge %u\n", status_description(left_status).c_str(), avenge_value);
+                    left_status->m_attack += avenge_value;
+                    left_status->m_max_hp += avenge_value;
+                    left_status->m_hp += avenge_value;
+                }
+            }
+            if (status->m_index + 1 < assaults.size())
+            {
+                auto right_status = &assaults[status->m_index + 1];
+                unsigned avenge_value = right_status->skill(avenge);
+                if (right_status->m_hp > 0 && avenge_value > 0)
+                {
+                    _DEBUG_MSG(1, "%s activates Avenge %u\n", status_description(right_status).c_str(), avenge_value);
+                    right_status->m_attack += avenge_value;
+                    right_status->m_max_hp += avenge_value;
+                    right_status->m_hp += avenge_value;
+                }
+            }
+        }
+        if (fd->bg_skill.id == reaping)
+        {
+            SkillSpec ss_heal{heal, fd->bg_skill.x, allfactions, 0, 0, no_skill, no_skill, true,};
+            SkillSpec ss_rally{rally, fd->bg_skill.x, allfactions, 0, 0, no_skill, no_skill, true,};
+            _DEBUG_MSG(2, "Preparing %s skill %s and %s\n", status_description(status).c_str(), skill_description(fd->cards, ss_heal).c_str(), skill_description(fd->cards, ss_rally).c_str());
+            od_skills.emplace_back(status, ss_heal);
+            od_skills.emplace_back(status, ss_rally);
+        }
     }
     fd->skill_queue.insert(fd->skill_queue.begin(), od_skills.begin(), od_skills.end());
-    fd->killed_with_on_death.clear();
+    fd->killed_units.clear();
 }
 //------------------------------------------------------------------------------
 void(*skill_table[num_skills])(Field*, CardStatus* src_status, const SkillSpec&);
@@ -283,7 +310,7 @@ inline bool is_active_next_turn(CardStatus* c) { return(c->m_delay <= 1); }
 inline bool can_act(CardStatus* c) { return(c->m_hp > 0 && !is_jammed(c)); }
 inline bool can_attack(CardStatus* c) { return(can_act(c)); }
 // Can be healed / repaired
-inline bool can_be_healed(CardStatus* c) { return(c->m_hp > 0 && c->m_hp < c->m_card->m_health); }
+inline bool can_be_healed(CardStatus* c) { return(c->m_hp > 0 && c->m_hp < c->m_max_hp); }
 //------------------------------------------------------------------------------
 bool attack_phase(Field* fd);
 bool check_and_perform_valor(Field* fd, CardStatus* src_status);
@@ -500,7 +527,7 @@ Results<uint64_t> play(Field* fd)
             {
                 if (attacked)
                 {
-                    unsigned v = std::min(current_status->m_corroded_rate, safe_minus(current_status->m_card->m_attack + current_status->m_berserk, current_status->m_corroded_weakened));
+                    unsigned v = std::min(current_status->m_corroded_rate, safe_minus(current_status->m_card->m_attack, current_status->m_corroded_weakened));
                     _DEBUG_MSG(1, "%s loses Attack by %u.\n", status_description(current_status).c_str(), v);
                     current_status->m_corroded_weakened += v;
                 }
@@ -522,7 +549,7 @@ Results<uint64_t> play(Field* fd)
         ++fd->turn;
     }
     const auto & p = fd->players;
-    unsigned raid_damage = 15 + (std::min<unsigned>(p[1]->deck->cards.size(), (fd->turn + 1) / 2) - p[1]->assaults.size() - p[1]->structures.size()) - (10 * p[1]->commander.m_hp / p[1]->commander.m_card->m_health);
+    unsigned raid_damage = 15 + (std::min<unsigned>(p[1]->deck->cards.size(), (fd->turn + 1) / 2) - p[1]->assaults.size() - p[1]->structures.size()) - (10 * p[1]->commander.m_hp / p[1]->commander.m_max_hp);
     // you lose
     if(fd->players[0]->commander.m_hp == 0)
     {
@@ -543,7 +570,7 @@ Results<uint64_t> play(Field* fd)
         case OptimizationMode::brawl:
             {
                 unsigned brawl_score = 57
-                    - (10 * (p[0]->commander.m_card->m_health - p[0]->commander.m_hp) / p[0]->commander.m_card->m_health)
+                    - (10 * (p[0]->commander.m_max_hp - p[0]->commander.m_hp) / p[0]->commander.m_max_hp)
                     + (p[0]->assaults.size() + p[0]->structures.size() + p[0]->deck->shuffled_cards.size())
                     - (p[1]->assaults.size() + p[1]->structures.size() + p[1]->deck->shuffled_cards.size())
                     - fd->turn / 4;
@@ -611,10 +638,9 @@ void remove_hp(Field* fd, CardStatus* status, unsigned dmg)
     if(status->m_hp == 0)
     {
         _DEBUG_MSG(1, "%s dies\n", status_description(status).c_str());
-        // Assume only assaults get reaping effect
-        if(fd->bg_skill.id == reaping && status->m_card->m_type != CardType::commander)
+        if(status->m_card->m_type != CardType::commander)
         {
-            fd->killed_with_on_death.push_back(status);
+            fd->killed_units.push_back(status);
         }
         if (status->m_player == 0 && fd->players[0]->deck->vip_cards.count(status->m_card->m_id))
         {
@@ -639,7 +665,7 @@ inline void remove_dead(Storage<CardStatus>& storage)
 }
 inline void add_hp(Field* fd, CardStatus* target, unsigned v)
 {
-    target->m_hp = std::min(target->m_hp + v, target->m_card->m_health);
+    target->m_hp = std::min(target->m_hp + v, target->m_max_hp);
 }
 void cooldown_skills(CardStatus * status)
 {
@@ -804,7 +830,7 @@ void turn_end_phase(Field* fd)
     // Active player's structure cards:
     // nothing so far
 
-    prepend_bge_reaping(fd);
+    prepend_on_death(fd);
     resolve_skill(fd);
     remove_dead(fd->tap->assaults);
     remove_dead(fd->tap->structures);
@@ -858,10 +884,9 @@ struct PerformAttack
     CardStatus* att_status;
     CardStatus* def_status;
     unsigned att_dmg;
-    bool killed_by_attack;
 
     PerformAttack(Field* fd_, CardStatus* att_status_, CardStatus* def_status_) :
-        fd(fd_), att_status(att_status_), def_status(def_status_), att_dmg(0), killed_by_attack(false)
+        fd(fd_), att_status(att_status_), def_status(def_status_), att_dmg(0)
     {}
 
     template<enum CardType::CardType def_cardtype>
@@ -898,7 +923,7 @@ struct PerformAttack
                 if(berserk_value > 0 && skill_check<berserk>(fd, att_status, nullptr))
                 {
                     // perform_skill_berserk
-                    att_status->m_berserk += berserk_value;
+                    att_status->m_attack += berserk_value;
                 }
                 unsigned corrosive_value = def_status->skill(corrosive);
                 if (corrosive_value > att_status->m_corroded_rate && skill_check<corrosive>(fd, def_status, att_status))
@@ -910,7 +935,7 @@ struct PerformAttack
             }
             do_leech<def_cardtype>();
         }
-        prepend_bge_reaping(fd);
+        prepend_on_death(fd);
         resolve_skill(fd);
         return att_dmg;
     }
@@ -983,7 +1008,6 @@ struct PerformAttack
     void attack_damage()
     {
         remove_hp(fd, def_status, att_dmg);
-        killed_by_attack = def_status->m_hp == 0;
     }
 
     template<enum CardType::CardType>
@@ -1358,8 +1382,8 @@ bool check_and_perform_valor(Field* fd, CardStatus* src_status)
             _DEBUG_MSG(1, "%s loses Valor (weak blocker %s)\n", status_description(src_status).c_str(), status_description(dst_status).c_str());
             return false;
         }
-        _DEBUG_MSG(1, "%s activates Valor %u (as if Berserked)\n", status_description(src_status).c_str(), valor_value);
-        src_status->m_berserk += valor_value;
+        _DEBUG_MSG(1, "%s activates Valor %u\n", status_description(src_status).c_str(), valor_value);
+        src_status->m_attack += valor_value;
         return true;
     }
     return false;
@@ -1410,7 +1434,7 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src_status, const Ski
             }
         }
     }
-    prepend_bge_reaping(fd);
+    prepend_on_death(fd);
 }
 
 template<Skill skill_id>
