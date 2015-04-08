@@ -104,7 +104,7 @@ inline void CardStatus::set(const Card& card)
 //------------------------------------------------------------------------------
 inline int attack_power(const CardStatus* att)
 {
-    return(safe_minus(att->m_card->m_attack + att->m_rallied, att->m_weakened + att->m_corroded_weakened));
+    return(safe_minus(att->m_attack + att->m_rallied, att->m_weakened + att->m_corroded_weakened));
 }
 //------------------------------------------------------------------------------
 std::string skill_description(const Cards& cards, const SkillSpec& s)
@@ -527,7 +527,7 @@ Results<uint64_t> play(Field* fd)
             {
                 if (attacked)
                 {
-                    unsigned v = std::min(current_status->m_corroded_rate, safe_minus(current_status->m_card->m_attack, current_status->m_corroded_weakened));
+                    unsigned v = std::min(current_status->m_corroded_rate, safe_minus(current_status->m_attack, current_status->m_corroded_weakened));
                     _DEBUG_MSG(1, "%s loses Attack by %u.\n", status_description(current_status).c_str(), v);
                     current_status->m_corroded_weakened += v;
                 }
