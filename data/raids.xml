@@ -184,6 +184,30 @@
 		</deck>
 	</raid>
 
+	<raid>
+		<id>9</id>
+		<name>Talos</name>
+		<commander>1732</commander>
+		<levels>26</levels>
+		<deck>
+			<always_include>
+				<card>16136</card>
+				<card>16146</card>
+				<card>16156</card>
+				<card>16166</card>
+				<card>16176</card>
+				<card>8630</card>
+			</always_include>
+			<card_pool amount="4">
+				<card>16136</card>
+				<card>16146</card>
+				<card>16156</card>
+				<card>16166</card>
+				<card>16176</card>
+			</card_pool>
+		</deck>
+	</raid>
+
 	<campaign>
 		<id>1</id>
 		<name>Tartarus Vanguard 1</name>
