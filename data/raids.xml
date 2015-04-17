@@ -817,4 +817,466 @@
 		</deck>
 	</campaign>
 
+	<campaign>
+		<id>311</id>
+		<name>Secr101</name>
+		<name>Secrets Revealed Normal 1</name>
+		<commander>1018</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4468</card>
+				<card>4468</card>
+				<card>6329</card>
+				<card>6644</card>
+				<card>6644</card>
+				<card>12520</card>
+				<card>14103</card>
+				<card>15910</card>
+				<card>15914</card>
+				<card>15920</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>312</id>
+		<name>Secr102</name>
+		<name>Secrets Revealed Normal 2</name>
+		<commander>1018</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>517</card>
+				<card>517</card>
+				<card>951</card>
+				<card>5502</card>
+				<card>6335</card>
+				<card>6896</card>
+				<card>6896</card>
+				<card>15910</card>
+				<card>15914</card>
+				<card>15920</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>313</id>
+		<name>Secr103</name>
+		<name>Secrets Revealed Normal 3</name>
+		<commander>1714</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7406</card>
+				<card>11468</card>
+				<card>12523</card>
+				<card>13487</card>
+				<card>13565</card>
+				<card>13644</card>
+				<card>15913</card>
+				<card>15913</card>
+				<card>15916</card>
+				<card>15920</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>314</id>
+		<name>Secr104</name>
+		<name>Secrets Revealed Normal 4</name>
+		<commander>1018</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>8173</card>
+				<card>11143</card>
+				<card>11143</card>
+				<card>11999</card>
+				<card>12716</card>
+				<card>13469</card>
+				<card>15113</card>
+				<card>15908</card>
+				<card>15916</card>
+				<card>15920</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>315</id>
+		<name>Secr105</name>
+		<name>Secrets Revealed Normal 5</name>
+		<commander>1018</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>6644</card>
+				<card>6644</card>
+				<card>6644</card>
+				<card>12008</card>
+				<card>14007</card>
+				<card>14100</card>
+				<card>14672</card>
+				<card>15913</card>
+				<card>15916</card>
+				<card>15920</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>316</id>
+		<name>Secr106</name>
+		<name>Secrets Revealed Normal 6</name>
+		<commander>1720</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>543</card>
+				<card>11239</card>
+				<card>13433</card>
+				<card>14008</card>
+				<card>14100</card>
+				<card>14617</card>
+				<card>15913</card>
+				<card>15919</card>
+				<card>15919</card>
+				<card>15920</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>317</id>
+		<name>Secr107</name>
+		<name>Secrets Revealed Normal 7</name>
+		<commander>1726</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4921</card>
+				<card>10758</card>
+				<card>11239</card>
+				<card>12722</card>
+				<card>13029</card>
+				<card>14010</card>
+				<card>15913</card>
+				<card>15919</card>
+				<card>15920</card>
+				<card>15920</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>321</id>
+		<name>Secr201</name>
+		<name>Secrets Revealed Heroic 1</name>
+		<commander>1044</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>6332</card>
+				<card>7671</card>
+				<card>12523</card>
+				<card>13481</card>
+				<card>14106</card>
+				<card>14674</card>
+				<card>15601</card>
+				<card>15913</card>
+				<card>15919</card>
+				<card>15922</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>322</id>
+		<name>Secr202</name>
+		<name>Secrets Revealed Heroic 2</name>
+		<commander>1044</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4289</card>
+				<card>4738</card>
+				<card>5508</card>
+				<card>6339</card>
+				<card>11828</card>
+				<card>12526</card>
+				<card>12526</card>
+				<card>15913</card>
+				<card>15919</card>
+				<card>15922</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>323</id>
+		<name>Secr203</name>
+		<name>Secrets Revealed Heroic 3</name>
+		<commander>1716</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7412</card>
+				<card>11828</card>
+				<card>12526</card>
+				<card>13493</card>
+				<card>13571</card>
+				<card>13652</card>
+				<card>15913</card>
+				<card>15913</card>
+				<card>15919</card>
+				<card>15922</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>324</id>
+		<name>Secr204</name>
+		<name>Secrets Revealed Heroic 4</name>
+		<commander>1201</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>11149</card>
+				<card>11149</card>
+				<card>11245</card>
+				<card>14013</card>
+				<card>14617</card>
+				<card>15116</card>
+				<card>15245</card>
+				<card>15913</card>
+				<card>15919</card>
+				<card>15922</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>325</id>
+		<name>Secr205</name>
+		<name>Secrets Revealed Heroic 5</name>
+		<commander>1201</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>8462</card>
+				<card>12722</card>
+				<card>13475</card>
+				<card>14317</card>
+				<card>14674</card>
+				<card>15395</card>
+				<card>15907</card>
+				<card>15913</card>
+				<card>15919</card>
+				<card>15922</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>326</id>
+		<name>Secr206</name>
+		<name>Secrets Revealed Heroic 6</name>
+		<commander>1722</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>854</card>
+				<card>11245</card>
+				<card>13439</card>
+				<card>14013</card>
+				<card>14013</card>
+				<card>14106</card>
+				<card>14620</card>
+				<card>15919</card>
+				<card>15919</card>
+				<card>15922</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>327</id>
+		<name>Secr207</name>
+		<name>Secrets Revealed Heroic 7</name>
+		<commander>1728</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>10764</card>
+				<card>11245</card>
+				<card>11531</card>
+				<card>12728</card>
+				<card>13032</card>
+				<card>14016</card>
+				<card>15913</card>
+				<card>15919</card>
+				<card>15922</card>
+				<card>15922</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>331</id>
+		<name>Secr301</name>
+		<name>Secrets Revealed Mythic 1</name>
+		<commander>1046</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>6344</card>
+				<card>12529</card>
+				<card>12535</card>
+				<card>13571</card>
+				<card>13571</card>
+				<card>13649</card>
+				<card>14112</card>
+				<card>15913</card>
+				<card>15919</card>
+				<card>15925</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>332</id>
+		<name>Secr302</name>
+		<name>Secrets Revealed Mythic 2</name>
+		<commander>1046</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4741</card>
+				<card>6344</card>
+				<card>7676</card>
+				<card>11444</card>
+				<card>11444</card>
+				<card>12499</card>
+				<card>13655</card>
+				<card>15913</card>
+				<card>15919</card>
+				<card>15925</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>333</id>
+		<name>Secr303</name>
+		<name>Secrets Revealed Mythic 3</name>
+		<commander>1719</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7418</card>
+				<card>11834</card>
+				<card>12535</card>
+				<card>13499</card>
+				<card>13571</card>
+				<card>13661</card>
+				<card>15913</card>
+				<card>15913</card>
+				<card>15919</card>
+				<card>15925</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>334</id>
+		<name>Secr304</name>
+		<name>Secrets Revealed Mythic 4</name>
+		<commander>1204</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>12643</card>
+				<card>12795</card>
+				<card>14112</card>
+				<card>14112</card>
+				<card>14677</card>
+				<card>14677</card>
+				<card>15913</card>
+				<card>15919</card>
+				<card>15925</card>
+				<card>16299</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>335</id>
+		<name>Secr305</name>
+		<name>Secrets Revealed Mythic 5</name>
+		<commander>1204</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7166</card>
+				<card>12646</card>
+				<card>12801</card>
+				<card>14413</card>
+				<card>14677</card>
+				<card>14779</card>
+				<card>15913</card>
+				<card>15919</card>
+				<card>15925</card>
+				<card>16299</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>336</id>
+		<name>Secr306</name>
+		<name>Secrets Revealed Mythic 6</name>
+		<commander>1725</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4177</card>
+				<card>11251</card>
+				<card>13445</card>
+				<card>14022</card>
+				<card>14112</card>
+				<card>14623</card>
+				<card>15913</card>
+				<card>15919</card>
+				<card>15919</card>
+				<card>15925</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>337</id>
+		<name>Secr307</name>
+		<name>Secrets Revealed Mythic 7</name>
+		<commander>1731</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7178</card>
+				<card>7532</card>
+				<card>10770</card>
+				<card>11251</card>
+				<card>14022</card>
+				<card>14022</card>
+				<card>15913</card>
+				<card>15919</card>
+				<card>15925</card>
+				<card>15925</card>
+			</always_include>
+		</deck>
+	</campaign>
+
 </root>
