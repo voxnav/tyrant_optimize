@@ -1720,6 +1720,11 @@ int main(int argc, char** argv)
                     opt_bg_skill.all = true;
                     skill_index += 1;
                 }
+                else if (skill_index + 1 < tokens.size() && isdigit(*tokens[skill_index].c_str()))
+                {
+                    opt_bg_skill.n = boost::lexical_cast<unsigned>(tokens[skill_index]);
+                    skill_index += 1;
+                }
                 if (skill_index < tokens.size())
                 {
                     opt_bg_skill.s = skill_name_to_id(tokens[skill_index], false);
@@ -1730,7 +1735,14 @@ int main(int argc, char** argv)
                 }
                 if (skill_index < tokens.size())
                 {
-                    opt_bg_skill.x = boost::lexical_cast<unsigned>(tokens[skill_index]);
+                    if (opt_bg_skill.id == jam || opt_bg_skill.id == overload)
+                    {
+                        opt_bg_skill.n = boost::lexical_cast<unsigned>(tokens[skill_index]);
+                    }
+                    else
+                    {
+                        opt_bg_skill.x = boost::lexical_cast<unsigned>(tokens[skill_index]);
+                    }
                 }
             }
             catch (const boost::bad_lexical_cast & e)

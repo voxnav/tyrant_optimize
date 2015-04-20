@@ -114,7 +114,7 @@ std::string skill_description(const Cards& cards, const SkillSpec& s)
        (s.y == allfactions ? "" : std::string(" ") + faction_names[s.y]) +
        (s.s == no_skill ? "" : std::string(" ") + skill_names[s.s]) +
        (s.s2 == no_skill ? "" : std::string(" ") + skill_names[s.s2]) +
-       (s.x == 0 || s.x == s.n ? "" : std::string(" ") + to_string(s.x)) +
+       (s.x == 0 ? "" : std::string(" ") + to_string(s.x)) +
        (s.c == 0 ? "" : std::string(" every ") + to_string(s.c));
 }
 std::string skill_short_description(const SkillSpec& s)
