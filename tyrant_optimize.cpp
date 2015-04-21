@@ -1731,6 +1731,14 @@ int main(int argc, char** argv)
                     if (opt_bg_skill.s != no_skill)
                     {
                         skill_index += 1;
+                        if (skill_index < tokens.size())
+                        {
+                            opt_bg_skill.s2 = skill_name_to_id(tokens[skill_index], false);
+                            if (opt_bg_skill.s2 != no_skill)
+                            {
+                                skill_index += 1;
+                            }
+                        }
                     }
                 }
                 if (skill_index < tokens.size())
