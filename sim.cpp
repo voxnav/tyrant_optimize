@@ -269,11 +269,11 @@ void prepend_on_death(Field* fd)
                 }
             }
         }
-        if (fd->bg_skill.id == reaping)
+        if (fd->bg_effects.count(reaping))
         {
-            SkillSpec ss_heal{heal, fd->bg_skill.x, allfactions, 0, 0, no_skill, no_skill, true,};
-            SkillSpec ss_rally{rally, fd->bg_skill.x, allfactions, 0, 0, no_skill, no_skill, true,};
-            _DEBUG_MSG(2, "Preparing %s skill %s and %s\n", status_description(status).c_str(), skill_description(fd->cards, ss_heal).c_str(), skill_description(fd->cards, ss_rally).c_str());
+            SkillSpec ss_heal{heal, fd->bg_effects.at(reaping), allfactions, 0, 0, no_skill, no_skill, true,};
+            SkillSpec ss_rally{rally, fd->bg_effects.at(reaping), allfactions, 0, 0, no_skill, no_skill, true,};
+            _DEBUG_MSG(2, "Reaping: Preparing %s skill %s and %s\n", status_description(status).c_str(), skill_description(fd->cards, ss_heal).c_str(), skill_description(fd->cards, ss_rally).c_str());
             od_skills.emplace_back(status, ss_heal);
             od_skills.emplace_back(status, ss_rally);
         }
@@ -478,13 +478,14 @@ Results<uint64_t> play(Field* fd)
         }
         if(__builtin_expect(fd->end, false)) { break; }
 
-        if (fd->bg_skill.id != no_skill && skill_table[fd->bg_skill.id])
+        // Evaluate activation Battleground skills
+        for (const auto & bg_skill: fd->bg_skills)
         {
-            // Evaluate TU Battleground effect (Enhance all)
-            _DEBUG_MSG(2, "Evaluating Battleground skill %s\n", skill_description(fd->cards, fd->bg_skill).c_str());
-            fd->skill_queue.emplace_back(&fd->tap->commander, fd->bg_skill);
+            _DEBUG_MSG(2, "Evaluating BG skill %s\n", skill_description(fd->cards, bg_skill).c_str());
+            fd->skill_queue.emplace_back(&fd->tap->commander, bg_skill);
             resolve_skill(fd);
         }
+        if (__builtin_expect(fd->end, false)) { break; }
 
         // Evaluate commander
         fd->current_phase = Field::commander_phase;
@@ -918,6 +919,13 @@ struct PerformAttack
                     unsigned counter_dmg(counter_damage(fd, att_status, def_status));
                     _DEBUG_MSG(1, "%s takes %u counter damage from %s\n", status_description(att_status).c_str(), counter_dmg, status_description(def_status).c_str());
                     remove_hp(fd, att_status, counter_dmg);
+                    if (fd->bg_effects.count(counterflux))
+                    {
+                        unsigned flux_value = (def_status->skill(counter) + 1) / 2;
+                        _DEBUG_MSG(1, "Counterflux: %s heals itself and berserks for %u\n", status_description(def_status).c_str(), flux_value);
+                        add_hp(fd, def_status, flux_value);
+                        def_status->m_attack += flux_value;
+                    }
                 }
                 unsigned berserk_value = att_status->skill(berserk);
                 if(berserk_value > 0 && skill_check<berserk>(fd, att_status, nullptr))
@@ -1087,9 +1095,9 @@ bool attack_phase(Field* fd)
         att_dmg = attack_commander(fd, att_status);
     }
 
-    if (att_dmg > 0 && !fd->assault_bloodlusted && fd->bg_skill.id == bloodlust)
+    if (att_dmg > 0 && !fd->assault_bloodlusted && fd->bg_effects.count(bloodlust))
     {
-        fd->bloodlust_value += fd->bg_skill.x;
+        fd->bloodlust_value += fd->bg_effects.at(bloodlust);
         fd->assault_bloodlusted = true;
     }
 
@@ -1268,7 +1276,7 @@ inline void perform_skill<weaken>(Field* fd, CardStatus* src, CardStatus* dst, c
 template<unsigned skill_id>
 inline unsigned select_fast(Field* fd, CardStatus* src_status, const std::vector<CardStatus*>& cards, const SkillSpec& s)
 {
-    if(s.y == allfactions || fd->effect == metamorphosis)
+    if (s.y == allfactions || fd->bg_effects.count(metamorphosis))
     {
         return(fd->make_selection_array(cards.begin(), cards.end(), [fd, src_status, s](CardStatus* c){return(skill_predicate<skill_id>(fd, src_status, c, s));}));
     }

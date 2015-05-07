@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "2.7.2"
+#define TYRANT_OPTIMIZER_VERSION "2.8.0"
 
 #include <string>
 #include <sstream>
@@ -32,7 +32,7 @@ enum Skill
     enfeeble, jam, siege, strike, weaken, 
     END_ACTIVATION_HARMFUL,
     BEGIN_ACTIVATION_HELPFUL,
-    enhance, evolve, heal, overload, protect, rally,
+    enhance, evolve, heal, mend, overload, protect, rally,
     END_ACTIVATION_HELPFUL,
     // Defensive:
     BEGIN_DEFENSIVE,
@@ -41,12 +41,12 @@ enum Skill
     // Combat-Modifier:
     flurry, pierce, valor,
     // Damage-Dependant:
-    berserk, inhibit, leech, poison,
+    berserk, inhibit, leech, poison, venom,
     // Triggered:
     legion,
     // Pseudo-Skill for BGE:
     BEGIN_BGE_SKILL,
-    bloodlust, reaping, 
+    bloodlust, reaping, metamorphosis, counterflux,
     END_BGE_SKILL,
     num_skills
 };
@@ -81,14 +81,6 @@ enum DeckType {
 }
 
 extern std::string decktype_names[DeckType::num_decktypes];
-
-enum Effect {
-    none,
-    metamorphosis,
-    num_effects
-};
-
-extern std::string effect_names[Effect::num_effects];
 
 enum gamemode_t
 {

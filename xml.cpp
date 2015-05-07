@@ -265,7 +265,7 @@ void load_cards_xml(Cards & all_cards, const char * filename)
     all_cards.organize();
 }
 //------------------------------------------------------------------------------
-Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, const char* effect_node_name, DeckType::DeckType decktype, unsigned id, std::string base_deck_name)
+Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, DeckType::DeckType decktype, unsigned id, std::string base_deck_name)
 {
     xml_node<>* commander_node(node->first_node("commander"));
     const Card* card = all_cards.by_id(atoi(commander_node->value()));
@@ -273,7 +273,6 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, const ch
     unsigned upgrade_opportunities = card->m_top_level_card->m_level - card->m_level;
     std::vector<const Card*> always_cards;
     std::vector<std::pair<unsigned, std::vector<const Card*>>> some_cards;
-    std::vector<const Card*> reward_cards;
     xml_node<>* deck_node(node->first_node("deck"));
     xml_node<>* levels_node(node->first_node("levels"));
     unsigned max_level = levels_node ? atoi(levels_node->value()) : 10;
@@ -304,35 +303,22 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, const ch
         some_cards.push_back(std::make_pair(num_cards_from_pool, cards_from_pool));
         upgrade_opportunities += upgrade_points * num_cards_from_pool / cards_from_pool.size();
     }
-    xml_node<>* rewards_node(node->first_node("rewards"));
-    if(decktype == DeckType::mission && rewards_node)
-    {
-        for(xml_node<>* card_node = rewards_node->first_node("card");
-                card_node;
-                card_node = card_node->next_sibling("card"))
-        {
-            card = all_cards.by_id(atoi(card_node->value()));
-            reward_cards.push_back(card);
-        }
-    }
     xml_node<>* mission_req_node(node->first_node(decktype == DeckType::mission ? "req" : "mission_req"));
     unsigned mission_req(mission_req_node ? atoi(mission_req_node->value()) : 0);
-    xml_node<>* effect_id_node(node->first_node(effect_node_name));
-    Effect effect = effect_id_node ? static_cast<enum Effect>(atoi(effect_id_node->value())) : Effect::none;
 
     for (unsigned level = 1; level < max_level; ++ level)
     {
         std::string deck_name = base_deck_name + "-" + to_string(level);
-        decks.decks.push_back(Deck{all_cards, decktype, id, deck_name, effect, (upgrade_opportunities + 1) * (level - 1) / (max_level - 1), upgrade_opportunities});
+        decks.decks.push_back(Deck{all_cards, decktype, id, deck_name, (upgrade_opportunities + 1) * (level - 1) / (max_level - 1), upgrade_opportunities});
         Deck* deck = &decks.decks.back();
-        deck->set(commander_card, always_cards, some_cards, reward_cards, mission_req);
+        deck->set(commander_card, always_cards, some_cards, mission_req);
         decks.by_name[deck_name] = deck;
         decks.by_name[decktype_names[decktype] + " #" + to_string(id) + "-" + to_string(level)] = deck;
     }
 
-    decks.decks.push_back(Deck{all_cards, decktype, id, base_deck_name, effect});
+    decks.decks.push_back(Deck{all_cards, decktype, id, base_deck_name});
     Deck* deck = &decks.decks.back();
-    deck->set(commander_card, always_cards, some_cards, reward_cards, mission_req);
+    deck->set(commander_card, always_cards, some_cards, mission_req);
 
     // upgrade cards for full-level missions/raids
     if (max_level > 1)
@@ -379,7 +365,7 @@ void read_missions(Decks& decks, const Cards& all_cards, std::string filename)
         std::string deck_name{name_node->value()};
         try
         {
-            read_deck(decks, all_cards, mission_node, "effect", DeckType::mission, id, deck_name);
+            read_deck(decks, all_cards, mission_node, DeckType::mission, id, deck_name);
         }
         catch (const std::runtime_error& e)
         {
@@ -410,7 +396,7 @@ void read_raids(Decks& decks, const Cards& all_cards, std::string filename)
         unsigned id(id_node ? atoi(id_node->value()) : 0);
         xml_node<>* name_node(raid_node->first_node("name"));
         std::string deck_name{name_node->value()};
-        read_deck(decks, all_cards, raid_node, "effect", DeckType::raid, id, deck_name);
+        read_deck(decks, all_cards, raid_node, DeckType::raid, id, deck_name);
     }
 
     for(xml_node<>* campaign_node = root->first_node("campaign");
@@ -424,7 +410,7 @@ void read_raids(Decks& decks, const Cards& all_cards, std::string filename)
             name_node;
             name_node = name_node->next_sibling("name"))
         {
-            read_deck(decks, all_cards, campaign_node, "effect", DeckType::campaign, id, name_node->value());
+            read_deck(decks, all_cards, campaign_node, DeckType::campaign, id, name_node->value());
         }
     }
 }

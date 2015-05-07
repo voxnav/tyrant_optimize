@@ -46,7 +46,6 @@ public:
     DeckType::DeckType decktype;
     unsigned id;
     std::string name;
-    Effect effect; // for quests
     unsigned upgrade_points;
     unsigned upgrade_opportunities;
     DeckStrategy::DeckStrategy strategy;
@@ -61,7 +60,6 @@ public:
     // card id -> card order
     std::map<unsigned, std::list<unsigned>> order;
     std::vector<std::pair<unsigned, std::vector<const Card*>>> raid_cards;
-    std::vector<const Card*> reward_cards;
     unsigned mission_req;
 
     std::string deck_string;
@@ -74,7 +72,6 @@ public:
         DeckType::DeckType decktype_ = DeckType::deck,
         unsigned id_ = 0,
         std::string name_ = "",
-        Effect effect_ = Effect::none,
         unsigned upgrade_points_ = 0,
         unsigned upgrade_opportunities_ = 0,
         DeckStrategy::DeckStrategy strategy_ = DeckStrategy::random) :
@@ -82,7 +79,6 @@ public:
         decktype(decktype_),
         id(id_),
         name(name_),
-        effect(Effect::none),
         upgrade_points(upgrade_points_),
         upgrade_opportunities(upgrade_opportunities_),
         strategy(strategy_),
@@ -98,13 +94,11 @@ public:
         const Card* commander_,
         const std::vector<const Card*>& cards_,
         std::vector<std::pair<unsigned, std::vector<const Card*>>> raid_cards_ = {},
-        std::vector<const Card*> reward_cards_ = {},
         unsigned mission_req_ = 0)
     {
         commander = commander_;
         cards = std::vector<const Card*>(std::begin(cards_), std::end(cards_));
         raid_cards = std::vector<std::pair<unsigned, std::vector<const Card*>>>(raid_cards_);
-        reward_cards = std::vector<const Card*>(reward_cards_);
         mission_req = mission_req_;
     }
 

@@ -7,6 +7,7 @@
 #include <deque>
 #include <tuple>
 #include <vector>
+#include <unordered_map>
 #include <map>
 #include <random>
 
@@ -67,7 +68,6 @@ struct FinalResults
 
 void fill_skill_table();
 Results<uint64_t> play(Field* fd);
-void modify_cards(Cards& cards, enum Effect effect);
 // Pool-based indexed storage.
 //---------------------- Pool-based indexed storage ----------------------------
 template<typename T>
@@ -221,8 +221,8 @@ public:
     unsigned turn;
     gamemode_t gamemode;
     OptimizationMode optimization_mode;
-    const Effect effect;
-    SkillSpec bg_skill;
+    std::unordered_map<unsigned, unsigned> bg_effects; // passive BGE
+    std::vector<SkillSpec> bg_skills; // active BGE, casted every turn
     // With the introduction of on death skills, a single skill can trigger arbitrary many skills.
     // They are stored in this, and cleared after all have been performed.
     std::deque<std::tuple<CardStatus*, SkillSpec>> skill_queue;
@@ -247,7 +247,7 @@ public:
     unsigned current_ci;
 
     Field(std::mt19937& re_, const Cards& cards_, Hand& hand1, Hand& hand2, gamemode_t gamemode_, OptimizationMode optimization_mode_,
-            Effect effect_, SkillSpec bg_skill_) :
+            std::unordered_map<unsigned, unsigned>& bg_effects_, std::vector<SkillSpec>& bg_skills_) :
         end{false},
         re(re_),
         cards(cards_),
@@ -255,8 +255,8 @@ public:
         turn(1),
         gamemode(gamemode_),
         optimization_mode(optimization_mode_),
-        effect(effect_),
-        bg_skill(bg_skill_),
+        bg_effects(bg_effects_),
+        bg_skills(bg_skills_),
         n_player_kills(0),
         assault_bloodlusted(false),
         bloodlust_value(0)

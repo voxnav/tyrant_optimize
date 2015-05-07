@@ -16,7 +16,7 @@ std::string skill_names[Skill::num_skills] =
     "Enfeeble", "Jam", "Siege", "Strike", "Weaken",
     "<Error>",
     "<Error>",
-    "Enhance", "Evolve", "Heal", "Overload", "Protect", "Rally",
+    "Enhance", "Evolve", "Heal", "Mend", "Overload", "Protect", "Rally",
     "<Error>",
     // Defensive:
     "<Error>",
@@ -25,12 +25,12 @@ std::string skill_names[Skill::num_skills] =
     // Combat-Modifier:
     "Flurry", "Pierce", "Valor",
     // Damage-Dependant:
-    "Berserk", "Inhibit", "Leech", "Poison",
+    "Berserk", "Inhibit", "Leech", "Poison", "Venom",
     // Triggered:
     "Legion",
-    // Pseudo-Skill for BGE:
+    // Pseudo-skill for passive BGEs:
     "<Error>",
-    "Bloodlust", "Reaping",
+    "Bloodlust", "Reaping", "Metamorphosis", "Counterflux",
     "<Error>",
 };
 
@@ -45,11 +45,6 @@ signed min_possible_score[]{0, 0, 0, 10, 0, 5, 5, 0};
 signed max_possible_score[]{100, 100, 100, 100, 100, 67, 100, 100};
 
 std::string decktype_names[DeckType::num_decktypes]{"Deck", "Mission", "Raid", "Campaign", "Quest", "Custom Deck", };
-
-std::string effect_names[Effect::num_effects] = {
-    "None",
-    "Metamorphosis",
-};
 
 signed debug_print(0);
 unsigned debug_cached(0);
