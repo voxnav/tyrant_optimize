@@ -97,11 +97,11 @@ Skill skill_target_skill(xml_node<>* skill, const char* attribute)
 }
 
 //------------------------------------------------------------------------------
-void load_decks_xml(Decks& decks, const Cards& all_cards, const char * mission_filename, const char * raid_filename)
+void load_decks_xml(Decks& decks, const Cards& all_cards, const std::string & mission_filename, const std::string & raid_filename, bool do_warn_on_missing=true)
 {
     try
     {
-        read_missions(decks, all_cards, mission_filename);
+        read_missions(decks, all_cards, mission_filename, do_warn_on_missing);
     }
     catch (const rapidxml::parse_error& e)
     {
@@ -109,7 +109,7 @@ void load_decks_xml(Decks& decks, const Cards& all_cards, const char * mission_f
     }
     try
     {
-        read_raids(decks, all_cards, raid_filename);
+        read_raids(decks, all_cards, raid_filename, do_warn_on_missing);
     }
     catch(const rapidxml::parse_error& e)
     {
@@ -118,12 +118,15 @@ void load_decks_xml(Decks& decks, const Cards& all_cards, const char * mission_f
 }
 
 //------------------------------------------------------------------------------
-void parse_file(const char* filename, std::vector<char>& buffer, xml_document<>& doc)
+void parse_file(const std::string & filename, std::vector<char>& buffer, xml_document<>& doc, bool do_warn_on_missing=true)
 {
     std::ifstream cards_stream(filename, std::ios::binary);
-    if(!cards_stream.good())
+    if (!cards_stream.good())
     {
-        std::cout << "Warning: The file '" << filename << "' does not exist. Proceeding without reading from this file.\n";
+        if (do_warn_on_missing)
+        {
+            std::cerr << "Warning: The file '" << filename << "' does not exist. Proceeding without reading from this file.\n";
+        }
         buffer.resize(1);
         buffer[0] = 0;
         doc.parse<0>(&buffer[0]);
@@ -244,11 +247,11 @@ void parse_card_node(Cards& all_cards, Card* card, xml_node<>* card_node)
     card->m_top_level_card = top_card;
 }
 
-void load_cards_xml(Cards & all_cards, const char * filename)
+void load_cards_xml(Cards & all_cards, const std::string & filename, bool do_warn_on_missing=true)
 {
     std::vector<char> buffer;
     xml_document<> doc;
-    parse_file(filename, buffer, doc);
+    parse_file(filename, buffer, doc, do_warn_on_missing);
     xml_node<>* root = doc.first_node();
 
     if(!root)
@@ -262,7 +265,6 @@ void load_cards_xml(Cards & all_cards, const char * filename)
         auto card = new Card();
         parse_card_node(all_cards, card, card_node);
     }
-    all_cards.organize();
 }
 //------------------------------------------------------------------------------
 Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, DeckType::DeckType decktype, unsigned id, std::string base_deck_name)
@@ -341,11 +343,11 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, DeckType
     return deck;
 }
 //------------------------------------------------------------------------------
-void read_missions(Decks& decks, const Cards& all_cards, std::string filename)
+void read_missions(Decks& decks, const Cards& all_cards, const std::string & filename, bool do_warn_on_missing=true)
 {
     std::vector<char> buffer;
     xml_document<> doc;
-    parse_file(filename.c_str(), buffer, doc);
+    parse_file(filename.c_str(), buffer, doc, do_warn_on_missing);
     xml_node<>* root = doc.first_node();
 
     if(!root)
@@ -375,11 +377,11 @@ void read_missions(Decks& decks, const Cards& all_cards, std::string filename)
     }
 }
 //------------------------------------------------------------------------------
-void read_raids(Decks& decks, const Cards& all_cards, std::string filename)
+void read_raids(Decks& decks, const Cards& all_cards, const std::string & filename, bool do_warn_on_missing=true)
 {
     std::vector<char> buffer;
     xml_document<> doc;
-    parse_file(filename.c_str(), buffer, doc);
+    parse_file(filename.c_str(), buffer, doc, do_warn_on_missing);
     xml_node<>* root = doc.first_node();
 
     if(!root)
@@ -416,11 +418,11 @@ void read_raids(Decks& decks, const Cards& all_cards, std::string filename)
 }
 
 //------------------------------------------------------------------------------
-void load_recipes_xml(Cards& all_cards, const char * filename)
+void load_recipes_xml(Cards& all_cards, const std::string & filename, bool do_warn_on_missing=true)
 {
     std::vector<char> buffer;
     xml_document<> doc;
-    parse_file(filename, buffer, doc);
+    parse_file(filename, buffer, doc, do_warn_on_missing);
     xml_node<>* root = doc.first_node();
 
     if(!root)

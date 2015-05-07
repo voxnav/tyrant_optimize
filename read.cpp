@@ -16,14 +16,6 @@
 #include "cards.h"
 #include "deck.h"
 
-void load_custom_decks(Decks& decks, Cards& all_cards, const char * filename)
-{
-    if(boost::filesystem::exists(filename))
-    {
-        read_custom_decks(decks, all_cards, filename);
-    }
-}
-
 template<typename Iterator, typename Functor> Iterator advance_until(Iterator it, Iterator it_end, Functor f)
 {
     while(it != it_end)
@@ -354,13 +346,17 @@ unsigned read_card_abbrs(Cards& all_cards, const std::string& filename)
 // Error codes:
 // 2 -> file not readable
 // 3 -> error while parsing file
-unsigned read_custom_decks(Decks& decks, Cards& all_cards, std::string filename)
+unsigned load_custom_decks(Decks& decks, Cards& all_cards, const std::string & filename)
 {
+    if (!boost::filesystem::exists(filename))
+    {
+        return 0;
+    }
     std::ifstream decks_file(filename);
-    if(!decks_file.is_open())
+    if (!decks_file.is_open())
     {
         std::cerr << "Error: Custom deck file " << filename << " could not be opened\n";
-        return(2);
+        return 2;
     }
     unsigned num_line(0);
     decks_file.exceptions(std::ifstream::badbit);
@@ -405,7 +401,7 @@ unsigned read_custom_decks(Decks& decks, Cards& all_cards, std::string filename)
             std::cerr << " at line " << num_line;
         }
         std::cerr << ": " << e.what() << ".\n";
-        return(3);
+        return 3;
     }
     return(0);
 }
@@ -433,7 +429,7 @@ void add_owned_card(Cards& all_cards, std::map<unsigned, unsigned>& owned_cards,
     }
 }
 
-void read_owned_cards(Cards& all_cards, std::map<unsigned, unsigned>& owned_cards, std::string filename)
+void read_owned_cards(Cards& all_cards, std::map<unsigned, unsigned>& owned_cards, const std::string & filename)
 {
     std::ifstream owned_file{filename};
     if(!owned_file.good())
