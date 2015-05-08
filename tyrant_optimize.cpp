@@ -25,14 +25,15 @@
 #include <stack>
 #include <tuple>
 #include <chrono>
-#include <boost/range/join.hpp>
-#include <boost/optional.hpp>
-#include <boost/thread/thread.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/barrier.hpp>
-#include <boost/math/distributions/binomial.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/math/distributions/binomial.hpp>
+#include <boost/optional.hpp>
+#include <boost/range/join.hpp>
+#include <boost/thread/barrier.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/thread.hpp>
 #include "card.h"
 #include "cards.h"
 #include "deck.h"
@@ -1681,7 +1682,11 @@ int main(int argc, char** argv)
         {  // load default files only if specify no -o=
             for (const auto & suffix: fn_suffix_list)
             {
-                opt_owned_cards_str_list.push_back("data/ownedcards" + suffix + ".txt");
+                std::string filename = "data/ownedcards" + suffix + ".txt";
+                if (boost::filesystem::exists(filename))
+                {
+                    opt_owned_cards_str_list.push_back(filename);
+                }
             }
         }
         for (const auto & oc_str: opt_owned_cards_str_list)
