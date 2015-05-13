@@ -129,7 +129,8 @@ unsigned get_required_cards_before_upgrade(const std::vector<const Card *> & car
         auto card_it = unresolved_cards.end();
         auto card = *(-- card_it);
         unresolved_cards.erase(card_it);
-        if(owned_cards[card->m_id] < num_cards[card] && !card->m_recipe_cards.empty())
+        if ((use_fused_card_level > 0 && card->m_set == 1000 && card->m_rarity <= 2 && card->m_level == 1) ||  // assume unlimited common/rare level-1 cards (standard set) under endgame 1|2
+            (owned_cards[card->m_id] < num_cards[card] && !card->m_recipe_cards.empty()))
         {
             unsigned num_under = num_cards[card] - owned_cards[card->m_id];
             num_cards[card] = owned_cards[card->m_id];
