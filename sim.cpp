@@ -919,7 +919,7 @@ struct PerformAttack
                     unsigned counter_dmg(counter_damage(fd, att_status, def_status));
                     _DEBUG_MSG(1, "%s takes %u counter damage from %s\n", status_description(att_status).c_str(), counter_dmg, status_description(def_status).c_str());
                     remove_hp(fd, att_status, counter_dmg);
-                    if (fd->bg_effects.count(counterflux))
+                    if (def_cardtype == CardType::assault && fd->bg_effects.count(counterflux))
                     {
                         unsigned flux_value = (def_status->skill(counter) + 1) / 2;
                         _DEBUG_MSG(1, "Counterflux: %s heals itself and berserks for %u\n", status_description(def_status).c_str(), flux_value);
