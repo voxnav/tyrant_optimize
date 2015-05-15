@@ -1279,4 +1279,466 @@
 		</deck>
 	</campaign>
 
+    <campaign>
+        <id>411</id>
+        <name>Deid101</name>
+        <name>Deidon Normal 1</name>
+        <commander>1022</commander>
+        <levels>1</levels>
+        <deck>
+            <always_include>
+                <card>4472</card>
+                <card>4472</card>
+                <card>6648</card>
+                <card>6648</card>
+                <card>12822</card>
+                <card>16054</card>
+                <card>16746</card>
+                <card>16768</card>
+                <card>16774</card>
+                <card>16780</card>
+            </always_include>
+        </deck>
+    </campaign>
+
+	<campaign>
+		<id>412</id>
+		<name>Deid102</name>
+		<name>Deidon Normal 2</name>
+		<commander>1022</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>443</card>
+				<card>443</card>
+				<card>6652</card>
+				<card>6652</card>
+				<card>7322</card>
+				<card>7907</card>
+				<card>12810</card>
+				<card>16768</card>
+				<card>16774</card>
+				<card>16780</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>413</id>
+		<name>Deid103</name>
+		<name>Deidon Normal 3</name>
+		<commander>1742</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7322</card>
+				<card>11537</card>
+				<card>12807</card>
+				<card>14420</card>
+				<card>14426</card>
+				<card>16752</card>
+				<card>16773</card>
+				<card>16773</card>
+				<card>16774</card>
+				<card>16780</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>414</id>
+		<name>Deid104</name>
+		<name>Deidon Normal 4</name>
+		<commander>1022</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>443</card>
+				<card>443</card>
+				<card>2292</card>
+				<card>13958</card>
+				<card>16033</card>
+				<card>16120</card>
+				<card>16587</card>
+				<card>16768</card>
+				<card>16774</card>
+				<card>16780</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>415</id>
+		<name>Deid105</name>
+		<name>Deidon Normal 5</name>
+		<commander>1022</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>2292</card>
+				<card>4476</card>
+				<card>4476</card>
+				<card>4476</card>
+				<card>10773</card>
+				<card>11324</card>
+				<card>15323</card>
+				<card>16768</card>
+				<card>16774</card>
+				<card>16780</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>416</id>
+		<name>Deid106</name>
+		<name>Deidon Normal 6</name>
+		<commander>1748</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>5384</card>
+				<card>8346</card>
+				<card>10210</card>
+				<card>10780</card>
+				<card>12038</card>
+				<card>13815</card>
+				<card>16768</card>
+				<card>16779</card>
+				<card>16779</card>
+				<card>16780</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>417</id>
+		<name>Deid107</name>
+		<name>Deidon Normal 7</name>
+		<commander>1754</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>2578</card>
+				<card>6602</card>
+				<card>12439</card>
+				<card>13181</card>
+				<card>14034</card>
+				<card>15078</card>
+				<card>16768</card>
+				<card>16774</card>
+				<card>16780</card>
+				<card>16780</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+    <campaign>
+        <id>421</id>
+        <name>Deid201</name>
+        <name>Deidon Heroic 1</name>
+        <commander>1049</commander>
+        <levels>1</levels>
+        <deck>
+            <always_include>
+                <card>6929</card>
+                <card>7914</card>
+                <card>7920</card>
+                <card>12825</card>
+                <card>14426</card>
+                <card>16051</card>
+                <card>16749</card>
+                <card>16770</card>
+                <card>16776</card>
+                <card>16782</card>
+            </always_include>
+        </deck>
+    </campaign>
+
+    <campaign>
+        <id>422</id>
+        <name>Deid202</name>
+        <name>Deidon Heroic 2</name>
+        <commander>1049</commander>
+        <levels>1</levels>
+        <deck>
+            <always_include>
+                <card>6932</card>
+                <card>6932</card>
+                <card>7328</card>
+                <card>12813</card>
+                <card>13418</card>
+                <card>14425</card>
+                <card>16755</card>
+                <card>16770</card>
+                <card>16776</card>
+                <card>16782</card>
+            </always_include>
+        </deck>
+    </campaign>
+
+	<campaign>
+		<id>423</id>
+		<name>Deid203</name>
+		<name>Deidon Heroic 3</name>
+		<commander>1744</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>12813</card>
+				<card>12951</card>
+				<card>13418</card>
+				<card>13418</card>
+				<card>16057</card>
+				<card>16761</card>
+				<card>16773</card>
+				<card>16773</card>
+				<card>16776</card>
+				<card>16782</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+    <campaign>
+        <id>424</id>
+        <name>Deid204</name>
+        <name>Deidon Heroic 4</name>
+        <commander>1051</commander>
+        <levels>1</levels>
+        <deck>
+            <always_include>
+                <card>2572</card>
+                <card>11816</card>
+                <card>14023</card>
+                <card>14136</card>
+                <card>15703</card>
+                <card>16045</card>
+                <card>16045</card>
+                <card>16770</card>
+                <card>16776</card>
+                <card>16782</card>
+            </always_include>
+        </deck>
+    </campaign>
+
+    <campaign>
+        <id>425</id>
+        <name>Deid205</name>
+        <name>Deidon Heroic 5</name>
+        <commander>1051</commander>
+        <levels>1</levels>
+        <deck>
+            <always_include>
+                <card>14635</card>
+                <card>15320</card>
+                <card>15329</card>
+                <card>15709</card>
+                <card>16194</card>
+                <card>16449</card>
+                <card>16770</card>
+                <card>16776</card>
+                <card>16782</card>
+                <card>16921</card>
+            </always_include>
+        </deck>
+    </campaign>
+
+    <campaign>
+        <id>426</id>
+        <name>Deid206</name>
+        <name>Deidon Heroic 6</name>
+        <commander>1750</commander>
+        <levels>1</levels>
+        <deck>
+            <always_include>
+                <card>247</card>
+                <card>10213</card>
+                <card>12445</card>
+                <card>15709</card>
+                <card>16551</card>
+                <card>16770</card>
+                <card>16779</card>
+                <card>16779</card>
+                <card>16782</card>
+                <card>16959</card>
+            </always_include>
+        </deck>
+    </campaign>
+
+    <campaign>
+        <id>427</id>
+        <name>Deid207</name>
+        <name>Deidon Heroic 7</name>
+        <commander>1756</commander>
+        <levels>1</levels>
+        <deck>
+            <always_include>
+                <card>2578</card>
+                <card>10782</card>
+                <card>13823</card>
+                <card>14032</card>
+                <card>14136</card>
+                <card>15084</card>
+                <card>16770</card>
+                <card>16776</card>
+                <card>16782</card>
+                <card>16782</card>
+            </always_include>
+        </deck>
+    </campaign>
+
+	<campaign>
+		<id>431</id>
+		<name>Deid301</name>
+		<name>Deidon Mythic 1</name>
+		<commander>1051</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7922</card>
+				<card>12837</card>
+				<card>12957</card>
+				<card>14431</card>
+				<card>14431</card>
+				<card>16063</card>
+				<card>16761</card>
+				<card>16773</card>
+				<card>16779</card>
+				<card>16785</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+    <campaign>
+        <id>432</id>
+        <name>Deid302</name>
+        <name>Deidon Mythic 2</name>
+        <commander>1051</commander>
+        <levels>1</levels>
+        <deck>
+            <always_include>
+                <card>7334</card>
+                <card>7922</card>
+                <card>11546</card>
+                <card>11546</card>
+                <card>12819</card>
+                <card>12957</card>
+                <card>12957</card>
+                <card>16773</card>
+                <card>16779</card>
+                <card>16785</card>
+            </always_include>
+        </deck>
+    </campaign>
+
+	<campaign>
+		<id>433</id>
+		<name>Deid303</name>
+		<name>Deidon Mythic 3</name>
+		<commander>1747</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7922</card>
+				<card>12963</card>
+				<card>13421</card>
+				<card>14437</card>
+				<card>15757</card>
+				<card>16599</card>
+				<card>16773</card>
+				<card>16773</card>
+				<card>16779</card>
+				<card>16785</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>434</id>
+		<name>Deid304</name>
+		<name>Deidon Mythic 4</name>
+		<commander>1052</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>2578</card>
+				<card>2578</card>
+				<card>12939</card>
+				<card>13901</card>
+				<card>14569</card>
+				<card>14569</card>
+				<card>16045</card>
+				<card>16773</card>
+				<card>16779</card>
+				<card>16785</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>435</id>
+		<name>Deid305</name>
+		<name>Deidon Mythic 5</name>
+		<commander>1052</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>12451</card>
+				<card>13385</card>
+				<card>15709</card>
+				<card>15709</card>
+				<card>15811</card>
+				<card>16203</card>
+				<card>16203</card>
+				<card>16773</card>
+				<card>16779</card>
+				<card>16785</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+    <campaign>
+        <id>436</id>
+        <name>Deid306</name>
+        <name>Deidon Mythic 6</name>
+        <commander>1753</commander>
+        <levels>1</levels>
+        <deck>
+            <always_include>
+                <card>10788</card>
+                <card>13679</card>
+                <card>14269</card>
+                <card>15547</card>
+                <card>15709</card>
+                <card>16773</card>
+                <card>16779</card>
+                <card>16779</card>
+                <card>16785</card>
+                <card>16929</card>
+            </always_include>
+        </deck>
+    </campaign>
+
+	<campaign>
+		<id>437</id>
+		<name>Deid307</name>
+		<name>Deidon Mythic 7</name>
+		<commander>1759</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>11822</card>
+				<card>13823</card>
+				<card>14148</card>
+				<card>14269</card>
+				<card>14275</card>
+				<card>15092</card>
+				<card>16773</card>
+				<card>16779</card>
+				<card>16785</card>
+				<card>16785</card>
+			</always_include>
+		</deck>
+	</campaign>
+
 </root>
