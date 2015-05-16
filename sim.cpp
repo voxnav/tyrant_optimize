@@ -921,7 +921,8 @@ struct PerformAttack
                     remove_hp(fd, att_status, counter_dmg);
                     if (def_cardtype == CardType::assault && def_status->m_hp > 0 && fd->bg_effects.count(counterflux))
                     {
-                        unsigned flux_value = (def_status->skill(counter) + 1) / 2;
+                        unsigned flux_denominator = fd->bg_effects.at(counterflux) ? fd->bg_effects.at(counterflux) : 4;
+                        unsigned flux_value = (def_status->skill(counter) - 1) / flux_denominator + 1;
                         _DEBUG_MSG(1, "Counterflux: %s heals itself and berserks for %u\n", status_description(def_status).c_str(), flux_value);
                         add_hp(fd, def_status, flux_value);
                         def_status->m_attack += flux_value;
