@@ -909,7 +909,7 @@ void print_deck_inline(const unsigned deck_cost, const FinalResults<long double>
     {
         std::cout << " #" << num_repeat;
     }
-    std::cout << std::endl;
+    std::cout << " = " << deck->cards.size() << " units" << std::endl;
 }
 //------------------------------------------------------------------------------
 void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d1, Process& proc, Requirement requirement)
