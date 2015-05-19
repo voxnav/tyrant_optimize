@@ -813,11 +813,14 @@ void turn_end_phase(Field* fd)
                 _DEBUG_MSG(1, "%s refreshes %u health\n", status_description(&status).c_str(), refresh_value);
                 add_hp(fd, &status, refresh_value);
             }
-            unsigned poison_dmg = safe_minus(status.m_poisoned + (status.m_poisoned ? status.m_enfeebled : 0), status.protected_value());
-            if(poison_dmg > 0)
+            if (status.m_poisoned > 0)
             {
-                _DEBUG_MSG(1, "%s takes poison damage %u\n", status_description(&status).c_str(), poison_dmg);
-                remove_hp(fd, &status, poison_dmg);
+                unsigned poison_dmg = safe_minus(status.m_poisoned + status.m_enfeebled, status.protected_value());
+                if (poison_dmg > 0)
+                {
+                    _DEBUG_MSG(1, "%s takes poison damage %u\n", status_description(&status).c_str(), poison_dmg);
+                    remove_hp(fd, &status, poison_dmg);
+                }
             }
             // end of the opponent's next turn for enemy units
             status.m_jammed = false;
@@ -975,6 +978,12 @@ struct PerformAttack
                 }
             }
         }
+        unsigned venom_value = att_status->skill(venom);
+        if (venom_value && def_status->m_poisoned > 0)
+        {
+            if (debug_print > 0) { desc += "+" + to_string(venom_value) + "(venom)"; }
+            att_dmg += venom_value;
+        }
         if (fd->bloodlust_value > 0)
         {
             if (debug_print > 0) { desc += "+" + to_string(fd->bloodlust_value) + "(bloodlust)"; }
@@ -1035,8 +1044,8 @@ void PerformAttack::attack_damage<CardType::commander>()
 template<>
 void PerformAttack::damage_dependant_pre_oa<CardType::assault>()
 {
-    unsigned poison_value = att_status->skill(poison);
-    if(poison_value > def_status->m_poisoned && skill_check<poison>(fd, att_status, def_status))
+    unsigned poison_value = std::max(att_status->skill(poison), att_status->skill(venom));
+    if (poison_value > def_status->m_poisoned && skill_check<poison>(fd, att_status, def_status))
     {
         // perform_skill_poison
         _DEBUG_MSG(1, "%s poisons %s by %u\n", status_description(att_status).c_str(), status_description(def_status).c_str(), poison_value);
@@ -1466,6 +1475,7 @@ void perform_targetted_allied_fast(Field* fd, CardStatus* src_status, const Skil
 void fill_skill_table()
 {
     memset(skill_table, 0, sizeof skill_table);
+    skill_table[besiege] = perform_targetted_hostile_fast<siege>;
     skill_table[enfeeble] = perform_targetted_hostile_fast<enfeeble>;
     skill_table[enhance] = perform_targetted_allied_fast<enhance>;
     skill_table[evolve] = perform_targetted_allied_fast<evolve>;
