@@ -2,6 +2,8 @@
 
 <root>
 
+<!-- Raids -->
+
 	<raid>
 		<id>1</id>
 		<name>Apocalypse</name>
@@ -207,6 +209,35 @@
 			</card_pool>
 		</deck>
 	</raid>
+
+	<raid>
+		<id>10</id>
+		<name>Gore Typhon</name>
+		<commander>1760</commander>
+		<levels>26</levels>
+		<deck>
+			<always_include>
+				<card>30236</card>
+				<card>30246</card>
+				<card>30256</card>
+				<card>30266</card>
+				<card>30276</card>
+				<card>8658</card>
+			</always_include>
+			<card_pool amount="4">
+				<card>30236</card>
+				<card>30246</card>
+				<card>30256</card>
+				<card>30266</card>
+				<card>30276</card>
+			</card_pool>
+		</deck>
+	</raid>
+
+<!-- END of Raids -->
+
+
+<!-- Campaigns -->
 
 	<campaign>
 		<id>1</id>
@@ -1740,5 +1771,7 @@
 			</always_include>
 		</deck>
 	</campaign>
+
+<!-- Campaigns -->
 
 </root>
