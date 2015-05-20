@@ -851,6 +851,7 @@ void print_results(const EvaluatedResults& results, std::vector<long double>& fa
 //------------------------------------------------------------------------------
 void print_deck_inline(const unsigned deck_cost, const FinalResults<long double> score, Deck * deck)
 {
+    std::cout << deck->cards.size() << " units: ";
     if(fund > 0)
     {
         std::cout << "$" << deck_cost << " ";
@@ -909,7 +910,7 @@ void print_deck_inline(const unsigned deck_cost, const FinalResults<long double>
     {
         std::cout << " #" << num_repeat;
     }
-    std::cout << " = " << deck->cards.size() << " units" << std::endl;
+    std::cout << std::endl;
 }
 //------------------------------------------------------------------------------
 void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d1, Process& proc, Requirement requirement)
