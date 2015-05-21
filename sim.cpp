@@ -351,7 +351,7 @@ void evaluate_skills(Field* fd, CardStatus* status, const std::vector<SkillSpec>
             }
             else
             {
-                _DEBUG_MSG(2, "Assault %s cannot take attack.\n", status_description(status).c_str());
+                _DEBUG_MSG(2, "%s cannot take attack.\n", status_description(status).c_str());
             }
         }
         // Flurry
@@ -499,7 +499,7 @@ Results<uint64_t> play(Field* fd)
             CardStatus* current_status(&fd->tap->structures[fd->current_ci]);
             if(!is_active(current_status) || !can_act(current_status))
             {
-                _DEBUG_MSG(2, "Structure %s cannot take action.\n", status_description(current_status).c_str());
+                _DEBUG_MSG(2, "%s cannot take action.\n", status_description(current_status).c_str());
             }
             else
             {
@@ -516,7 +516,7 @@ Results<uint64_t> play(Field* fd)
             bool attacked = false;
             if(!is_active(current_status) || !can_act(current_status))
             {
-                _DEBUG_MSG(2, "Assault %s cannot take action.\n", status_description(current_status).c_str());
+                _DEBUG_MSG(2, "%s cannot take action.\n", status_description(current_status).c_str());
             }
             else
             {
