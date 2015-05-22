@@ -212,25 +212,22 @@
 
 	<raid>
 		<id>10</id>
-		<name>Gore Typhon</name>
+		<name>Gore Typhon Raid</name>
 		<commander>1760</commander>
 		<levels>26</levels>
 		<deck>
 			<always_include>
 				<card>30236</card>
 				<card>30246</card>
+				<card>30246</card>
 				<card>30256</card>
+				<card>30256</card>
+				<card>30266</card>
 				<card>30266</card>
 				<card>30276</card>
 				<card>8658</card>
+				<card>8686</card>
 			</always_include>
-			<card_pool amount="4">
-				<card>30236</card>
-				<card>30246</card>
-				<card>30256</card>
-				<card>30266</card>
-				<card>30276</card>
-			</card_pool>
 		</deck>
 	</raid>
 
