@@ -252,6 +252,7 @@ void Deck::set(const std::vector<unsigned>& ids, const std::map<signed, char> &m
     {
         throw std::runtime_error("While constructing a deck: no commander found");
     }
+    deck_size = ids.size();
     card_marks = marks;
 }
 

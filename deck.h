@@ -60,6 +60,7 @@ public:
     // card id -> card order
     std::map<unsigned, std::list<unsigned>> order;
     std::vector<std::pair<unsigned, std::vector<const Card*>>> raid_cards;
+    unsigned deck_size;
     unsigned mission_req;
 
     std::string deck_string;
@@ -84,6 +85,7 @@ public:
         strategy(strategy_),
         commander(nullptr),
         shuffled_commander(nullptr),
+        deck_size(0),
         mission_req(0)
     {
     }
@@ -99,6 +101,11 @@ public:
         commander = commander_;
         cards = std::vector<const Card*>(std::begin(cards_), std::end(cards_));
         raid_cards = std::vector<std::pair<unsigned, std::vector<const Card*>>>(raid_cards_);
+        deck_size = cards.size();
+        for (const auto & pool: raid_cards)
+        {
+            deck_size += pool.first;
+        }
         mission_req = mission_req_;
     }
 

@@ -550,7 +550,7 @@ Results<uint64_t> play(Field* fd)
         ++fd->turn;
     }
     const auto & p = fd->players;
-    unsigned raid_damage = 15 + (std::min<unsigned>(p[1]->deck->cards.size(), (fd->turn + 1) / 2) - p[1]->assaults.size() - p[1]->structures.size()) - (10 * p[1]->commander.m_hp / p[1]->commander.m_max_hp);
+    unsigned raid_damage = 15 + (std::min<unsigned>(p[1]->deck->deck_size, (fd->turn + 1) / 2) - p[1]->assaults.size() - p[1]->structures.size()) - (10 * p[1]->commander.m_hp / p[1]->commander.m_max_hp);
     // you lose
     if(fd->players[0]->commander.m_hp == 0)
     {
@@ -579,7 +579,7 @@ Results<uint64_t> play(Field* fd)
             }
         case OptimizationMode::campaign:
             {
-                unsigned campaign_score = 100 - (std::min<unsigned>(p[0]->deck->cards.size(), (fd->turn + 1) / 2) - p[0]->assaults.size() - p[0]->structures.size()) * 10;
+                unsigned campaign_score = 100 - (std::min<unsigned>(p[0]->deck->deck_size, (fd->turn + 1) / 2) - p[0]->assaults.size() - p[0]->structures.size()) * 10;
                 return {1, 0, 0, campaign_score, 0};
             }
         default: return {1, 0, 0, 100, 0};
