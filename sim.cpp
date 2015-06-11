@@ -1147,6 +1147,7 @@ inline bool skill_predicate<enhance>(Field* fd, CardStatus* src, CardStatus* dst
 template<>
 inline bool skill_predicate<evolve>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
+    return dst->has_skill(s.s) && !dst->has_skill(s.s2);  // XXX in-game behavior
     return dst->has_skill(s.s) && !dst->has_skill(s.s2) && ((BEGIN_DEFENSIVE < s.s2 && s.s2 < END_DEFENSIVE) || is_active(dst));
 }
 
