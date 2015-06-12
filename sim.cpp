@@ -998,6 +998,26 @@ struct PerformAttack
         std::string reduced_desc;
         unsigned reduced_dmg(0);
         unsigned armor_value = def_status->skill(armor);
+        if (fd->bg_effects.count(fortification))
+        {
+            auto & assaults = fd->players[def_status->m_player]->assaults;
+            if (def_status->m_index > 0)
+            {
+                auto left_status = &assaults[def_status->m_index - 1];
+                if (left_status->m_hp > 0)
+                {
+                    armor_value = std::max(armor_value, left_status->skill(armor));
+                }
+            }
+            if (def_status->m_index + 1 < assaults.size())
+            {
+                auto right_status = &assaults[def_status->m_index + 1];
+                if (right_status->m_hp > 0)
+                {
+                    armor_value = std::max(armor_value, right_status->skill(armor));
+                }
+            }
+        }
         if(armor_value > 0)
         {
             if(debug_print > 0) { reduced_desc += to_string(armor_value) + "(armor)"; }

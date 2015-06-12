@@ -1322,7 +1322,8 @@ void print_available_effects()
         "  Bloodlust X\n"
         "  Reaping X\n"
         "  Metamorphosis\n"
-        "  Counterflux\n";
+        "  Counterflux\n"
+        "  Fortification\n";
 }
 void usage(int argc, char** argv)
 {
