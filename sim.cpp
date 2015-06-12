@@ -579,7 +579,7 @@ Results<uint64_t> play(Field* fd)
             }
         case OptimizationMode::campaign:
             {
-                unsigned campaign_score = 100 - (std::min<unsigned>(p[0]->deck->deck_size, (fd->turn + 1) / 2) - p[0]->assaults.size() - p[0]->structures.size()) * 10;
+                unsigned campaign_score = 100 - 10 * (std::min<unsigned>(p[0]->deck->cards.size(), (fd->turn + 1) / 2) - p[0]->assaults.size() - p[0]->structures.size());
                 return {1, 0, 0, campaign_score, 0};
             }
         default: return {1, 0, 0, 100, 0};
