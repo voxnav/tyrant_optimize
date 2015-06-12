@@ -1769,6 +1769,596 @@
 		</deck>
 	</campaign>
 
+	<campaign>
+		<id>511</id>
+		<name>Kali101</name>
+		<name>Kalihmah Normal 1</name>
+		<commander>1150</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4460</card>
+				<card>4460</card>
+				<card>4460</card>
+				<card>6636</card>
+				<card>10369</card>
+				<card>10647</card>
+				<card>12768</card>
+				<card>30450</card>
+				<card>30454</card>
+				<card>30460</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>512</id>
+		<name>Kali102</name>
+		<name>Kalihmah Normal 2</name>
+		<commander>1150</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4460</card>
+				<card>4460</card>
+				<card>6636</card>
+				<card>6636</card>
+				<card>12197</card>
+				<card>12278</card>
+				<card>15712</card>
+				<card>30450</card>
+				<card>30454</card>
+				<card>30460</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>513</id>
+		<name>Kali103</name>
+		<name>Kalihmah Normal 3</name>
+		<commander>1776</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>650</card>
+				<card>8648</card>
+				<card>11414</card>
+				<card>12898</card>
+				<card>13005</card>
+				<card>16512</card>
+				<card>30450</card>
+				<card>30450</card>
+				<card>30454</card>
+				<card>30460</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>514</id>
+		<name>Kali104</name>
+		<name>Kalihmah Normal 4</name>
+		<commander>1150</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>6632</card>
+				<card>6632</card>
+				<card>7220</card>
+				<card>8648</card>
+				<card>12508</card>
+				<card>14695</card>
+				<card>14977</card>
+				<card>30448</card>
+				<card>30456</card>
+				<card>30460</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>515</id>
+		<name>Kali105</name>
+		<name>Kalihmah Normal 5</name>
+		<commander>1150</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4506</card>
+				<card>6636</card>
+				<card>6636</card>
+				<card>6636</card>
+				<card>12894</card>
+				<card>14389</card>
+				<card>16401</card>
+				<card>30448</card>
+				<card>30456</card>
+				<card>30460</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>516</id>
+		<name>Kali106</name>
+		<name>Kalihmah Normal 6</name>
+		<commander>1782</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>5276</card>
+				<card>5279</card>
+				<card>11840</card>
+				<card>12281</card>
+				<card>15937</card>
+				<card>30348</card>
+				<card>30448</card>
+				<card>30456</card>
+				<card>30456</card>
+				<card>30460</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>517</id>
+		<name>Kali107</name>
+		<name>Kalihmah Normal 7</name>
+		<commander>1788</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>11275</card>
+				<card>11502</card>
+				<card>13349</card>
+				<card>14593</card>
+				<card>15631</card>
+				<card>16989</card>
+				<card>30448</card>
+				<card>30454</card>
+				<card>30460</card>
+				<card>30460</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>521</id>
+		<name>Kali201</name>
+		<name>Kalihmah Heroic 1</name>
+		<commander>1796</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>8435</card>
+				<card>10372</card>
+				<card>10372</card>
+				<card>15014</card>
+				<card>15571</card>
+				<card>15724</card>
+				<card>16266</card>
+				<card>30453</card>
+				<card>30456</card>
+				<card>30462</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>522</id>
+		<name>Kali202</name>
+		<name>Kalihmah Heroic 2</name>
+		<commander>1797</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>2283</card>
+				<card>7058</card>
+				<card>10378</card>
+				<card>10384</card>
+				<card>10384</card>
+				<card>10656</card>
+				<card>16887</card>
+				<card>30453</card>
+				<card>30456</card>
+				<card>30462</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>523</id>
+		<name>Kali203</name>
+		<name>Kalihmah Heroic 3</name>
+		<commander>1778</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>10749</card>
+				<card>10749</card>
+				<card>11420</card>
+				<card>14707</card>
+				<card>14983</card>
+				<card>30309</card>
+				<card>30453</card>
+				<card>30453</card>
+				<card>30456</card>
+				<card>30462</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>524</id>
+		<name>Kali204</name>
+		<name>Kalihmah Heroic 4</name>
+		<commander>1213</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>5652</card>
+				<card>7628</card>
+				<card>10749</card>
+				<card>12511</card>
+				<card>13011</card>
+				<card>14704</card>
+				<card>14704</card>
+				<card>30450</card>
+				<card>30459</card>
+				<card>30462</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>525</id>
+		<name>Kali205</name>
+		<name>Kalihmah Heroic 5</name>
+		<commander>1213</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4512</card>
+				<card>11843</card>
+				<card>11852</card>
+				<card>12900</card>
+				<card>13017</card>
+				<card>14395</card>
+				<card>16521</card>
+				<card>30450</card>
+				<card>30459</card>
+				<card>30462</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>526</id>
+		<name>Kali206</name>
+		<name>Kalihmah Heroic 6</name>
+		<commander>1784</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>5282</card>
+				<card>11504</card>
+				<card>12287</card>
+				<card>12287</card>
+				<card>15679</card>
+				<card>16357</card>
+				<card>30450</card>
+				<card>30459</card>
+				<card>30459</card>
+				<card>30462</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>527</id>
+		<name>Kali207</name>
+		<name>Kalihmah Heroic 7</name>
+		<commander>1793</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4083</card>
+				<card>11912</card>
+				<card>13349</card>
+				<card>14049</card>
+				<card>14605</card>
+				<card>16989</card>
+				<card>30450</card>
+				<card>30456</card>
+				<card>30462</card>
+				<card>30462</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>531</id>
+		<name>Kali301</name>
+		<name>Kalihmah Mythic 1</name>
+		<commander>1799</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7292</card>
+				<card>10384</card>
+				<card>15019</card>
+				<card>15019</card>
+				<card>15727</card>
+				<card>30453</card>
+				<card>30459</card>
+				<card>30465</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>532</id>
+		<name>Kali302</name>
+		<name>Kalihmah Mythic 2</name>
+		<commander>1799</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>10662</card>
+				<card>10883</card>
+				<card>10883</card>
+				<card>11227</card>
+				<card>11227</card>
+				<card>15583</card>
+				<card>15583</card>
+				<card>30453</card>
+				<card>30459</card>
+				<card>30465</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>533</id>
+		<name>Kali303</name>
+		<name>Kalihmah Mythic 3</name>
+		<commander>1781</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>11426</card>
+				<card>11426</card>
+				<card>12909</card>
+				<card>13553</card>
+				<card>14707</card>
+				<card>14707</card>
+				<card>30453</card>
+				<card>30453</card>
+				<card>30459</card>
+				<card>30465</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>534</id>
+		<name>Kali304</name>
+		<name>Kalihmah Mythic 4</name>
+		<commander>1216</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>8657</card>
+				<card>10752</card>
+				<card>14707</card>
+				<card>14707</card>
+				<card>14989</card>
+				<card>14989</card>
+				<card>30453</card>
+				<card>30459</card>
+				<card>30465</card>
+				<card>30597</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>535</id>
+		<name>Kali305</name>
+		<name>Kalihmah Mythic 5</name>
+		<commander>1216</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4512</card>
+				<card>4560</card>
+				<card>4560</card>
+				<card>16527</card>
+				<card>16527</card>
+				<card>30315</card>
+				<card>30315</card>
+				<card>30453</card>
+				<card>30459</card>
+				<card>30465</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>536</id>
+		<name>Kali306</name>
+		<name>Kalihmah Mythic 6</name>
+		<commander>1787</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>5288</card>
+				<card>5288</card>
+				<card>5789</card>
+				<card>10883</card>
+				<card>16947</card>
+				<card>16989</card>
+				<card>30453</card>
+				<card>30459</card>
+				<card>30459</card>
+				<card>30465</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>531</id>
+		<name>Kali301</name>
+		<name>Kalihmah Mythic 1</name>
+		<commander>1799</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7292</card>
+				<card>10384</card>
+				<card>15019</card>
+				<card>15019</card>
+				<card>15727</card>
+				<card>30453</card>
+				<card>30459</card>
+				<card>30465</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>532</id>
+		<name>Kali302</name>
+		<name>Kalihmah Mythic 2</name>
+		<commander>1799</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>10662</card>
+				<card>10883</card>
+				<card>10883</card>
+				<card>11227</card>
+				<card>11227</card>
+				<card>15583</card>
+				<card>15583</card>
+				<card>30453</card>
+				<card>30459</card>
+				<card>30465</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>533</id>
+		<name>Kali303</name>
+		<name>Kalihmah Mythic 3</name>
+		<commander>1781</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>11426</card>
+				<card>11426</card>
+				<card>12909</card>
+				<card>13553</card>
+				<card>14707</card>
+				<card>14707</card>
+				<card>30453</card>
+				<card>30453</card>
+				<card>30459</card>
+				<card>30465</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>534</id>
+		<name>Kali304</name>
+		<name>Kalihmah Mythic 4</name>
+		<commander>1216</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>8657</card>
+				<card>10752</card>
+				<card>14707</card>
+				<card>14707</card>
+				<card>14989</card>
+				<card>14989</card>
+				<card>30453</card>
+				<card>30459</card>
+				<card>30465</card>
+				<card>30597</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>535</id>
+		<name>Kali305</name>
+		<name>Kalihmah Mythic 5</name>
+		<commander>1216</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4512</card>
+				<card>4560</card>
+				<card>4560</card>
+				<card>16527</card>
+				<card>16527</card>
+				<card>30315</card>
+				<card>30315</card>
+				<card>30453</card>
+				<card>30459</card>
+				<card>30465</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>536</id>
+		<name>Kali306</name>
+		<name>Kalihmah Mythic 6</name>
+		<commander>1787</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>5288</card>
+				<card>5288</card>
+				<card>5789</card>
+				<card>10883</card>
+				<card>16947</card>
+				<card>16989</card>
+				<card>30453</card>
+				<card>30459</card>
+				<card>30459</card>
+				<card>30465</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>537</id>
+		<name>Kali307</name>
+		<name>Kalihmah Mythic 7</name>
+		<commander>1793</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7298</card>
+				<card>7976</card>
+				<card>13355</card>
+				<card>13355</card>
+				<card>14052</card>
+				<card>15745</card>
+				<card>30453</card>
+				<card>30459</card>
+				<card>30465</card>
+				<card>30465</card>
+			</always_include>
+		</deck>
+	</campaign>
+
 <!-- Campaigns -->
 
 </root>
