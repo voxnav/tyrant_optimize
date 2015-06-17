@@ -1172,6 +1172,10 @@ inline bool skill_predicate<evolve>(Field* fd, CardStatus* src, CardStatus* dst,
 }
 
 template<>
+inline bool skill_predicate<mend>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
+{ return(can_be_healed(dst)); }
+
+template<>
 inline bool skill_predicate<heal>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 { return(can_be_healed(dst)); }
 
@@ -1256,6 +1260,12 @@ inline void perform_skill<evolve>(Field* fd, CardStatus* src, CardStatus* dst, c
 }
 
 template<>
+inline void perform_skill<mend>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
+{
+    add_hp(fd, dst, s.x);
+}
+
+template<>
 inline void perform_skill<heal>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
     add_hp(fd, dst, s.x);
@@ -1317,6 +1327,30 @@ inline unsigned select_fast(Field* fd, CardStatus* src_status, const std::vector
     }
 }
 
+template<>
+inline unsigned select_fast<mend>(Field* fd, CardStatus* src_status, const std::vector<CardStatus*>& cards, const SkillSpec& s)
+{
+    fd->selection_array.clear();
+    auto & assaults = fd->players[src_status->m_player]->assaults;
+    if (src_status->m_index > 0)
+    {
+        auto left_status = &assaults[src_status->m_index - 1];
+        if (skill_predicate<mend>(fd, src_status, left_status, s))
+        {
+            fd->selection_array.push_back(left_status);
+        }
+    }
+    if (src_status->m_index + 1 < assaults.size())
+    {
+        auto right_status = &assaults[src_status->m_index + 1];
+        if (skill_predicate<mend>(fd, src_status, right_status, s))
+        {
+            fd->selection_array.push_back(right_status);
+        }
+    }
+    return fd->selection_array.size();
+}
+
 inline std::vector<CardStatus*>& skill_targets_hostile_assault(Field* fd, CardStatus* src_status)
 {
     return(fd->players[opponent(src_status->m_player)]->assaults.m_indirect);
@@ -1351,6 +1385,9 @@ template<> std::vector<CardStatus*>& skill_targets<enhance>(Field* fd, CardStatu
 { return(skill_targets_allied_assault(fd, src_status)); }
 
 template<> std::vector<CardStatus*>& skill_targets<evolve>(Field* fd, CardStatus* src_status)
+{ return(skill_targets_allied_assault(fd, src_status)); }
+
+template<> std::vector<CardStatus*>& skill_targets<mend>(Field* fd, CardStatus* src_status)
 { return(skill_targets_allied_assault(fd, src_status)); }
 
 template<> std::vector<CardStatus*>& skill_targets<heal>(Field* fd, CardStatus* src_status)
@@ -1439,7 +1476,7 @@ size_t select_targets(Field* fd, CardStatus* src_status, const SkillSpec& s)
     }
     _DEBUG_SELECTION("%s", skill_names[skill_id].c_str());
     unsigned n_targets = s.n > 0 ? s.n : 1;
-    if (s.all || n_targets >= n_candidates) // target all
+    if (s.all || n_targets >= n_candidates || skill_id == mend)  // target all or mend
     {
         return n_candidates;
     }
@@ -1502,6 +1539,7 @@ void fill_skill_table()
     skill_table[evolve] = perform_targetted_allied_fast<evolve>;
     skill_table[heal] = perform_targetted_allied_fast<heal>;
     skill_table[jam] = perform_targetted_hostile_fast<jam>;
+    skill_table[mend] = perform_targetted_allied_fast<mend>;
     skill_table[overload] = perform_targetted_allied_fast<overload>;
     skill_table[protect] = perform_targetted_allied_fast<protect>;
     skill_table[rally] = perform_targetted_allied_fast<rally>;
