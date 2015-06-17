@@ -1700,6 +1700,10 @@ int main(int argc, char** argv)
 
     for (const auto & opt_effect: opt_effects)
     {
+        if (opt_effect.empty())
+        {
+            continue;
+        }
         try
         {
             std::vector<std::string> tokens;
