@@ -998,7 +998,7 @@ struct PerformAttack
         std::string reduced_desc;
         unsigned reduced_dmg(0);
         unsigned armor_value = def_status->skill(armor);
-        if (fd->bg_effects.count(fortification))
+        if (def_status->m_card->m_type == CardType::assault && fd->bg_effects.count(fortification))
         {
             auto & assaults = fd->players[def_status->m_player]->assaults;
             if (def_status->m_index > 0)
