@@ -231,6 +231,27 @@
 		</deck>
 	</raid>
 
+	<raid>
+		<id>11</id>
+		<name>Supremacy Raid</name>
+		<commander>1815</commander>
+		<levels>26</levels>
+		<deck>
+			<always_include>
+				<card>31116</card>
+				<card>31116</card>
+				<card>31126</card>
+				<card>31126</card>
+				<card>31136</card>
+				<card>31136</card>
+				<card>31146</card>
+				<card>31146</card>
+				<card>31156</card>
+				<card>31156</card>
+			</always_include>
+		</deck>
+	</raid>
+
 <!-- END of Raids -->
 
 
