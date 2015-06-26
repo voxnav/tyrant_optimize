@@ -20,25 +20,6 @@
 // mission only and test cards have no set
 using namespace rapidxml;
 
-Faction map_to_faction(unsigned i)
-{
-    return(i == 1 ? imperial :
-           i == 2 ? raider :
-           i == 3 ? bloodthirsty :
-           i == 4 ? xeno :
-           i == 5 ? righteous :
-           i == 6 ? progenitor :
-           allfactions);
-}
-
-CardType::CardType map_to_type(unsigned i)
-{
-    return(i == 1 ? CardType::commander :
-           i == 2 ? CardType::assault :
-           i == 4 ? CardType::structure :
-           CardType::num_cardtypes);
-}
-
 Skill skill_name_to_id(const std::string & name, bool do_warn)
 {
     static std::map<std::string, int> skill_map;
@@ -70,13 +51,12 @@ Skill skill_name_to_id(const std::string & name, bool do_warn)
 
 Faction skill_faction(xml_node<>* skill)
 {
-    unsigned unmapped_faction(0);
     xml_attribute<>* y(skill->first_attribute("y"));
-    if(y)
+    if (y)
     {
-        unmapped_faction = atoi(y->value());
+        return static_cast<Faction>(atoi(y->value()));
     }
-    return(unmapped_faction == 0 ? allfactions : map_to_faction(unmapped_faction));
+    return allfactions;
 }
 
 unsigned node_value(xml_node<>* skill, const char* attribute, unsigned default_value = 0)
@@ -172,33 +152,47 @@ void parse_card_node(Cards& all_cards, Card* card, xml_node<>* card_node)
     if (name_node) { card->m_name = name_node->value(); }
     if (level_node) { card->m_level = atoi(level_node->value()); }
     if (fusion_level_node) { card->m_fusion_level = atoi(fusion_level_node->value()); }
+    if (attack_node) { card->m_attack = atoi(attack_node->value()); }
+    if (health_node) { card->m_health = atoi(health_node->value()); }
+    if (cost_node) { card->m_delay = atoi(cost_node->value()); }
     if (id_node)
     {
-        if (card->m_id < 1000)
-        { card->m_type = CardType::assault; }
-        else if (card->m_id < 2000)
+        if (cost_node)
+        {
+            if (attack_node)
+            {
+                if (card->m_attack == 0)
+                {
+                    if (card->m_id < 1000)
+                    { card->m_type = CardType::assault; }
+                    else if (card->m_id < 2000)
+                    { card->m_type = CardType::commander; }
+                    else if (card->m_id < 3000)
+                    { card->m_type = CardType::structure; }
+                    else if (card->m_id < 8000)
+                    { card->m_type = CardType::assault; }
+                    else if (card->m_id < 10000)
+                    { card->m_type = CardType::structure; }
+                    else if (card->m_id < 17000)
+                    { card->m_type = CardType::assault; }
+                    else if (card->m_id < 25000)
+                    { card->m_type = CardType::structure; }
+                    else if (card->m_id < 30000)
+                    { card->m_type = CardType::commander; }
+                    else
+                    { card->m_type = CardType::assault; }
+                }
+                else  // attack > 0: must be assault
+                { card->m_type = CardType::assault; }
+            }
+            else  // no attack_node: must be structure
+            { card->m_type = CardType::structure; }
+        }
+        else  // no cost_node: must be commander
         { card->m_type = CardType::commander; }
-        else if (card->m_id < 3000)
-        { card->m_type = CardType::structure; }
-#if 0
-        else if (card->m_id < 4000)
-        { card->m_type = CardType::action; }
-#endif
-        else if (card->m_id < 8000)
-        { card->m_type = CardType::assault; }
-        else if (card->m_id < 10000)
-        { card->m_type = CardType::structure; }
-        else
-        { card->m_type = cost_node ? (attack_node ? CardType::assault : CardType::structure) : CardType::commander; }
-#if 0
-        { card->m_type = cost_node ? (attack_node ? CardType::assault : CardType::structure) : (health_node ? CardType::commander : CardType::action); }
-#endif
     }
-    if(attack_node) { card->m_attack = atoi(attack_node->value()); }
-    if(health_node) { card->m_health = atoi(health_node->value()); }
-    if(cost_node) { card->m_delay = atoi(cost_node->value()); }
     if(rarity_node) { card->m_rarity = atoi(rarity_node->value()); }
-    if(type_node) { card->m_faction = map_to_faction(atoi(type_node->value())); }
+    if(type_node) { card->m_faction = static_cast<Faction>(atoi(type_node->value())); }
     card->m_set = set;
 
     if (card_node->first_node("skill"))
