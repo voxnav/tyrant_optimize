@@ -31,15 +31,16 @@ Skill skill_name_to_id(const std::string & name, bool do_warn)
             std::string skill_id = boost::to_lower_copy(skill_names[i]);
             skill_map[skill_id] = i;
         }
-        skill_map["armored"] = skill_map["armor"]; // Special case for Armor: id and name differ
+        skill_map["armored"] = skill_map["armor"];  // Special case for Armor: id and name differ
+        skill_map["besiege"] = skill_map["mortar"]; // Special case for Mortar: id and name differ
     }
     auto x = skill_map.find(boost::to_lower_copy(name));
     if (x == skill_map.end())
     {
         if (do_warn and unknown_skills.count(name) == 0)
-        { // Warn only once for each unknown skill
+        { // Warn only once for each new skill
             unknown_skills.insert(name);
-            std::cerr << "Warning: Ignore unknown skill [" << name << "] in data/cards.xml\n";
+            std::cerr << "Warning: Ignore new skill [" << name << "] in data/cards.xml\n";
         }
         return no_skill;
     }

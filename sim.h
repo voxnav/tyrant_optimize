@@ -34,7 +34,6 @@ struct Results
     result_type draws;
     result_type losses;
     result_type points;
-    result_type sq_points;
     template<typename other_result_type>
     Results& operator+=(const Results<other_result_type>& other)
     {
@@ -42,7 +41,6 @@ struct Results
         draws += other.draws;
         losses += other.losses;
         points += other.points;
-        sq_points += other.points * other.points;
         return *this;
     }
 };
@@ -55,12 +53,7 @@ struct FinalResults
     result_type wins;
     result_type draws;
     result_type losses;
-	//MDJ
-	result_type wins2;
-	result_type draws2;
-	result_type losses2;
     result_type points;
-    result_type sq_points;
     result_type points_lower_bound;
     result_type points_upper_bound;
     uint64_t n_sims;
@@ -202,6 +195,27 @@ public:
     Storage<CardStatus> assaults;
     Storage<CardStatus> structures;
 };
+
+struct Quest
+{
+    QuestType::QuestType quest_type;
+    unsigned quest_key;
+    unsigned quest_value;
+    unsigned quest_score; // score for quest goal
+    unsigned win_score;   // score for win regardless quest goal
+    bool must_fulfill;  // true: score iff value is reached; false: score proportion to achieved value
+    bool must_win;      // true: score only if win
+    Quest() :
+        quest_type(QuestType::none),
+        quest_key(0),
+        quest_value(0),
+        quest_score(100),
+        win_score(0),
+        must_fulfill(false),
+        must_win(false)
+    {}
+};
+
 //------------------------------------------------------------------------------
 // struct Field is the data model of a battle:
 // an attacker and a defender deck, list of assaults and structures, etc.
@@ -221,15 +235,13 @@ public:
     unsigned turn;
     gamemode_t gamemode;
     OptimizationMode optimization_mode;
+    const Quest quest;
     std::unordered_map<unsigned, unsigned> bg_effects; // passive BGE
     std::vector<SkillSpec> bg_skills; // active BGE, casted every turn
     // With the introduction of on death skills, a single skill can trigger arbitrary many skills.
     // They are stored in this, and cleared after all have been performed.
     std::deque<std::tuple<CardStatus*, SkillSpec>> skill_queue;
     std::vector<CardStatus*> killed_units;
-    unsigned n_player_kills;
-    bool assault_bloodlusted;
-    unsigned bloodlust_value;
     enum phase
     {
         playcard_phase,
@@ -246,7 +258,11 @@ public:
     // otherwise is the index of the current card in players->structures or players->assaults
     unsigned current_ci;
 
-    Field(std::mt19937& re_, const Cards& cards_, Hand& hand1, Hand& hand2, gamemode_t gamemode_, OptimizationMode optimization_mode_,
+    bool assault_bloodlusted;
+    unsigned bloodlust_value;
+    unsigned quest_counter;
+
+    Field(std::mt19937& re_, const Cards& cards_, Hand& hand1, Hand& hand2, gamemode_t gamemode_, OptimizationMode optimization_mode_, const Quest & quest_,
             std::unordered_map<unsigned, unsigned>& bg_effects_, std::vector<SkillSpec>& bg_skills_) :
         end{false},
         re(re_),
@@ -255,11 +271,12 @@ public:
         turn(1),
         gamemode(gamemode_),
         optimization_mode(optimization_mode_),
+        quest(quest_),
         bg_effects(bg_effects_),
         bg_skills(bg_skills_),
-        n_player_kills(0),
         assault_bloodlusted(false),
-        bloodlust_value(0)
+        bloodlust_value(0),
+        quest_counter(0)
     {
     }
 
@@ -283,6 +300,14 @@ public:
     template <typename CardsIter, typename Functor>
     inline unsigned make_selection_array(CardsIter first, CardsIter last, Functor f);
     inline void print_selection_array();
+
+    inline void inc_counter(QuestType::QuestType quest_type, unsigned quest_key, unsigned value = 1)
+    {
+        if (quest.quest_type == quest_type && quest.quest_key == quest_key)
+        {
+            quest_counter += value;
+        }
+    }
 };
 
 #endif

@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "2.10.1"
+#define TYRANT_OPTIMIZER_VERSION "2.10.2"
 
 #include <string>
 #include <sstream>
@@ -29,7 +29,7 @@ enum Skill
     attack,
     // Activation:
     BEGIN_ACTIVATION_HARMFUL, // TODO skill traits
-    besiege, enfeeble, jam, siege, strike, weaken,
+    enfeeble, jam, mortar, siege, strike, weaken,
     END_ACTIVATION_HARMFUL,
     BEGIN_ACTIVATION_HELPFUL,
     enhance, evolve, heal, mend, overload, protect, rally,
@@ -74,7 +74,6 @@ enum DeckType {
     mission,
     raid,
     campaign,
-    quest,
     custom_deck,
     num_decktypes
 };
@@ -88,17 +87,31 @@ enum gamemode_t
     surge,
 };
 
-//MDJ
+namespace QuestType
+{
+enum QuestType
+{
+    none,
+    skill_use,
+    skill_damage,
+    faction_card_use,
+    type_card_use,
+    faction_assault_card_kill,
+    type_card_kill,
+    num_objective_types
+};
+}
+
 enum class OptimizationMode
 {
     notset,
     winrate,
     defense,
     war,
-	totalwar,
     brawl,
     raid,
     campaign,
+    quest,
     num_optimization_mode
 };
 

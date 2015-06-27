@@ -42,11 +42,14 @@
 #include "tyrant.h"
 #include "xml.h"
 
+struct Requirement
+{
+    std::unordered_map<const Card*, unsigned> num_cards;
+};
+
 namespace {
     gamemode_t gamemode{fight};
     OptimizationMode optimization_mode{OptimizationMode::notset};
-	//MDJ
-	std::string opt_forts, opt_enemy_forts;
     std::map<unsigned, unsigned> owned_cards;
     bool use_owned_cards{true};
     unsigned min_deck_len{1};
@@ -59,11 +62,10 @@ namespace {
     bool use_top_level_card{false};
     unsigned use_fused_card_level{0};
     bool show_ci{false};
-    bool show_stdev{false};
     bool use_harmonic_mean{false};
+    Requirement requirement;
+    Quest quest;
 }
-
-typedef std::unordered_map<const Card*, unsigned> Requirement;
 
 using namespace std::placeholders;
 //------------------------------------------------------------------------------
@@ -266,6 +268,8 @@ bool adjust_deck(Deck * deck, const signed from_slot, const signed to_slot, cons
             deck_cost = get_deck_cost(deck);
             if (use_top_level_card || deck_cost <= fund)
             { break; }
+            if (i < freezed_cards)
+            { return false; }
             for (auto recipe_it : card_in->m_recipe_cards)
             { candidate_cards.emplace(recipe_it.first); }
         }
@@ -284,26 +288,77 @@ bool adjust_deck(Deck * deck, const signed from_slot, const signed to_slot, cons
     return !cards_in.empty() || !cards_out.empty();
 }
 
-bool check_requirements(const Deck* deck, const Requirement & requirement)
+unsigned check_requirement(const Deck* deck, const Requirement & requirement, const Quest & quest)
 {
-    if (requirement.empty())
+    unsigned gap = 0;
+    if (!requirement.num_cards.empty())
     {
-        return true;
-    }
-    Requirement num_cards;
-    num_cards[deck->commander] = 1;
-    for (auto card: deck->cards)
-    {
-        ++ num_cards[card];
-    }
-    for (auto it: requirement)
-    {
-        if (num_cards[it.first] < it.second)
+        std::unordered_map<const Card*, unsigned> num_cards;
+        num_cards[deck->commander] = 1;
+        for (auto card: deck->cards)
         {
-            return false;
+            ++ num_cards[card];
+        }
+        for (auto it: requirement.num_cards)
+        {
+            gap += safe_minus(it.second, num_cards[it.first]);
         }
     }
-    return true;
+    if (quest.quest_type != QuestType::none)
+    {
+        unsigned potential_value = 0;
+        switch (quest.quest_type)
+        {
+            case QuestType::skill_use:
+            case QuestType::skill_damage:
+                for (const auto & ss: deck->commander->m_skills)
+                {
+                    if (quest.quest_key == ss.id)
+                    {
+                        potential_value = quest.quest_value;
+                        break;
+                    }
+                }
+                break;
+            case QuestType::faction_assault_card_kill:
+            case QuestType::type_card_kill:
+                potential_value = quest.quest_value;
+                break;
+            default:
+                break;
+        }
+        for (auto card: deck->cards)
+        {
+            switch (quest.quest_type)
+            {
+                case QuestType::skill_use:
+                case QuestType::skill_damage:
+                    for (const auto & ss: card->m_skills)
+                    {
+                        if (quest.quest_key == ss.id)
+                        {
+                            potential_value = quest.quest_value;
+                            break;
+                        }
+                    }
+                    break;
+                case QuestType::faction_card_use:
+                    potential_value += (quest.quest_key == card->m_faction);
+                    break;
+                case QuestType::type_card_use:
+                    potential_value += (quest.quest_key == card->m_type);
+                    break;
+                default:
+                    break;
+            }
+            if (potential_value >= (quest.must_fulfill ? quest.quest_value : 1))
+            {
+                break;
+            }
+        }
+        gap += safe_minus(quest.must_fulfill ? quest.quest_value : 1, potential_value);
+    }
+    return gap;
 }
 
 void claim_cards(const std::vector<const Card*> & card_list)
@@ -328,111 +383,44 @@ void claim_cards(const std::vector<const Card*> & card_list)
 //------------------------------------------------------------------------------
 FinalResults<long double> compute_score(const EvaluatedResults& results, std::vector<long double>& factors)
 {
-    FinalResults<long double> final{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, results.second};
+    FinalResults<long double> final{0, 0, 0, 0, 0, 0, results.second};
     long double max_possible = max_possible_score[(size_t)optimization_mode];
-	if (optimization_mode == OptimizationMode::totalwar) //Double results
-	{
-		for (unsigned index(0); index < results.first.size(); ++index)
-		{
-			//MDJ (evens are offense and odds are defense)
-			unsigned findex = index / 2;
-			if (index % 2 == 0)
-			{
-				final.wins += results.first[index].wins * factors[findex];
-				final.draws += results.first[index].draws * factors[findex];
-				final.losses += results.first[index].losses * factors[findex];
-			}
-			else
-			{
-				final.wins2 += results.first[index].wins * factors[findex];
-				final.draws2 += results.first[index].draws * factors[findex];
-				final.losses2 += results.first[index].losses * factors[findex];
-			}
-			auto lower_bound = boost::math::binomial_distribution<>::find_lower_bound_on_p(results.second, results.first[index].points / max_possible, 1 - confidence_level) * max_possible;
-			auto upper_bound = boost::math::binomial_distribution<>::find_upper_bound_on_p(results.second, results.first[index].points / max_possible, 1 - confidence_level) * max_possible;
-			if (use_harmonic_mean)
-			{
-				final.points += factors[findex] / results.first[index].points;
-				final.points_lower_bound += factors[findex] / lower_bound;
-				final.points_upper_bound += factors[findex] / upper_bound;
-			}
-			else
-			{
-				final.points += results.first[index].points * factors[findex];
-				final.points_lower_bound += lower_bound * factors[findex];
-				final.points_upper_bound += upper_bound * factors[findex];
-			}
-			final.sq_points += results.first[index].sq_points * factors[findex] * factors[findex];
-		}
-		long double factor_sum = std::accumulate(factors.begin(), factors.end(), 0.);
-		final.wins /= factor_sum * (long double)results.second;
-		final.draws /= factor_sum * (long double)results.second;
-		final.losses /= factor_sum * (long double)results.second;
-		final.wins2 /= factor_sum * (long double)results.second;
-		final.draws2 /= factor_sum * (long double)results.second;
-		final.losses2 /= factor_sum * (long double)results.second;
-		//MDJ Twice the results if two sets of sims
-		long double total_results = results.second;
-		if (optimization_mode == OptimizationMode::totalwar)
-		{
-			total_results *= 2;
-		}
-		if (use_harmonic_mean)
-		{
-			final.points = factor_sum / (total_results * final.points);
-			final.points_lower_bound = factor_sum / final.points_lower_bound;
-			final.points_upper_bound = factor_sum / final.points_upper_bound;
-		}
-		else
-		{
-			final.points /= factor_sum * total_results;
-			final.points_lower_bound /= factor_sum;
-			final.points_upper_bound /= factor_sum;
-		}
-		//std::cout << "OWins/ODraws/OLosses/DWins/DDraws/DLosses/Score:" << final.wins << "/" << final.draws << "/" << final.losses << "/" << final.wins2 << "/" << final.draws2 << "/" << final.losses2 << "/" << final.points;
-		final.sq_points /= factor_sum * factor_sum * total_results;
-	}
-	else //No double results
-	{
-		for (unsigned index(0); index < results.first.size(); ++index)
-		{
-			final.wins += results.first[index].wins * factors[index];
-			final.draws += results.first[index].draws * factors[index];
-			final.losses += results.first[index].losses * factors[index];
-			auto lower_bound = boost::math::binomial_distribution<>::find_lower_bound_on_p(results.second, results.first[index].points / max_possible, 1 - confidence_level) * max_possible;
-			auto upper_bound = boost::math::binomial_distribution<>::find_upper_bound_on_p(results.second, results.first[index].points / max_possible, 1 - confidence_level) * max_possible;
-			if (use_harmonic_mean)
-			{
-				final.points += factors[index] / results.first[index].points;
-				final.points_lower_bound += factors[index] / lower_bound;
-				final.points_upper_bound += factors[index] / upper_bound;
-			}
-			else
-			{
-				final.points += results.first[index].points * factors[index];
-				final.points_lower_bound += lower_bound * factors[index];
-				final.points_upper_bound += upper_bound * factors[index];
-			}
-			final.sq_points += results.first[index].sq_points * factors[index] * factors[index];
-		}
-		long double factor_sum = std::accumulate(factors.begin(), factors.end(), 0.);
-		final.wins /= factor_sum * (long double)results.second;
-		final.draws /= factor_sum * (long double)results.second;
-		final.losses /= factor_sum * (long double)results.second;
-		if (use_harmonic_mean)
-		{
-			final.points = factor_sum / ((long double)results.second * final.points);
-			final.points_lower_bound = factor_sum / final.points_lower_bound;
-			final.points_upper_bound = factor_sum / final.points_upper_bound;
-		}
-		else
-		{
-			final.points /= factor_sum * (long double)results.second;
-			final.points_lower_bound /= factor_sum;
-			final.points_upper_bound /= factor_sum;
-		}
-		final.sq_points /= factor_sum * factor_sum * (long double)results.second;
-	}
+    for (unsigned index(0); index < results.first.size(); ++index)
+    {
+        final.wins += results.first[index].wins * factors[index];
+        final.draws += results.first[index].draws * factors[index];
+        final.losses += results.first[index].losses * factors[index];
+        auto lower_bound = boost::math::binomial_distribution<>::find_lower_bound_on_p(results.second, results.first[index].points / max_possible, 1 - confidence_level) * max_possible;
+        auto upper_bound = boost::math::binomial_distribution<>::find_upper_bound_on_p(results.second, results.first[index].points / max_possible, 1 - confidence_level) * max_possible;
+        if (use_harmonic_mean)
+        {
+            final.points += factors[index] / results.first[index].points;
+            final.points_lower_bound += factors[index] / lower_bound;
+            final.points_upper_bound += factors[index] / upper_bound;
+        }
+        else
+        {
+            final.points += results.first[index].points * factors[index];
+            final.points_lower_bound += lower_bound * factors[index];
+            final.points_upper_bound += upper_bound * factors[index];
+        }
+    }
+    long double factor_sum = std::accumulate(factors.begin(), factors.end(), 0.);
+    final.wins /= factor_sum * (long double)results.second;
+    final.draws /= factor_sum * (long double)results.second;
+    final.losses /= factor_sum * (long double)results.second;
+    if (use_harmonic_mean)
+    {
+        final.points = factor_sum / ((long double)results.second * final.points);
+        final.points_lower_bound = factor_sum / final.points_lower_bound;
+        final.points_upper_bound = factor_sum / final.points_upper_bound;
+    }
+    else
+    {
+        final.points /= factor_sum * (long double)results.second;
+        final.points_lower_bound /= factor_sum;
+        final.points_upper_bound /= factor_sum;
+    }
     return final;
 }
 //------------------------------------------------------------------------------
@@ -457,10 +445,11 @@ struct SimulationData
     std::vector<Hand*> enemy_hands;
     std::vector<long double> factors;
     gamemode_t gamemode;
+    Quest quest;
     std::unordered_map<unsigned, unsigned> bg_effects;
     std::vector<SkillSpec> bg_skills;
 
-    SimulationData(unsigned seed, const Cards& cards_, const Decks& decks_, unsigned num_enemy_decks_, std::vector<long double> factors_, gamemode_t gamemode_,
+    SimulationData(unsigned seed, const Cards& cards_, const Decks& decks_, unsigned num_enemy_decks_, std::vector<long double> factors_, gamemode_t gamemode_, Quest & quest_,
             std::unordered_map<unsigned, unsigned>& bg_effects_, std::vector<SkillSpec>& bg_skills_) :
         re(seed),
         cards(cards_),
@@ -470,6 +459,7 @@ struct SimulationData
         enemy_decks(num_enemy_decks_),
         factors(factors_),
         gamemode(gamemode_),
+        quest(quest_),
         bg_effects(bg_effects_),
         bg_skills(bg_skills_)
     {
@@ -502,62 +492,9 @@ struct SimulationData
         {
             your_hand.reset(re);
             enemy_hand->reset(re);
-            Field fd(re, cards, your_hand, *enemy_hand, gamemode, optimization_mode, bg_effects, bg_skills);
+            Field fd(re, cards, your_hand, *enemy_hand, gamemode, optimization_mode, quest, bg_effects, bg_skills);
             Results<uint64_t> result(play(&fd));
             res.emplace_back(result);
-			//MDJ
-			if (optimization_mode == OptimizationMode::totalwar)
-			{
-				if (!opt_enemy_forts.empty())
-				{
-					try
-					{
-						your_hand.deck->set_forts(opt_enemy_forts + ",");
-					}
-					catch (const std::runtime_error& e)
-					{
-						std::cerr << "Error: ef " << opt_enemy_forts << ": " << e.what() << std::endl;
-					}
-				}
-				if (!opt_forts.empty())
-				{
-					try
-					{
-							enemy_hand->deck->set_forts(opt_forts + ",");
-					}
-					catch (const std::runtime_error& e)
-					{
-						std::cerr << "Error: yf " << opt_forts << ": " << e.what() << std::endl;
-					}
-				}
-				your_hand.reset(re);
-				enemy_hand->reset(re);
-				Field fd1(re, cards, your_hand, *enemy_hand, gamemode_t::fight, OptimizationMode::defense, bg_effects, bg_skills);
-				Results<uint64_t> result1(play(&fd1));
-				res.emplace_back(result1);
-				if (!opt_forts.empty())
-				{
-					try
-					{
-						your_hand.deck->set_forts(opt_forts + ",");
-					}
-					catch (const std::runtime_error& e)
-					{
-						std::cerr << "Error: yf " << opt_forts << ": " << e.what() << std::endl;
-					}
-				}
-				if (!opt_enemy_forts.empty())
-				{
-					try
-					{
-							enemy_hand->deck->set_forts(opt_enemy_forts + ",");
-					}
-					catch (const std::runtime_error& e)
-					{
-						std::cerr << "Error: ef " << opt_enemy_forts << ": " << e.what() << std::endl;
-					}
-				}
-			}
         }
         return(res);
     }
@@ -584,10 +521,11 @@ public:
     const std::vector<Deck*> enemy_decks;
     std::vector<long double> factors;
     gamemode_t gamemode;
+    Quest quest;
     std::unordered_map<unsigned, unsigned> bg_effects;
     std::vector<SkillSpec> bg_skills;
 
-    Process(unsigned num_threads_, const Cards& cards_, const Decks& decks_, Deck* your_deck_, std::vector<Deck*> enemy_decks_, std::vector<long double> factors_, gamemode_t gamemode_,
+    Process(unsigned num_threads_, const Cards& cards_, const Decks& decks_, Deck* your_deck_, std::vector<Deck*> enemy_decks_, std::vector<long double> factors_, gamemode_t gamemode_, Quest & quest_,
             std::unordered_map<unsigned, unsigned>& bg_effects_, std::vector<SkillSpec>& bg_skills_) :
         num_threads(num_threads_),
         main_barrier(num_threads+1),
@@ -597,6 +535,7 @@ public:
         enemy_decks(enemy_decks_),
         factors(factors_),
         gamemode(gamemode_),
+        quest(quest_),
         bg_effects(bg_effects_),
         bg_skills(bg_skills_)
     {
@@ -604,7 +543,7 @@ public:
         unsigned seed(time(0));
         for(unsigned i(0); i < num_threads; ++i)
         {
-            threads_data.push_back(new SimulationData(seed + i, cards, decks, enemy_decks.size(), factors, gamemode, bg_effects, bg_skills));
+            threads_data.push_back(new SimulationData(seed + i, cards, decks, enemy_decks.size(), factors, gamemode, quest, bg_effects, bg_skills));
             threads.push_back(new boost::thread(thread_evaluate, std::ref(main_barrier), std::ref(shared_mutex), std::ref(*threads_data.back()), std::ref(*this), i));
         }
     }
@@ -676,7 +615,6 @@ void thread_evaluate(boost::barrier& main_barrier,
             else
             {
                 --thread_num_iterations; //!
-				//MDJ
                 shared_mutex.unlock(); //>>>>
                 std::vector<Results<uint64_t>> result{sim.evaluate()};
                 shared_mutex.lock(); //<<<<
@@ -754,74 +692,33 @@ void print_score_info(const EvaluatedResults& results, std::vector<long double>&
 void print_results(const EvaluatedResults& results, std::vector<long double>& factors)
 {
     auto final = compute_score(results, factors);
-	//MDJ
-	if (optimization_mode == OptimizationMode::totalwar)
-	{
-		std::cout << "Offense win%: " << final.wins * 100.0 << " (";
-		for (unsigned index(0); index < results.first.size(); index = index+2)
-		{
-			std::cout << results.first[index].wins << " ";
-		}
-		std::cout << "/ " << results.second << ")" << std::endl;
+    std::cout << "win%: " << final.wins * 100.0 << " (";
+    for (const auto & val : results.first)
+    {
+        std::cout << val.wins << " ";
+    }
+    std::cout << "/ " << results.second << ")" << std::endl;
 
-		std::cout << "Offense stall%: " << final.draws * 100.0 << " (";
-		for (unsigned index(0); index < results.first.size(); index = index + 2)
-		{
-			std::cout << results.first[index].draws << " ";
-		}
-		std::cout << "/ " << results.second << ")" << std::endl;
+    std::cout << "stall%: " << final.draws * 100.0 << " (";
+    for (const auto & val : results.first)
+    {
+        std::cout << val.draws << " ";
+    }
+    std::cout << "/ " << results.second << ")" << std::endl;
 
-		std::cout << "Offense loss%: " << final.losses * 100.0 << " (";
-		for (unsigned index(0); index < results.first.size(); index = index + 2)
-		{
-			std::cout << results.first[index].losses << " ";
-		}
-		std::cout << "/ " << results.second << ")" << std::endl;
+    std::cout << "loss%: " << final.losses * 100.0 << " (";
+    for (const auto & val : results.first)
+    {
+        std::cout << val.losses << " ";
+    }
+    std::cout << "/ " << results.second << ")" << std::endl;
 
-		std::cout << "Defense win%: " << final.wins2 * 100.0 << " (";
-		for (unsigned index(1); index < results.first.size(); index = index + 2)
-		{
-			std::cout << results.first[index].wins << " ";
-		}
-		std::cout << "/ " << results.second << ")" << std::endl;
-
-		std::cout << "Defense stall%: " << final.draws2 * 100.0 << " (";
-		for (unsigned index(1); index < results.first.size(); index = index + 2)
-		{
-			std::cout << results.first[index].draws << " ";
-		}
-		std::cout << "/ " << results.second << ")" << std::endl;
-
-		std::cout << "Defense loss%: " << final.losses2 * 100.0 << " (";
-		for (unsigned index(1); index < results.first.size(); index = index + 2)
-		{
-			std::cout << results.first[index].losses << " ";
-		}
-		std::cout << "/ " << results.second << ")" << std::endl;
-	}
-	else
-	{
-		std::cout << "win%: " << final.wins * 100.0 << " (";
-		for (const auto & val : results.first)
-		{
-			std::cout << val.wins << " ";
-		}
-		std::cout << "/ " << results.second << ")" << std::endl;
-
-		std::cout << "stall%: " << final.draws * 100.0 << " (";
-		for (const auto & val : results.first)
-		{
-			std::cout << val.draws << " ";
-		}
-		std::cout << "/ " << results.second << ")" << std::endl;
-
-		std::cout << "loss%: " << final.losses * 100.0 << " (";
-		for (const auto & val : results.first)
-		{
-			std::cout << val.losses << " ";
-		}
-		std::cout << "/ " << results.second << ")" << std::endl;
-	}
+    if (optimization_mode == OptimizationMode::quest)
+    {
+        // points = win% * win_score + (must_win ? win% : 100%) * quest% * quest_score
+        // quest% = (points - win% * win_score) / (must_win ? win% : 100%) / quest_score
+        std::cout << "quest%: " << (final.points - final.wins * quest.win_score) / (quest.must_win ? final.wins : 1) / quest.quest_score * 100 << std::endl;
+    }
 
     switch(optimization_mode)
     {
@@ -829,6 +726,7 @@ void print_results(const EvaluatedResults& results, std::vector<long double>& fa
         case OptimizationMode::campaign:
         case OptimizationMode::brawl:
         case OptimizationMode::war:
+        case OptimizationMode::quest:
             std::cout << "score: " << final.points << " (";
             for(const auto & val: results.first)
             {
@@ -838,10 +736,6 @@ void print_results(const EvaluatedResults& results, std::vector<long double>& fa
             if (show_ci)
             {
                 std::cout << "ci: " << final.points_lower_bound << " - " << final.points_upper_bound << std::endl;
-            }
-            if (show_stdev)
-            {
-                std::cout << "stdev: " << sqrt(final.sq_points - final.points * final.points) << std::endl;
             }
             break;
         default:
@@ -862,23 +756,21 @@ void print_deck_inline(const unsigned deck_cost, const FinalResults<long double>
         case OptimizationMode::campaign:
         case OptimizationMode::brawl:
         case OptimizationMode::war:
-            std::cout << "(" << score.wins * 100 << "% win, " << score.draws * 100 << "% stall";
+        case OptimizationMode::quest:
+            std::cout << "(" << score.wins * 100 << "% win";
+            if (optimization_mode == OptimizationMode::quest)
+            {
+                std::cout << ", " << (score.points - score.wins * quest.win_score) / (quest.must_win ? score.wins : 1) / quest.quest_score * 100 << "% quest";
+            }
             if (show_ci)
             {
                 std::cout << ", " << score.points_lower_bound << "-" << score.points_upper_bound;
-            }
-            if (show_stdev)
-            {
-                std::cout << ", " << sqrt(score.sq_points - score.points * score.points) << " stdev";
             }
             std::cout << ") ";
             break;
         case OptimizationMode::defense:
             std::cout << "(" << score.draws * 100.0 << "% stall) ";
             break;			
-		case OptimizationMode::totalwar:
-			std::cout << "(Offense: " << score.wins * 100 << "% win, Defense: " << (score.wins2 + score.draws2) * 100 << "% win/stall) ";
-			break;
         default:
             break;
     }
@@ -913,17 +805,9 @@ void print_deck_inline(const unsigned deck_cost, const FinalResults<long double>
     std::cout << std::endl;
 }
 //------------------------------------------------------------------------------
-void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d1, Process& proc, Requirement requirement)
+void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d1, Process& proc, Requirement & requirement, Quest & quest)
 {
-	//MDJ
-	EvaluatedResults zero_results;
-	if (optimization_mode == OptimizationMode::totalwar)
-	{
-		zero_results = { EvaluatedResults::first_type(proc.enemy_decks.size() * 2), 0 };
-	}
-	else{
-		zero_results = { EvaluatedResults::first_type(proc.enemy_decks.size()), 0 };
-	}
+	EvaluatedResults zero_results = { EvaluatedResults::first_type(proc.enemy_decks.size()), 0 };
     auto best_deck = d1->hash();
     std::map<std::string, EvaluatedResults> evaluated_decks{{best_deck, zero_results}};
     EvaluatedResults & results = proc.evaluate(num_min_iterations, evaluated_decks.begin()->second);
@@ -941,6 +825,7 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
     fund = std::max(fund, deck_cost);
     print_deck_inline(deck_cost, best_score, d1);
     std::mt19937 re(std::chrono::system_clock::now().time_since_epoch().count());
+    unsigned best_gap = check_requirement(d1, requirement, quest);
     bool deck_has_been_improved = true;
     unsigned long skipped_simulations = 0;
     std::vector<std::pair<signed, const Card *>> cards_out, cards_in;
@@ -953,7 +838,7 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
         }
         else if (slot_i == dead_slot || best_score.points - target_score > -1e-9)
         {
-            if (best_score.n_sims >= num_iterations)
+            if (best_score.n_sims >= num_iterations || best_gap > 0)
             {
                 break;
             }
@@ -970,7 +855,7 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
         {
             continue;
         }
-        if (requirement.count(best_commander) == 0)
+        if (requirement.num_cards.count(best_commander) == 0)
         {
             for(const Card* commander_candidate: proc.cards.player_commanders)
             {
@@ -984,8 +869,10 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
                 cards_out.emplace_back(-1, best_commander);
                 cards_out = {{-1, best_commander}};
                 d1->commander = commander_candidate;
-                if (! adjust_deck(d1, -1, -1, nullptr, fund, re, deck_cost, cards_out, cards_in) ||
-                        ! check_requirements(d1, requirement))
+                if (! adjust_deck(d1, -1, -1, nullptr, fund, re, deck_cost, cards_out, cards_in))
+                { continue; }
+                unsigned new_gap = check_requirement(d1, requirement, quest);
+                if (new_gap > 0 && new_gap >= best_gap)
                 { continue; }
                 auto && cur_deck = d1->hash();
                 auto && emplace_rv = evaluated_decks.insert({cur_deck, zero_results});
@@ -998,15 +885,16 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
 				auto compare_results = proc.compare(best_score.n_sims, prev_results, best_score);
 				current_score = compute_score(compare_results, proc.factors);
                 // Is it better ?
-                if (current_score.points > best_score.points + min_increment_of_score)
+                if (new_gap < best_gap || current_score.points > best_score.points + min_increment_of_score)
                 {
-                    std::cout << "Deck improved: " << d1->hash() << ": " << card_slot_id_names(cards_out) << " -> " << card_slot_id_names(cards_in) << ": ";
                     // Then update best score/commander, print stuff
+                    std::cout << "Deck improved: " << d1->hash() << ": " << card_slot_id_names(cards_out) << " -> " << card_slot_id_names(cards_in) << ": ";
+                    best_gap = new_gap;
                     best_score = current_score;
                     best_deck = cur_deck;
                     best_commander = d1->commander;
                     best_cards = d1->cards;
-//                    deck_has_been_improved = true;
+                    deck_has_been_improved = true;
                     print_score_info(compare_results, proc.factors);
                     print_deck_inline(deck_cost, best_score, d1);
                 }
@@ -1034,8 +922,10 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
                 d1->cards.erase(d1->cards.begin() + slot_i);
             }
             if (! adjust_deck(d1, slot_i, slot_i, card_candidate, fund, re, deck_cost, cards_out, cards_in) ||
-                    d1->cards.size() < min_deck_len ||
-                    ! check_requirements(d1, requirement))
+                    d1->cards.size() < min_deck_len)
+            { continue; }
+            unsigned new_gap = check_requirement(d1, requirement, quest);
+            if (new_gap > 0 && new_gap >= best_gap)
             { continue; }
             auto && cur_deck = d1->hash();
             auto && emplace_rv = evaluated_decks.insert({cur_deck, zero_results});
@@ -1048,10 +938,11 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
             auto compare_results = proc.compare(best_score.n_sims, prev_results, best_score);
             current_score = compute_score(compare_results, proc.factors);
             // Is it better ?
-            if (current_score.points > best_score.points + min_increment_of_score)
+            if (new_gap < best_gap || current_score.points > best_score.points + min_increment_of_score)
             {
-                std::cout << "Deck improved: " << d1->hash() << ": " << card_slot_id_names(cards_out) << " -> " << card_slot_id_names(cards_in) << ": ";
                 // Then update best score/slot, print stuff
+                std::cout << "Deck improved: " << d1->hash() << ": " << card_slot_id_names(cards_out) << " -> " << card_slot_id_names(cards_in) << ": ";
+                best_gap = new_gap;
                 best_score = current_score;
                 best_deck = cur_deck;
                 best_commander = d1->commander;
@@ -1074,17 +965,9 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
     print_deck_inline(get_deck_cost(d1), best_score, d1);
 }
 //------------------------------------------------------------------------------
-void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations, Deck* d1, Process& proc, Requirement requirement)
+void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations, Deck* d1, Process& proc, Requirement & requirement, Quest & quest)
 {
-	//MDJ
-	EvaluatedResults zero_results;
-	if (optimization_mode == OptimizationMode::totalwar)
-	{
-		zero_results = { EvaluatedResults::first_type(proc.enemy_decks.size() * 2), 0 };
-	}
-	else{
-		zero_results = { EvaluatedResults::first_type(proc.enemy_decks.size()), 0 };
-	}
+	EvaluatedResults zero_results = { EvaluatedResults::first_type(proc.enemy_decks.size()), 0 };
     auto best_deck = d1->hash();
     std::map<std::string, EvaluatedResults> evaluated_decks{{best_deck, zero_results}};
     EvaluatedResults & results = proc.evaluate(num_min_iterations, evaluated_decks.begin()->second);
@@ -1102,6 +985,7 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
     fund = std::max(fund, deck_cost);
     print_deck_inline(deck_cost, best_score, d1);
     std::mt19937 re(std::chrono::system_clock::now().time_since_epoch().count());
+    unsigned best_gap = check_requirement(d1, requirement, quest);
     bool deck_has_been_improved = true;
     unsigned long skipped_simulations = 0;
     std::vector<std::pair<signed, const Card *>> cards_out, cards_in;
@@ -1118,7 +1002,7 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
         }
         else if (from_slot == dead_slot || best_score.points - target_score > -1e-9)
         {
-            if (best_score.n_sims >= num_iterations)
+            if (best_score.n_sims >= num_iterations || best_gap > 0)
             {
                 break;
             }
@@ -1135,7 +1019,7 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
         {
             continue;
         }
-        if (requirement.count(best_commander) == 0)
+        if (requirement.num_cards.count(best_commander) == 0)
         {
             for(const Card* commander_candidate: proc.cards.player_commanders)
             {
@@ -1150,8 +1034,10 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
                 cards_out.clear();
                 cards_out.emplace_back(-1, best_commander);
                 d1->commander = commander_candidate;
-                if (! adjust_deck(d1, -1, -1, nullptr, fund, re, deck_cost, cards_out, cards_in) ||
-                    ! check_requirements(d1, requirement))
+                if (! adjust_deck(d1, -1, -1, nullptr, fund, re, deck_cost, cards_out, cards_in))
+                { continue; }
+                unsigned new_gap = check_requirement(d1, requirement, quest);
+                if (new_gap > 0 && new_gap >= best_gap)
                 { continue; }
                 auto && cur_deck = d1->hash();
                 auto && emplace_rv = evaluated_decks.insert({cur_deck, zero_results});
@@ -1164,10 +1050,11 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
                 auto compare_results = proc.compare(best_score.n_sims, prev_results, best_score);
                 current_score = compute_score(compare_results, proc.factors);
                 // Is it better ?
-                if (current_score.points > best_score.points + min_increment_of_score)
+                if (new_gap < best_gap || current_score.points > best_score.points + min_increment_of_score)
                 {
                     std::cout << "Deck improved: " << d1->hash() << ": " << card_slot_id_names(cards_out) << " -> " << card_slot_id_names(cards_in) << ": ";
                     // Then update best score/commander, print stuff
+                    best_gap = new_gap;
                     best_score = current_score;
                     best_deck = cur_deck;
                     best_commander = commander_candidate;
@@ -1204,8 +1091,10 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
                     d1->cards.erase(d1->cards.begin() + from_slot);
                 }
                 if (! adjust_deck(d1, from_slot, to_slot, card_candidate, fund, re, deck_cost, cards_out, cards_in) ||
-                        d1->cards.size() < min_deck_len ||
-                        ! check_requirements(d1, requirement))
+                        d1->cards.size() < min_deck_len)
+                { continue; }
+                unsigned new_gap = check_requirement(d1, requirement, quest);
+                if (new_gap > 0 && new_gap >= best_gap)
                 { continue; }
                 auto && cur_deck = d1->hash();
                 auto && emplace_rv = evaluated_decks.insert({cur_deck, zero_results});
@@ -1218,10 +1107,11 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
                 auto compare_results = proc.compare(best_score.n_sims, prev_results, best_score);
                 current_score = compute_score(compare_results, proc.factors);
                 // Is it better ?
-                if (current_score.points > best_score.points + min_increment_of_score)
+                if (new_gap < best_gap || current_score.points > best_score.points + min_increment_of_score)
                 {
                     // Then update best score/slot, print stuff
                     std::cout << "Deck improved: " << d1->hash() << ": " << card_slot_id_names(cards_out) << " -> " << card_slot_id_names(cards_in) << ": ";
+                    best_gap = new_gap;
                     best_score = current_score;
                     best_deck = cur_deck;
                     best_commander = d1->commander;
@@ -1244,68 +1134,6 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
     std::cout << "Optimized Deck: ";
     print_deck_inline(get_deck_cost(d1), best_score, d1);
 }
-//------------------------------------------------------------------------------
-// Implements iteration over all combination of k elements from n elements.
-// parameter firstIndexLimit: this is a ugly hack used to implement the special condition that
-// a deck could be expected to contain at least 1 assault card. Thus the first element
-// will be chosen among the assault cards only, instead of all cards.
-// It works on the condition that the assault cards are sorted first in the list of cards,
-// thus have indices 0..firstIndexLimit-1.
-class Combination
-{
-public:
-    Combination(unsigned all_, unsigned choose_, unsigned firstIndexLimit_ = 0) :
-        all(all_),
-        choose(choose_),
-        firstIndexLimit(firstIndexLimit_ == 0 ? all_ - choose_ : firstIndexLimit_),
-        indices(choose_, 0),
-        indicesLimits(choose_, 0)
-    {
-        assert(choose > 0);
-        assert(choose <= all);
-        assert(firstIndexLimit <= all);
-        indicesLimits[0] = firstIndexLimit;
-        for(unsigned i(1); i < choose; ++i)
-        {
-            indices[i] = i;
-            indicesLimits[i] =  all - choose + i;
-        }
-    }
-
-    const std::vector<unsigned>& getIndices()
-    {
-        return(indices);
-    }
-
-    bool next()
-    {
-        // The end condition's a bit odd here, but index is unsigned.
-        // The last iteration is when index = 0.
-        // After that, index = max int, which is clearly >= choose.
-        for(index = choose - 1; index < choose; --index)
-        {
-            if(indices[index] < indicesLimits[index])
-            {
-                ++indices[index];
-                for(nextIndex = index + 1; nextIndex < choose; nextIndex++)
-                {
-                    indices[nextIndex] = indices[index] - index + nextIndex;
-                }
-                return(false);
-            }
-        }
-        return(true);
-    }
-
-private:
-    unsigned all;
-    unsigned choose;
-    unsigned firstIndexLimit;
-    std::vector<unsigned> indices;
-    std::vector<unsigned> indicesLimits;
-    unsigned index;
-    unsigned nextIndex;
-};
 //------------------------------------------------------------------------------
 enum Operation {
     simulate,
@@ -1384,10 +1212,11 @@ int main(int argc, char** argv)
     unsigned opt_num_threads(4);
     DeckStrategy::DeckStrategy opt_your_strategy(DeckStrategy::random);
     DeckStrategy::DeckStrategy opt_enemy_strategy(DeckStrategy::random);
-	//MDJ
-    //std::string opt_forts, opt_enemy_forts;
+	std::string opt_forts, opt_enemy_forts;
     std::string opt_hand, opt_enemy_hand;
     std::string opt_vip;
+    std::string opt_quest;
+    std::string opt_target_score;
     std::vector<std::string> fn_suffix_list{"",};
     std::vector<std::string> opt_owned_cards_str_list;
     bool opt_do_optimization(false);
@@ -1473,12 +1302,6 @@ int main(int argc, char** argv)
             gamemode = fight;
             optimization_mode = OptimizationMode::defense;
         }
-		//MDJ
-		else if (strcmp(argv[argIndex], "tw") == 0)
-		{
-			gamemode = surge;
-			optimization_mode = OptimizationMode::totalwar;
-		}
         // Others
         else if (strcmp(argv[argIndex], "keep-commander") == 0 || strcmp(argv[argIndex], "-c") == 0)
         {
@@ -1549,6 +1372,11 @@ int main(int argc, char** argv)
             use_fused_card_level = atoi(argv[argIndex+1]);
             argIndex += 1;
         }
+        else if (strcmp(argv[argIndex], "quest") == 0)
+        {
+            opt_quest = argv[argIndex+1];
+            argIndex += 1;
+        }
         else if(strcmp(argv[argIndex], "threads") == 0 || strcmp(argv[argIndex], "-t") == 0)
         {
             opt_num_threads = atoi(argv[argIndex+1]);
@@ -1556,7 +1384,7 @@ int main(int argc, char** argv)
         }
         else if(strcmp(argv[argIndex], "target") == 0)
         {
-            target_score = atof(argv[argIndex+1]);
+            opt_target_score = argv[argIndex+1];
             argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "turnlimit") == 0)
@@ -1577,10 +1405,6 @@ int main(int argc, char** argv)
         else if(strcmp(argv[argIndex], "+ci") == 0)
         {
             show_ci = true;
-        }
-        else if(strcmp(argv[argIndex], "+stdev") == 0)
-        {
-            show_stdev = true;
         }
         else if(strcmp(argv[argIndex], "+hm") == 0)
         {
@@ -1788,10 +1612,7 @@ int main(int argc, char** argv)
     std::string enemy_deck_list{argv[2]};
     auto && deck_list_parsed = parse_deck_list(enemy_deck_list, decks);
 
-	//MDJ
     Deck* your_deck{nullptr};
-    Requirement requirement;
-    Requirement vip_cards;
     std::vector<Deck*> enemy_decks;
     std::vector<long double> enemy_decks_factors;
 
@@ -1832,6 +1653,7 @@ int main(int argc, char** argv)
             return 0;
         }
     }
+
     try
     {
         your_deck->set_vip_cards(opt_vip);
@@ -1841,6 +1663,98 @@ int main(int argc, char** argv)
         std::cerr << "Error: vip " << opt_vip << ": " << e.what() << std::endl;
         return 0;
     }
+
+    if (!opt_quest.empty())
+    {
+        try
+        {
+            optimization_mode = OptimizationMode::quest;
+            std::vector<std::string> tokens;
+            boost::split(tokens, opt_quest, boost::is_any_of(" -"));
+            if (tokens.size() < 3)
+            {
+                throw std::runtime_error("Expect one of: su n skill; sd n skill; cu n faction/strcture; ck n structure");
+            }
+            auto type_str = boost::to_lower_copy(tokens[0]);
+            quest.quest_value = boost::lexical_cast<unsigned>(tokens[1]);
+            auto key_str = boost::to_lower_copy(tokens[2]);
+            if (type_str == "su" || type_str == "sd")
+            {
+                Skill skill_id = skill_name_to_id(key_str, false);
+                if (skill_id == no_skill)
+                {
+                    std::cerr << "Error: Expect skill in quest \"" << opt_quest << "\".\n";
+                    return 0;
+                }
+                quest.quest_type = type_str == "su" ? QuestType::skill_use : QuestType::skill_damage;
+                quest.quest_key = skill_id;
+            }
+            else if (type_str == "cu" || type_str == "ck")
+            {
+                if (key_str == "assault")
+                {
+                    quest.quest_type = type_str == "cu" ? QuestType::type_card_use : QuestType::type_card_kill;
+                    quest.quest_key = CardType::assault;
+                }
+                else if (key_str == "structure")
+                {
+                    quest.quest_type = type_str == "cu" ? QuestType::type_card_use : QuestType::type_card_kill;
+                    quest.quest_key = CardType::structure;
+                }
+                else
+                {
+                    for (unsigned i = 1; i < Faction::num_factions; ++ i)
+                    {
+                        if (key_str == boost::to_lower_copy(faction_names[i]))
+                        {
+                            quest.quest_type = type_str == "cu" ? QuestType::faction_card_use : QuestType::faction_assault_card_kill;
+                            quest.quest_key = i;
+                            break;
+                        }
+                    }
+                    if (quest.quest_key == 0)
+                    {
+                        std::cerr << "Error: Expect assault, structure or faction in quest \"" << opt_quest << "\".\n";
+                        return 0;
+                    }
+                }
+            }
+            else
+            {
+                throw std::runtime_error("Expect one of: su n skill; sd n skill; cu n faction/strcture; ck n structure");
+            }
+            quest.quest_score = quest.quest_value;
+            for (unsigned i = 3; i < tokens.size(); ++ i)
+            {
+                const auto & token = tokens[i];
+                if (token == "each")
+                {
+                    quest.must_fulfill = true;
+                    quest.quest_score = 100;
+                }
+                else if (token == "win")
+                { quest.must_win = true; }
+                else if (token.substr(0, 2) == "q=")
+                { quest.quest_score = boost::lexical_cast<unsigned>(token.substr(2)); }
+                else if (token.substr(0, 2) == "w=")
+                { quest.win_score = boost::lexical_cast<unsigned>(token.substr(2)); }
+                else
+                { throw std::runtime_error("Cannot recognize " + token); }
+            }
+            max_possible_score[(size_t)optimization_mode] = quest.quest_score + quest.win_score;
+        }
+        catch (const boost::bad_lexical_cast & e)
+        {
+            std::cerr << "Error: Expect a number in quest \"" << opt_quest << "\".\n";
+            return 0;
+        }
+        catch (const std::runtime_error& e)
+        {
+            std::cerr << "Error: quest " << opt_quest << ": " << e.what() << std::endl;
+            return 0;
+        }
+    }
+
     try
     {
         your_deck->set_given_hand(opt_hand);
@@ -1850,9 +1764,10 @@ int main(int argc, char** argv)
         std::cerr << "Error: hand " << opt_hand << ": " << e.what() << std::endl;
         return 0;
     }
+
     if (opt_keep_commander)
     {
-        requirement[your_deck->commander] = 1;
+        requirement.num_cards[your_deck->commander] = 1;
     }
     for (auto && card_mark: your_deck->card_marks)
     {
@@ -1860,9 +1775,11 @@ int main(int argc, char** argv)
         auto mark = card_mark.second;
         if (mark == '!')
         {
-            requirement[card] += 1;
+            requirement.num_cards[card] += 1;
         }
     }
+
+    target_score = opt_target_score.empty() ? max_possible_score[(size_t)optimization_mode] : boost::lexical_cast<long double>(opt_target_score);
 
     for(auto deck_parsed: deck_list_parsed)
     {
@@ -1969,7 +1886,7 @@ int main(int argc, char** argv)
         }
     }
 
-    Process p(opt_num_threads, all_cards, decks, your_deck, enemy_decks, enemy_decks_factors, gamemode, opt_bg_effects, opt_bg_skills);
+    Process p(opt_num_threads, all_cards, decks, your_deck, enemy_decks, enemy_decks_factors, gamemode, quest, opt_bg_effects, opt_bg_skills);
 
     {
         //ScopeClock timer;
@@ -1978,15 +1895,7 @@ int main(int argc, char** argv)
             switch(std::get<2>(op))
             {
 			case simulate: {
-				//MDJ
-				EvaluatedResults results;
-				if (optimization_mode == OptimizationMode::totalwar)
-				{
-					results = { EvaluatedResults::first_type(enemy_decks.size() * 2), 0 };
-				}
-				else{
-					results = { EvaluatedResults::first_type(enemy_decks.size()), 0 };
-				}		
+				EvaluatedResults results = { EvaluatedResults::first_type(enemy_decks.size()), 0 };
                 results = p.evaluate(std::get<0>(op), results);
                 print_results(results, p.factors);
                 break;
@@ -1995,12 +1904,12 @@ int main(int argc, char** argv)
                 switch (opt_your_strategy)
                 {
                 case DeckStrategy::random:
-                    hill_climbing(std::get<0>(op), std::get<1>(op), your_deck, p, requirement);
+                    hill_climbing(std::get<0>(op), std::get<1>(op), your_deck, p, requirement, quest);
                     break;
 //                case DeckStrategy::ordered:
 //                case DeckStrategy::exact_ordered:
                 default:
-                    hill_climbing_ordered(std::get<0>(op), std::get<1>(op), your_deck, p, requirement);
+                    hill_climbing_ordered(std::get<0>(op), std::get<1>(op), your_deck, p, requirement, quest);
                     break;
                 }
                 break;
@@ -2017,7 +1926,7 @@ int main(int argc, char** argv)
                 owned_cards.clear();
                 claim_cards({your_deck->commander});
                 claim_cards(your_deck->cards);
-                hill_climbing_ordered(std::get<0>(op), std::get<1>(op), your_deck, p, requirement);
+                hill_climbing_ordered(std::get<0>(op), std::get<1>(op), your_deck, p, requirement, quest);
                 break;
             }
             case debug: {
