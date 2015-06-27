@@ -20,10 +20,9 @@
 // mission only and test cards have no set
 using namespace rapidxml;
 
-Skill skill_name_to_id(const std::string & name, bool do_warn)
+Skill skill_name_to_id(const std::string & name)
 {
     static std::map<std::string, int> skill_map;
-    static std::set<std::string> unknown_skills;
     if(skill_map.empty())
     {
         for(unsigned i(0); i < Skill::num_skills; ++i)
@@ -37,11 +36,6 @@ Skill skill_name_to_id(const std::string & name, bool do_warn)
     auto x = skill_map.find(boost::to_lower_copy(name));
     if (x == skill_map.end())
     {
-        if (do_warn and unknown_skills.count(name) == 0)
-        { // Warn only once for each new skill
-            unknown_skills.insert(name);
-            std::cerr << "Warning: Ignore new skill [" << name << "] in data/cards.xml\n";
-        }
         return no_skill;
     }
     else

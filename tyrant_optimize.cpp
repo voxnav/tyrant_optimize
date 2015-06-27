@@ -1532,7 +1532,7 @@ int main(int argc, char** argv)
         {
             std::vector<std::string> tokens;
             boost::split(tokens, opt_effect, boost::is_any_of(" -"));
-            Skill skill_id = skill_name_to_id(tokens[0], false);
+            Skill skill_id = skill_name_to_id(tokens[0]);
             unsigned skill_index = 1;
             if (BEGIN_BGE_SKILL < skill_id && skill_id < END_BGE_SKILL)
             {
@@ -1562,13 +1562,13 @@ int main(int argc, char** argv)
                 }
                 if (skill_index < tokens.size())
                 {
-                    bg_skill.s = skill_name_to_id(tokens[skill_index], false);
+                    bg_skill.s = skill_name_to_id(tokens[skill_index]);
                     if (bg_skill.s != no_skill)
                     {
                         skill_index += 1;
                         if (skill_index < tokens.size())
                         {
-                            bg_skill.s2 = skill_name_to_id(tokens[skill_index], false);
+                            bg_skill.s2 = skill_name_to_id(tokens[skill_index]);
                             if (bg_skill.s2 != no_skill)
                             {
                                 skill_index += 1;
@@ -1680,7 +1680,7 @@ int main(int argc, char** argv)
             auto key_str = boost::to_lower_copy(tokens[2]);
             if (type_str == "su" || type_str == "sd")
             {
-                Skill skill_id = skill_name_to_id(key_str, false);
+                Skill skill_id = skill_name_to_id(key_str);
                 if (skill_id == no_skill)
                 {
                     std::cerr << "Error: Expect skill in quest \"" << opt_quest << "\".\n";
