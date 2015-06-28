@@ -268,7 +268,7 @@ bool adjust_deck(Deck * deck, const signed from_slot, const signed to_slot, cons
             deck_cost = get_deck_cost(deck);
             if (use_top_level_card || deck_cost <= fund)
             { break; }
-            if (i < freezed_cards)
+            if (i < (signed)freezed_cards)
             { return false; }
             for (auto recipe_it : card_in->m_recipe_cards)
             { candidate_cards.emplace(recipe_it.first); }
