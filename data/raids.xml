@@ -2380,6 +2380,468 @@
 		</deck>
 	</campaign>
 
+	<campaign>
+		<id>611</id>
+		<name>Ward101</name>
+		<name>Warden Normal 1</name>
+		<commander>1570</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4439</card>
+				<card>4439</card>
+				<card>6556</card>
+				<card>6556</card>
+				<card>30058</card>
+				<card>30600</card>
+				<card>30708</card>
+				<card>31415</card>
+				<card>31419</card>
+				<card>31425</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>612</id>
+		<name>Ward102</name>
+		<name>Warden Normal 2</name>
+		<commander>1570</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4444</card>
+				<card>4444</card>
+				<card>6560</card>
+				<card>6560</card>
+				<card>16762</card>
+				<card>16788</card>
+				<card>31415</card>
+				<card>31419</card>
+				<card>31425</card>
+				<card>31472</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>613</id>
+		<name>Ward103</name>
+		<name>Warden Normal 3</name>
+		<commander>1837</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4598</card>
+				<card>6435</card>
+				<card>6435</card>
+				<card>31274</card>
+				<card>31418</card>
+				<card>31418</card>
+				<card>31419</card>
+				<card>31425</card>
+				<card>31472</card>
+				<card>31601</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>614</id>
+		<name>Ward104</name>
+		<name>Warden Normal 4</name>
+		<commander>1570</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4439</card>
+				<card>10587</card>
+				<card>10587</card>
+				<card>12476</card>
+				<card>31271</card>
+				<card>31413</card>
+				<card>31421</card>
+				<card>31425</card>
+				<card>31598</card>
+				<card>31598</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>615</id>
+		<name>Ward105</name>
+		<name>Warden Normal 5</name>
+		<commander>1570</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4444</card>
+				<card>4444</card>
+				<card>6560</card>
+				<card>6658</card>
+				<card>12218</card>
+				<card>15823</card>
+				<card>16972</card>
+				<card>31413</card>
+				<card>31421</card>
+				<card>31425</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>616</id>
+		<name>Ward106</name>
+		<name>Warden Normal 6</name>
+		<commander>1843</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4095</card>
+				<card>7772</card>
+				<card>13065</card>
+				<card>13292</card>
+				<card>30097</card>
+				<card>30609</card>
+				<card>31413</card>
+				<card>31424</card>
+				<card>31424</card>
+				<card>31425</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>617</id>
+		<name>Ward107</name>
+		<name>Warden Normal 7</name>
+		<commander>1849</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>6750</card>
+				<card>12843</card>
+				<card>12966</card>
+				<card>13505</card>
+				<card>15299</card>
+				<card>31274</card>
+				<card>31418</card>
+				<card>31419</card>
+				<card>31425</card>
+				<card>31425</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>621</id>
+		<name>Ward201</name>
+		<name>Warden Heroic 1</name>
+		<commander>1833</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>30064</card>
+				<card>30502</card>
+				<card>30603</card>
+				<card>30612</card>
+				<card>30612</card>
+				<card>30711</card>
+				<card>30711</card>
+				<card>31418</card>
+				<card>31421</card>
+				<card>31427</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>622</id>
+		<name>Ward202</name>
+		<name>Warden Heroic 2</name>
+		<commander>1833</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>16767</card>
+				<card>16797</card>
+				<card>30513</card>
+				<card>30516</card>
+				<card>31190</card>
+				<card>31334</card>
+				<card>31418</card>
+				<card>31421</card>
+				<card>31427</card>
+				<card>31478</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>623</id>
+		<name>Ward203</name>
+		<name>Warden Heroic 3</name>
+		<commander>1839</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>6441</card>
+				<card>6441</card>
+				<card>6536</card>
+				<card>16977</card>
+				<card>31280</card>
+				<card>31418</card>
+				<card>31418</card>
+				<card>31421</card>
+				<card>31427</card>
+				<card>31604</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>624</id>
+		<name>Ward204</name>
+		<name>Warden Heroic 4</name>
+		<commander>1835</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>10590</card>
+				<card>10590</card>
+				<card>12478</card>
+				<card>12478</card>
+				<card>14073</card>
+				<card>31415</card>
+				<card>31424</card>
+				<card>31427</card>
+				<card>31604</card>
+				<card>31604</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>625</id>
+		<name>Ward205</name>
+		<name>Warden Heroic 5</name>
+		<commander>1835</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>6664</card>
+				<card>12224</card>
+				<card>12224</card>
+				<card>13071</card>
+				<card>15829</card>
+				<card>15829</card>
+				<card>16977</card>
+				<card>31415</card>
+				<card>31424</card>
+				<card>31427</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>626</id>
+		<name>Ward206</name>
+		<name>Warden Heroic 6</name>
+		<commander>1845</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7592</card>
+				<card>7772</card>
+				<card>13077</card>
+				<card>13316</card>
+				<card>30103</card>
+				<card>30609</card>
+				<card>31415</card>
+				<card>31424</card>
+				<card>31424</card>
+				<card>31427</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>627</id>
+		<name>Ward207</name>
+		<name>Warden Heroic 7</name>
+		<commander>1851</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>8384</card>
+				<card>12855</card>
+				<card>12972</card>
+				<card>13511</card>
+				<card>16689</card>
+				<card>31415</card>
+				<card>31421</card>
+				<card>31427</card>
+				<card>31427</card>
+				<card>31661</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>631</id>
+		<name>Ward301</name>
+		<name>Warden Mythic 1</name>
+		<commander>1835</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>16851</card>
+				<card>30073</card>
+				<card>30513</card>
+				<card>30513</card>
+				<card>30615</card>
+				<card>30615</card>
+				<card>30723</card>
+				<card>31418</card>
+				<card>31424</card>
+				<card>31430</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>632</id>
+		<name>Ward302</name>
+		<name>Warden Mythic 2</name>
+		<commander>1835</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>16371</card>
+				<card>16767</card>
+				<card>16803</card>
+				<card>16851</card>
+				<card>31190</card>
+				<card>31190</card>
+				<card>31418</card>
+				<card>31424</card>
+				<card>31430</card>
+				<card>31484</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>633</id>
+		<name>Ward303</name>
+		<name>Warden Mythic 3</name>
+		<commander>1842</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>6548</card>
+				<card>12233</card>
+				<card>13986</card>
+				<card>13986</card>
+				<card>14076</card>
+				<card>31418</card>
+				<card>31418</card>
+				<card>31424</card>
+				<card>31430</card>
+				<card>31610</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>634</id>
+		<name>Ward304</name>
+		<name>Warden Mythic 4</name>
+		<commander>1836</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>10596</card>
+				<card>12481</card>
+				<card>12481</card>
+				<card>14076</card>
+				<card>16977</card>
+				<card>31418</card>
+				<card>31424</card>
+				<card>31430</card>
+				<card>31610</card>
+				<card>31610</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>635</id>
+		<name>Ward305</name>
+		<name>Warden Mythic 5</name>
+		<commander>1836</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7592</card>
+				<card>12233</card>
+				<card>12233</card>
+				<card>15829</card>
+				<card>15829</card>
+				<card>16491</card>
+				<card>16977</card>
+				<card>31418</card>
+				<card>31424</card>
+				<card>31430</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>636</id>
+		<name>Ward306</name>
+		<name>Warden Mythic 6</name>
+		<commander>1848</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>8575</card>
+				<card>14725</card>
+				<card>15347</card>
+				<card>30109</card>
+				<card>30519</card>
+				<card>31418</card>
+				<card>31424</card>
+				<card>31424</card>
+				<card>31430</card>
+				<card>31484</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>637</id>
+		<name>Ward307</name>
+		<name>Warden Mythic 7</name>
+		<commander>1848</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7820</card>
+				<card>12981</card>
+				<card>14076</card>
+				<card>16689</card>
+				<card>30519</card>
+				<card>31418</card>
+				<card>31424</card>
+				<card>31430</card>
+				<card>31430</card>
+				<card>31670</card>
+			</always_include>
+		</deck>
+	</campaign>
+
 <!-- Campaigns -->
 
 </root>
