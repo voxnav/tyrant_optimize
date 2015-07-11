@@ -2433,14 +2433,14 @@
 		<deck>
 			<always_include>
 				<card>4598</card>
-				<card>6435</card>
-				<card>6435</card>
-				<card>31274</card>
-				<card>31418</card>
-				<card>31418</card>
+				<card>6434</card>
+				<card>6434</card>
+				<card>31271</card>
+				<card>31415</card>
+				<card>31415</card>
 				<card>31419</card>
 				<card>31425</card>
-				<card>31472</card>
+				<card>31469</card>
 				<card>31601</card>
 			</always_include>
 		</deck>
@@ -2455,7 +2455,7 @@
 		<deck>
 			<always_include>
 				<card>4439</card>
-				<card>10587</card>
+				<card>4439</card>
 				<card>10587</card>
 				<card>12476</card>
 				<card>31271</card>
@@ -2505,8 +2505,8 @@
 				<card>30097</card>
 				<card>30609</card>
 				<card>31413</card>
-				<card>31424</card>
-				<card>31424</card>
+				<card>31421</card>
+				<card>31421</card>
 				<card>31425</card>
 			</always_include>
 		</deck>
@@ -2526,7 +2526,7 @@
 				<card>13505</card>
 				<card>15299</card>
 				<card>31274</card>
-				<card>31418</card>
+				<card>31413</card>
 				<card>31419</card>
 				<card>31425</card>
 				<card>31425</card>
@@ -2549,7 +2549,7 @@
 				<card>30612</card>
 				<card>30711</card>
 				<card>30711</card>
-				<card>31418</card>
+				<card>31415</card>
 				<card>31421</card>
 				<card>31427</card>
 			</always_include>
@@ -2570,7 +2570,7 @@
 				<card>30516</card>
 				<card>31190</card>
 				<card>31334</card>
-				<card>31418</card>
+				<card>31415</card>
 				<card>31421</card>
 				<card>31427</card>
 				<card>31478</card>
@@ -2588,14 +2588,14 @@
 			<always_include>
 				<card>6441</card>
 				<card>6441</card>
-				<card>6536</card>
-				<card>16977</card>
+				<card>6534</card>
+				<card>16975</card>
 				<card>31280</card>
 				<card>31418</card>
 				<card>31418</card>
 				<card>31421</card>
 				<card>31427</card>
-				<card>31604</card>
+				<card>31601</card>
 			</always_include>
 		</deck>
 	</campaign>
@@ -2614,8 +2614,8 @@
 				<card>12478</card>
 				<card>14073</card>
 				<card>31415</card>
+				<card>31421</card>
 				<card>31424</card>
-				<card>31427</card>
 				<card>31604</card>
 				<card>31604</card>
 			</always_include>
@@ -2638,7 +2638,7 @@
 				<card>15829</card>
 				<card>16977</card>
 				<card>31415</card>
-				<card>31424</card>
+				<card>31421</card>
 				<card>31427</card>
 			</always_include>
 		</deck>
@@ -2740,11 +2740,11 @@
 		<levels>1</levels>
 		<deck>
 			<always_include>
+				<card>6444</card>
 				<card>6548</card>
 				<card>12233</card>
-				<card>13986</card>
-				<card>13986</card>
 				<card>14076</card>
+				<card>31280</card>
 				<card>31418</card>
 				<card>31418</card>
 				<card>31424</card>
