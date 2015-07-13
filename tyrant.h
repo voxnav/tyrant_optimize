@@ -98,6 +98,7 @@ enum QuestType
     type_card_use,
     faction_assault_card_kill,
     type_card_kill,
+    card_survival,
     num_objective_types
 };
 }

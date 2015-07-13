@@ -1719,6 +1719,19 @@ int main(int argc, char** argv)
                     }
                 }
             }
+            else if (type_str == "cs")
+            {
+                auto card_it = all_cards.player_cards_by_name.find(simplify_name(key_str));
+                if (card_it != all_cards.player_cards_by_name.end())
+                {
+                    quest.quest_type = QuestType::card_survival;
+                    quest.quest_key = card_it->second->m_id;
+                }
+                else {
+                    std::cerr << "Error: Expect card in quest \"" << opt_quest << "\".\n";
+                    return 0;
+                }
+            }
             else
             {
                 throw std::runtime_error("Expect one of: su n skill; sd n skill; cu n faction/strcture; ck n structure");

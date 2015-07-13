@@ -567,6 +567,15 @@ Results<uint64_t> play(Field* fd)
             raid_damage = 15 + (std::min<unsigned>(p[1]->deck->deck_size, (fd->turn + 1) / 2) - p[1]->assaults.size() - p[1]->structures.size()) - (10 * p[1]->commander.m_hp / p[1]->commander.m_max_hp);
             break;
         case OptimizationMode::quest:
+            if (fd->quest.quest_type == QuestType::card_survival)
+            {
+                for (const auto & status: p[0]->assaults.m_indirect)
+                { fd->quest_counter += (fd->quest.quest_key == status->m_card->m_id); }
+                for (const auto & status: p[0]->structures.m_indirect)
+                { fd->quest_counter += (fd->quest.quest_key == status->m_card->m_id); }
+                for (const auto & card: p[0]->deck->shuffled_cards)
+                { fd->quest_counter += (fd->quest.quest_key == card->m_id); }
+            }
             quest_score = fd->quest.must_fulfill ? (fd->quest_counter >= fd->quest.quest_value ? fd->quest.quest_score : 0) : std::min<unsigned>(fd->quest.quest_score, fd->quest.quest_score * fd->quest_counter / fd->quest.quest_value);
             _DEBUG_MSG(1, "Quest: %u / %u = %u%%.\n", fd->quest_counter, fd->quest.quest_value, quest_score);
             break;
