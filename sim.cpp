@@ -1323,12 +1323,6 @@ inline void perform_skill<evolve>(Field* fd, CardStatus* src, CardStatus* dst, c
 }
 
 template<>
-inline void perform_skill<mend>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
-{
-    add_hp(fd, dst, s.x);
-}
-
-template<>
 inline void perform_skill<heal>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
     add_hp(fd, dst, s.x);
@@ -1338,6 +1332,18 @@ template<>
 inline void perform_skill<jam>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
     dst->m_jammed = true;
+}
+
+template<>
+inline void perform_skill<mend>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
+{
+    add_hp(fd, dst, s.x);
+}
+
+template<>
+inline void perform_skill<mortar>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
+{
+    remove_hp(fd, dst, dst->m_card->m_type == CardType::structure ? s.x : (s.x + 1) / 2);
 }
 
 template<>
@@ -1450,14 +1456,14 @@ template<> std::vector<CardStatus*>& skill_targets<enhance>(Field* fd, CardStatu
 template<> std::vector<CardStatus*>& skill_targets<evolve>(Field* fd, CardStatus* src_status)
 { return(skill_targets_allied_assault(fd, src_status)); }
 
-template<> std::vector<CardStatus*>& skill_targets<mend>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_allied_assault(fd, src_status)); }
-
 template<> std::vector<CardStatus*>& skill_targets<heal>(Field* fd, CardStatus* src_status)
 { return(skill_targets_allied_assault(fd, src_status)); }
 
 template<> std::vector<CardStatus*>& skill_targets<jam>(Field* fd, CardStatus* src_status)
 { return(skill_targets_hostile_assault(fd, src_status)); }
+
+template<> std::vector<CardStatus*>& skill_targets<mend>(Field* fd, CardStatus* src_status)
+{ return(skill_targets_allied_assault(fd, src_status)); }
 
 template<> std::vector<CardStatus*>& skill_targets<overload>(Field* fd, CardStatus* src_status)
 { return(skill_targets_allied_assault(fd, src_status)); }
@@ -1468,14 +1474,14 @@ template<> std::vector<CardStatus*>& skill_targets<protect>(Field* fd, CardStatu
 template<> std::vector<CardStatus*>& skill_targets<rally>(Field* fd, CardStatus* src_status)
 { return(skill_targets_allied_assault(fd, src_status)); }
 
+template<> std::vector<CardStatus*>& skill_targets<siege>(Field* fd, CardStatus* src_status)
+{ return(skill_targets_hostile_structure(fd, src_status)); }
+
 template<> std::vector<CardStatus*>& skill_targets<strike>(Field* fd, CardStatus* src_status)
 { return(skill_targets_hostile_assault(fd, src_status)); }
 
 template<> std::vector<CardStatus*>& skill_targets<weaken>(Field* fd, CardStatus* src_status)
 { return(skill_targets_hostile_assault(fd, src_status)); }
-
-template<> std::vector<CardStatus*>& skill_targets<siege>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_hostile_structure(fd, src_status)); }
 
 template<Skill skill_id>
 bool check_and_perform_skill(Field* fd, CardStatus* src_status, CardStatus* dst_status, const SkillSpec& s, bool is_evadable, bool & has_counted_quest)
@@ -1564,6 +1570,36 @@ size_t select_targets(Field* fd, CardStatus* src_status, const SkillSpec& s)
     return n_targets;
 }
 
+template<>
+size_t select_targets<mortar>(Field* fd, CardStatus* src_status, const SkillSpec& s)
+{
+    size_t n_candidates = select_fast<siege>(fd, src_status, skill_targets<siege>(fd, src_status), s);
+    if (n_candidates == 0)
+    {
+        n_candidates = select_fast<strike>(fd, src_status, skill_targets<strike>(fd, src_status), s);
+        if (n_candidates == 0)
+        {
+            return n_candidates;
+        }
+    }
+    _DEBUG_SELECTION("%s", skill_names[mortar].c_str());
+    unsigned n_targets = s.n > 0 ? s.n : 1;
+    if (s.all || n_targets >= n_candidates)
+    {
+        return n_candidates;
+    }
+    for (unsigned i = 0; i < n_targets; ++i)
+    {
+        std::swap(fd->selection_array[i], fd->selection_array[fd->rand(i, n_candidates - 1)]);
+    }
+    fd->selection_array.resize(n_targets);
+    if (n_targets > 1)
+    {
+        std::sort(fd->selection_array.begin(), fd->selection_array.end(), [](const CardStatus * a, const CardStatus * b) { return a->m_index < b->m_index; });
+    }
+    return n_targets;
+}
+
 template<Skill skill_id>
 void perform_targetted_hostile_fast(Field* fd, CardStatus* src_status, const SkillSpec& s)
 {
@@ -1607,7 +1643,7 @@ void perform_targetted_allied_fast(Field* fd, CardStatus* src_status, const Skil
 void fill_skill_table()
 {
     memset(skill_table, 0, sizeof skill_table);
-    skill_table[mortar] = perform_targetted_hostile_fast<siege>;
+    skill_table[mortar] = perform_targetted_hostile_fast<mortar>;
     skill_table[enfeeble] = perform_targetted_hostile_fast<enfeeble>;
     skill_table[enhance] = perform_targetted_allied_fast<enhance>;
     skill_table[evolve] = perform_targetted_allied_fast<evolve>;
