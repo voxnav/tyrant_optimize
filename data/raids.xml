@@ -252,6 +252,27 @@
 		</deck>
 	</raid>
 
+	<raid>
+		<id>12</id>
+		<name>Intrepid Raid</name>
+		<commander>1855</commander>
+		<levels>26</levels>
+		<deck>
+			<always_include>
+				<card>8774</card>
+				<card>8784</card>
+				<card>31827</card>
+				<card>31827</card>
+				<card>31837</card>
+				<card>31837</card>
+				<card>31847</card>
+				<card>31847</card>
+				<card>31857</card>
+				<card>31857</card>
+			</always_include>
+		</deck>
+	</raid>
+
 <!-- END of Raids -->
 
 
