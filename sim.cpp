@@ -102,7 +102,7 @@ inline void CardStatus::set(const Card& card)
     std::memset(m_skill_cd, 0, sizeof m_skill_cd);
 }
 //------------------------------------------------------------------------------
-inline int attack_power(const CardStatus* att)
+inline unsigned attack_power(const CardStatus* att)
 {
     return(safe_minus(att->m_attack + att->m_rallied, att->m_weakened + att->m_corroded_weakened));
 }
@@ -153,12 +153,12 @@ std::string card_description(const Cards& cards, const Card* c)
 //------------------------------------------------------------------------------
 std::string CardStatus::description() const
 {
-    std::string desc;
+    std::string desc = "P" + to_string(m_player) + " ";
     switch(m_card->m_type)
     {
-    case CardType::commander: desc = "Commander "; break;
-    case CardType::assault: desc = "Assault " + to_string(m_index) + " "; break;
-    case CardType::structure: desc = "Structure " + to_string(m_index) + " "; break;
+    case CardType::commander: desc += "Commander "; break;
+    case CardType::assault: desc += "Assault " + to_string(m_index) + " "; break;
+    case CardType::structure: desc += "Structure " + to_string(m_index) + " "; break;
     case CardType::num_cardtypes: assert(false); break;
     }
     desc += "[" + m_card->m_name;
@@ -291,15 +291,16 @@ void resolve_skill(Field* fd)
         auto& status(std::get<0>(skill_instance));
         const auto& ss(std::get<1>(skill_instance));
         fd->skill_queue.pop_front();
-        if (!status->m_jammed)
+        if (status->m_jammed)
         {
-            signed evolved_offset = status->m_evolved_skill_offset[ss.id];
-            auto& evolved_s = status->m_evolved_skill_offset[ss.id] != 0 ? apply_evolve(ss, evolved_offset) : ss;
-            unsigned enhanced_value = status->enhanced(evolved_s.id);
-            auto& enhanced_s = enhanced_value > 0 ? apply_enhance(evolved_s, enhanced_value) : evolved_s;
-            auto& modified_s = enhanced_s;
-            skill_table[modified_s.id](fd, status, modified_s);
+            continue;
         }
+        signed evolved_offset = status->m_evolved_skill_offset[ss.id];
+        auto& evolved_s = status->m_evolved_skill_offset[ss.id] != 0 ? apply_evolve(ss, evolved_offset) : ss;
+        unsigned enhanced_value = status->enhanced(evolved_s.id);
+        auto& enhanced_s = enhanced_value > 0 ? apply_enhance(evolved_s, enhanced_value) : evolved_s;
+        auto& modified_s = enhanced_s;
+        skill_table[modified_s.id](fd, status, modified_s);
     }
 }
 //------------------------------------------------------------------------------
@@ -537,7 +538,7 @@ Results<uint64_t> play(Field* fd)
             {
                 if (attacked)
                 {
-                    unsigned v = std::min(current_status->m_corroded_rate, safe_minus(current_status->m_attack, current_status->m_corroded_weakened));
+                    unsigned v = std::min(current_status->m_corroded_rate, attack_power(current_status));
                     _DEBUG_MSG(1, "%s loses Attack by %u.\n", status_description(current_status).c_str(), v);
                     current_status->m_corroded_weakened += v;
                 }
@@ -1380,7 +1381,7 @@ inline void perform_skill<strike>(Field* fd, CardStatus* src, CardStatus* dst, c
 template<>
 inline void perform_skill<weaken>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
-    dst->m_weakened += s.x;
+    dst->m_weakened += std::min(s.x, attack_power(dst));
 }
 
 template<unsigned skill_id>
@@ -1601,28 +1602,6 @@ size_t select_targets<mortar>(Field* fd, CardStatus* src_status, const SkillSpec
 }
 
 template<Skill skill_id>
-void perform_targetted_hostile_fast(Field* fd, CardStatus* src_status, const SkillSpec& s)
-{
-    select_targets<skill_id>(fd, src_status, s);
-    bool has_counted_quest = false;
-    for (CardStatus * dst_status: fd->selection_array)
-    {
-        if (check_and_perform_skill<skill_id>(fd, src_status, dst_status, s, ! src_status->m_overloaded, has_counted_quest))
-        {
-            // Payback
-            if(dst_status->m_paybacked < dst_status->skill(payback) && skill_check<payback>(fd, dst_status, src_status) &&
-                    skill_predicate<skill_id>(fd, src_status, src_status, s) && skill_check<skill_id>(fd, src_status, dst_status))
-            {
-                ++ dst_status->m_paybacked;
-                _DEBUG_MSG(1, "%s Payback %s on %s\n", status_description(dst_status).c_str(), skill_short_description(s).c_str(), status_description(src_status).c_str());
-                perform_skill<skill_id>(fd, dst_status, src_status, s);
-            }
-        }
-    }
-    prepend_on_death(fd);
-}
-
-template<Skill skill_id>
 void perform_targetted_allied_fast(Field* fd, CardStatus* src_status, const SkillSpec& s)
 {
     select_targets<skill_id>(fd, src_status, s);
@@ -1637,6 +1616,73 @@ void perform_targetted_allied_fast(Field* fd, CardStatus* src_status, const Skil
         }
         check_and_perform_skill<skill_id>(fd, src_status, dst, s, false, has_counted_quest);
     }
+}
+
+template<Skill skill_id>
+void perform_targetted_hostile_fast(Field* fd, CardStatus* src_status, const SkillSpec& s)
+{
+    select_targets<skill_id>(fd, src_status, s);
+    bool has_counted_quest = false;
+    std::vector<CardStatus *> paybackers;
+    if (fd->bg_effects.count(turningtides) && skill_id == weaken)
+    {
+        unsigned turningtides_value = 0;
+        for (CardStatus * dst_status: fd->selection_array)
+        {
+            unsigned old_attack = attack_power(dst_status);
+            if (check_and_perform_skill<skill_id>(fd, src_status, dst_status, s, ! src_status->m_overloaded, has_counted_quest))
+            {
+                turningtides_value = std::max(turningtides_value, safe_minus(old_attack, attack_power(dst_status)));
+                // Payback
+                if(dst_status->m_paybacked < dst_status->skill(payback) && skill_check<payback>(fd, dst_status, src_status) &&
+                        skill_predicate<skill_id>(fd, src_status, src_status, s) && skill_check<skill_id>(fd, src_status, dst_status))
+                {
+                    paybackers.push_back(dst_status);
+                }
+            }
+        }
+        if (turningtides_value > 0)
+        {
+            SkillSpec ss_rally{rally, turningtides_value, allfactions, 0, 0, no_skill, no_skill, s.all,};
+            _DEBUG_MSG(1, "Turning Tides %u!\n", turningtides_value);
+            perform_targetted_allied_fast<rally>(fd, src_status, ss_rally);
+        }
+        for (CardStatus * pb_status: paybackers)
+        {
+            ++ pb_status->m_paybacked;
+            unsigned old_attack = attack_power(src_status);
+            _DEBUG_MSG(1, "%s Payback %s on %s\n", status_description(pb_status).c_str(), skill_short_description(s).c_str(), status_description(src_status).c_str());
+            perform_skill<skill_id>(fd, pb_status, src_status, s);
+            turningtides_value = std::max(turningtides_value, safe_minus(old_attack, attack_power(src_status)));
+            if (turningtides_value > 0)
+            {
+                SkillSpec ss_rally{rally, turningtides_value, allfactions, 0, 0, no_skill, no_skill, false,};
+                _DEBUG_MSG(1, "Paybacked Turning Tides %u!\n", turningtides_value);
+                perform_targetted_allied_fast<rally>(fd, pb_status, ss_rally);
+            }
+        }
+        prepend_on_death(fd);
+        return;
+    }
+    for (CardStatus * dst_status: fd->selection_array)
+    {
+        if (check_and_perform_skill<skill_id>(fd, src_status, dst_status, s, ! src_status->m_overloaded, has_counted_quest))
+        {
+            // Payback
+            if(dst_status->m_paybacked < dst_status->skill(payback) && skill_check<payback>(fd, dst_status, src_status) &&
+                    skill_predicate<skill_id>(fd, src_status, src_status, s) && skill_check<skill_id>(fd, src_status, dst_status))
+            {
+                paybackers.push_back(dst_status);
+            }
+        }
+    }
+    for (CardStatus * pb_status: paybackers)
+    {
+        ++ pb_status->m_paybacked;
+        _DEBUG_MSG(1, "%s Payback %s on %s\n", status_description(pb_status).c_str(), skill_short_description(s).c_str(), status_description(src_status).c_str());
+        perform_skill<skill_id>(fd, pb_status, src_status, s);
+    }
+    prepend_on_death(fd);
 }
 
 //------------------------------------------------------------------------------
