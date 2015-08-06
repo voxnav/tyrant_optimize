@@ -1344,7 +1344,15 @@ inline void perform_skill<mend>(Field* fd, CardStatus* src, CardStatus* dst, con
 template<>
 inline void perform_skill<mortar>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
-    remove_hp(fd, dst, dst->m_card->m_type == CardType::structure ? s.x : (s.x + 1) / 2);
+    if (dst->m_card->m_type == CardType::structure)
+    {
+        remove_hp(fd, dst, s.x);
+    }
+    else
+    {
+        unsigned strike_dmg = safe_minus((s.x + 1) / 2 + dst->m_enfeebled, src->m_overloaded ? 0 : dst->protected_value());
+        remove_hp(fd, dst, strike_dmg);
+    }
 }
 
 template<>
