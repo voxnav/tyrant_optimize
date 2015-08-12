@@ -1151,7 +1151,10 @@ void print_available_effects()
         "  Reaping X\n"
         "  Metamorphosis\n"
         "  Counterflux\n"
-        "  Fortification\n";
+        "  Fortification\n"
+        "  TurningTides\n"
+        "  EnduringRage\n"
+        ;
 }
 void usage(int argc, char** argv)
 {

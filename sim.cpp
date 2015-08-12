@@ -992,6 +992,14 @@ struct PerformAttack
                     {
                         fd->inc_counter(QuestType::skill_use, berserk);
                     }
+                    if (fd->bg_effects.count(enduringrage))
+                    {
+                        unsigned bge_denominator = fd->bg_effects.at(enduringrage) ? fd->bg_effects.at(enduringrage) : 2;
+                        unsigned bge_value = (berserk_value - 1) / bge_denominator + 1;
+                        _DEBUG_MSG(1, "EnduringRage: %s heals and protects itself for %u\n", status_description(att_status).c_str(), bge_value);
+                        add_hp(fd, att_status, bge_value);
+                        att_status->m_protected += bge_value;
+                    }
                 }
                 unsigned corrosive_value = def_status->skill(corrosive);
                 if (corrosive_value > att_status->m_corroded_rate && skill_check<corrosive>(fd, def_status, att_status))
