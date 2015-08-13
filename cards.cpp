@@ -66,7 +66,6 @@ void Cards::organize()
     player_commanders.clear();
     player_assaults.clear();
     player_structures.clear();
-    player_actions.clear();
     // Round 1: set cards_by_id
     for(Card* card: cards)
     {

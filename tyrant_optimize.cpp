@@ -817,7 +817,6 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
     // Non-commander cards
     auto non_commander_cards = proc.cards.player_assaults;
     non_commander_cards.insert(non_commander_cards.end(), proc.cards.player_structures.begin(), proc.cards.player_structures.end());
-    non_commander_cards.insert(non_commander_cards.end(), proc.cards.player_actions.begin(), proc.cards.player_actions.end());
     non_commander_cards.insert(non_commander_cards.end(), std::initializer_list<Card *>{NULL,});
     const Card* best_commander = d1->commander;
     std::vector<const Card*> best_cards = d1->cards;
@@ -977,7 +976,6 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
     // Non-commander cards
     auto non_commander_cards = proc.cards.player_assaults;
     non_commander_cards.insert(non_commander_cards.end(), proc.cards.player_structures.begin(), proc.cards.player_structures.end());
-    non_commander_cards.insert(non_commander_cards.end(), proc.cards.player_actions.begin(), proc.cards.player_actions.end());
     non_commander_cards.insert(non_commander_cards.end(), std::initializer_list<Card *>{NULL,});
     const Card* best_commander = d1->commander;
     std::vector<const Card*> best_cards = d1->cards;
