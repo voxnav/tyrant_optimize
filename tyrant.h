@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "2.10.4"
+#define TYRANT_OPTIMIZER_VERSION "2.10.5"
 
 #include <string>
 #include <sstream>
@@ -39,7 +39,7 @@ enum Skill
     armor, avenge, corrosive, counter, evade, payback, refresh, wall,
     END_DEFENSIVE,
     // Combat-Modifier:
-    flurry, pierce, valor,
+    flurry, pierce, swipe, valor,
     // Damage-Dependant:
     berserk, inhibit, leech, poison, venom,
     // Triggered:

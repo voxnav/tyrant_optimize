@@ -299,6 +299,7 @@ public:
 
     template <typename CardsIter, typename Functor>
     inline unsigned make_selection_array(CardsIter first, CardsIter last, Functor f);
+    inline const std::vector<CardStatus *> adjacent_assaults(const CardStatus * status);
     inline void print_selection_array();
 
     inline void inc_counter(QuestType::QuestType quest_type, unsigned quest_key, unsigned value = 1)

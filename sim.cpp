@@ -32,6 +32,28 @@ inline unsigned Field::make_selection_array(CardsIter first, CardsIter last, Fun
     }
     return(this->selection_array.size());
 }
+inline const std::vector<CardStatus *> Field::adjacent_assaults(const CardStatus * status)
+{
+    std::vector<CardStatus *> res;
+    auto & assaults = this->players[status->m_player]->assaults;
+    if (status->m_index > 0)
+    {
+        auto left_status = &assaults[status->m_index - 1];
+        if (left_status->m_hp > 0)
+        {
+            res.push_back(left_status);
+        }
+    }
+    if (status->m_index + 1 < assaults.size())
+    {
+        auto right_status = &assaults[status->m_index + 1];
+        if (right_status->m_hp > 0)
+        {
+            res.push_back(right_status);
+        }
+    }
+    return res;
+}
 inline void Field::print_selection_array()
 {
 #ifndef NDEBUG
@@ -243,29 +265,15 @@ void prepend_on_death(Field* fd)
         // avenge
         if (status->m_card->m_type == CardType::assault)
         {
-            auto & assaults = fd->players[status->m_player]->assaults;
-            if (status->m_index > 0)
+            for (auto && adj_status: fd->adjacent_assaults(status))
             {
-                auto left_status = &assaults[status->m_index - 1];
-                unsigned avenge_value = left_status->skill(avenge);
-                if (left_status->m_hp > 0 && avenge_value > 0)
+                unsigned avenge_value = adj_status->skill(avenge);
+                if (avenge_value > 0)
                 {
-                    _DEBUG_MSG(1, "%s activates Avenge %u\n", status_description(left_status).c_str(), avenge_value);
-                    left_status->m_attack += avenge_value;
-                    left_status->m_max_hp += avenge_value;
-                    left_status->m_hp += avenge_value;
-                }
-            }
-            if (status->m_index + 1 < assaults.size())
-            {
-                auto right_status = &assaults[status->m_index + 1];
-                unsigned avenge_value = right_status->skill(avenge);
-                if (right_status->m_hp > 0 && avenge_value > 0)
-                {
-                    _DEBUG_MSG(1, "%s activates Avenge %u\n", status_description(right_status).c_str(), avenge_value);
-                    right_status->m_attack += avenge_value;
-                    right_status->m_max_hp += avenge_value;
-                    right_status->m_hp += avenge_value;
+                    _DEBUG_MSG(1, "%s activates Avenge %u\n", status_description(adj_status).c_str(), avenge_value);
+                    adj_status->m_attack += avenge_value;
+                    adj_status->m_max_hp += avenge_value;
+                    adj_status->m_hp += avenge_value;
                 }
             }
         }
@@ -1064,22 +1072,9 @@ struct PerformAttack
         unsigned armor_value = def_status->skill(armor);
         if (def_status->m_card->m_type == CardType::assault && fd->bg_effects.count(fortification))
         {
-            auto & assaults = fd->players[def_status->m_player]->assaults;
-            if (def_status->m_index > 0)
+            for (auto && adj_status: fd->adjacent_assaults(def_status))
             {
-                auto left_status = &assaults[def_status->m_index - 1];
-                if (left_status->m_hp > 0)
-                {
-                    armor_value = std::max(armor_value, left_status->skill(armor));
-                }
-            }
-            if (def_status->m_index + 1 < assaults.size())
-            {
-                auto right_status = &assaults[def_status->m_index + 1];
-                if (right_status->m_hp > 0)
-                {
-                    armor_value = std::max(armor_value, right_status->skill(armor));
-                }
+                armor_value = std::max(armor_value, adj_status->skill(armor));
             }
         }
         if(armor_value > 0)
@@ -1163,7 +1158,7 @@ void PerformAttack::do_leech<CardType::assault>()
     }
 }
 
-// General attack phase by the currently evaluated assault, taking into accounts exotic stuff such as flurry,swipe,etc.
+// General attack phase by the currently evaluated assault, taking into accounts exotic stuff such as flurry, etc.
 unsigned attack_commander(Field* fd, CardStatus* att_status)
 {
     CardStatus* def_status{select_first_enemy_wall(fd)}; // defending wall
@@ -1189,7 +1184,18 @@ bool attack_phase(Field* fd)
     unsigned att_dmg = 0;
     if (alive_assault(def_assaults, fd->current_ci))
     {
-        att_dmg = PerformAttack{fd, att_status, &fd->tip->assaults[fd->current_ci]}.op<CardType::assault>();
+        CardStatus * def_status = &fd->tip->assaults[fd->current_ci];
+        att_dmg = PerformAttack{fd, att_status, def_status}.op<CardType::assault>();
+        unsigned swipe_value = att_status->skill(swipe);
+        if (swipe_value > 0)
+        {
+            for (auto && adj_status: fd->adjacent_assaults(def_status))
+            {
+                unsigned swipe_dmg = safe_minus(swipe_value + def_status->m_enfeebled, def_status->protected_value());
+                _DEBUG_MSG(1, "%s swipes %s for %u damage\n", status_description(att_status).c_str(), status_description(adj_status).c_str(), swipe_dmg);
+                remove_hp(fd, adj_status, swipe_dmg);
+            }
+        }
     }
     else
     {
@@ -1417,21 +1423,11 @@ template<>
 inline unsigned select_fast<mend>(Field* fd, CardStatus* src_status, const std::vector<CardStatus*>& cards, const SkillSpec& s)
 {
     fd->selection_array.clear();
-    auto & assaults = fd->players[src_status->m_player]->assaults;
-    if (src_status->m_index > 0)
+    for (auto && adj_status: fd->adjacent_assaults(src_status))
     {
-        auto left_status = &assaults[src_status->m_index - 1];
-        if (skill_predicate<mend>(fd, src_status, left_status, s))
+        if (skill_predicate<mend>(fd, src_status, adj_status, s))
         {
-            fd->selection_array.push_back(left_status);
-        }
-    }
-    if (src_status->m_index + 1 < assaults.size())
-    {
-        auto right_status = &assaults[src_status->m_index + 1];
-        if (skill_predicate<mend>(fd, src_status, right_status, s))
-        {
-            fd->selection_array.push_back(right_status);
+            fd->selection_array.push_back(adj_status);
         }
     }
     return fd->selection_array.size();
