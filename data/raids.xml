@@ -273,6 +273,27 @@
 		</deck>
 	</raid>
 
+	<raid>
+		<id>13</id>
+		<name>Pantheon Raid</name>
+		<commander>1883</commander>
+		<levels>26</levels>
+		<deck>
+			<always_include>
+				<card>32947</card>
+				<card>32947</card>
+				<card>32957</card>
+				<card>32957</card>
+				<card>32967</card>
+				<card>32967</card>
+				<card>32977</card>
+				<card>32977</card>
+				<card>32987</card>
+				<card>32987</card>
+			</always_include>
+		</deck>
+	</raid>
+
 <!-- END of Raids -->
 
 
