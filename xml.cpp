@@ -387,7 +387,15 @@ void read_raids(Decks& decks, const Cards& all_cards, const std::string & filena
         unsigned id(id_node ? atoi(id_node->value()) : 0);
         xml_node<>* name_node(raid_node->first_node("name"));
         std::string deck_name{name_node->value()};
-        read_deck(decks, all_cards, raid_node, DeckType::raid, id, deck_name);
+        try
+        {
+            read_deck(decks, all_cards, raid_node, DeckType::raid, id, deck_name);
+        }
+        catch (const std::runtime_error& e)
+        {
+            std::cerr << "Warning: Failed to parse raid [" << deck_name << "] in file " << filename << ": [" << e.what() << "]. Skip the raid.\n";
+            continue;
+        }
     }
 
     for(xml_node<>* campaign_node = root->first_node("campaign");
@@ -401,7 +409,15 @@ void read_raids(Decks& decks, const Cards& all_cards, const std::string & filena
             name_node;
             name_node = name_node->next_sibling("name"))
         {
-            read_deck(decks, all_cards, campaign_node, DeckType::campaign, id, name_node->value());
+            try
+            {
+                read_deck(decks, all_cards, campaign_node, DeckType::campaign, id, name_node->value());
+            }
+            catch (const std::runtime_error& e)
+            {
+                std::cerr << "Warning: Failed to parse campaign [" << name_node->value() << "] in file " << filename << ": [" << e.what() << "]. Skip the campaign.\n";
+                continue;
+            }
         }
     }
 }
