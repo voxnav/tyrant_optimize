@@ -188,11 +188,15 @@ void parse_card_spec(const Cards& all_cards, std::string& card_spec, unsigned& c
 //        }
         simple_name = simplify_name(abbr_it->second);
     }
-    auto card_it = all_cards.player_cards_by_name.find(simple_name);
+    auto card_it = all_cards.cards_by_name.find(simple_name);
     auto card_id_iter = advance_until(simple_name.begin(), simple_name.end(), [](char c){return(c=='[');});
-    if(card_it != all_cards.player_cards_by_name.end())
+    if (card_it != all_cards.cards_by_name.end())
     {
         card_id = card_it->second->m_id;
+        if (all_cards.ambiguous_names.count(simple_name))
+        {
+            std::cerr << "Warning: There are multiple cards named " << card_name << " in cards.xml. [" << card_id << "] is used.\n";
+        }
     }
     else if(card_id_iter != simple_name.end())
     {
@@ -319,7 +323,7 @@ unsigned read_card_abbrs(Cards& all_cards, const std::string& filename)
                 continue;
             }
             abbr_string_iter = advance_until(abbr_string_iter + 1, abbr_string.end(), [](const char& c){return(c != ' ');});
-            if(all_cards.player_cards_by_name.find(abbr_name) != all_cards.player_cards_by_name.end())
+            if(all_cards.cards_by_name.find(abbr_name) != all_cards.cards_by_name.end())
             {
                 std::cerr << "Warning in card abbreviation file " << filename << " at line " << num_line << ": ignored because the name has been used by an existing card." << std::endl;
             }

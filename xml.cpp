@@ -4,7 +4,6 @@
 #include <fstream>
 #include <iostream>
 #include <map>
-#include <set>
 #include <stdexcept>
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
@@ -210,7 +209,7 @@ void parse_card_node(Cards& all_cards, Card* card, xml_node<>* card_node)
         bool all(skill_node->first_attribute("all"));
         card->add_skill(skill_id, x, y, n, c, s, s2, all);
     }
-    all_cards.cards.push_back(card);
+    all_cards.all_cards.push_back(card);
     Card * top_card = card;
     for(xml_node<>* upgrade_node = card_node->first_node("upgrade");
             upgrade_node;
@@ -247,7 +246,18 @@ void load_cards_xml(Cards & all_cards, const std::string & filename, bool do_war
     {
         return;
     }
-    for(xml_node<>* card_node = root->first_node("unit");
+    for (xml_node<>* set_node = root->first_node("cardSet");
+            set_node;
+            set_node = set_node->next_sibling("cardSet"))
+    {
+        xml_node<>* id_node(set_node->first_node("id"));
+        xml_node<>* visible_node = set_node->first_node("visible");
+        if (id_node && visible_node && atoi(visible_node->value()))
+        {
+            all_cards.visible_cardset.insert(atoi(id_node->value()));
+        }
+    }
+    for (xml_node<>* card_node = root->first_node("unit");
         card_node;
         card_node = card_node->next_sibling("unit"))
     {
@@ -261,7 +271,9 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, DeckType
     xml_node<>* commander_node(node->first_node("commander"));
     const Card* card = all_cards.by_id(atoi(commander_node->value()));
     const Card* commander_card{card};
-    unsigned upgrade_opportunities = card->m_top_level_card->m_level - card->m_level;
+    xml_node<>* commander_max_level_node(node->first_node("commander_max_level"));
+    unsigned commander_max_level = commander_max_level_node ? atoi(commander_max_level_node->value()) : commander_card->m_top_level_card->m_level;
+    unsigned upgrade_opportunities = commander_max_level - card->m_level;
     std::vector<const Card*> always_cards;
     std::vector<std::pair<unsigned, std::vector<const Card*>>> some_cards;
     xml_node<>* deck_node(node->first_node("deck"));
@@ -302,19 +314,20 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, DeckType
         std::string deck_name = base_deck_name + "-" + to_string(level);
         decks.decks.push_back(Deck{all_cards, decktype, id, deck_name, (upgrade_opportunities + 1) * (level - 1) / (max_level - 1), upgrade_opportunities});
         Deck* deck = &decks.decks.back();
-        deck->set(commander_card, always_cards, some_cards, mission_req);
+        deck->set(commander_card, commander_max_level, always_cards, some_cards, mission_req);
         decks.by_name[deck_name] = deck;
         decks.by_name[decktype_names[decktype] + " #" + to_string(id) + "-" + to_string(level)] = deck;
     }
 
     decks.decks.push_back(Deck{all_cards, decktype, id, base_deck_name});
     Deck* deck = &decks.decks.back();
-    deck->set(commander_card, always_cards, some_cards, mission_req);
+    deck->set(commander_card, commander_max_level, always_cards, some_cards, mission_req);
 
     // upgrade cards for full-level missions/raids
     if (max_level > 1)
     {
-        deck->commander = deck->commander->m_top_level_card;
+        while (deck->commander->m_level < commander_max_level)
+        { deck->commander = deck->commander->upgraded(); }
         for (auto && card: deck->cards)
         { card = card->m_top_level_card; }
         for (auto && pool: deck->raid_cards)

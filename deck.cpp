@@ -252,6 +252,7 @@ void Deck::set(const std::vector<unsigned>& ids, const std::map<signed, char> &m
     {
         throw std::runtime_error("While constructing a deck: no commander found");
     }
+    commander_max_level = commander->m_top_level_card->m_level;
     deck_size = cards.size();
     card_marks = marks;
 }
@@ -378,7 +379,7 @@ std::string Deck::long_description() const
     ios << medium_description() << "\n";
     if (commander)
     {
-        show_upgrades(ios, commander, "");
+        show_upgrades(ios, commander, commander_max_level, "");
     }
     else
     {
@@ -386,14 +387,14 @@ std::string Deck::long_description() const
     }
     for(const Card* card: cards)
     {
-        show_upgrades(ios, card, "  ");
+        show_upgrades(ios, card, card->m_top_level_card->m_level, "  ");
     }
     for(auto& pool: raid_cards)
     {
         ios << pool.first << " of:\n";
         for(auto& card: pool.second)
         {
-            show_upgrades(ios, card, "  ");
+            show_upgrades(ios, card, card->m_top_level_card->m_level, "  ");
         }
     }
     for (const Card * fort: fort_cards)
@@ -403,26 +404,28 @@ std::string Deck::long_description() const
     return ios.str();
 }
 
-void Deck::show_upgrades(std::stringstream &ios, const Card* card, const char * leading_chars) const
+void Deck::show_upgrades(std::stringstream &ios, const Card* card, unsigned card_max_level, const char * leading_chars) const
 {
     ios << leading_chars << card_description(all_cards, card) << "\n";
-    if (upgrade_points == 0 || card == card->m_top_level_card)
+    if (upgrade_points == 0 || card->m_level == card_max_level)
     {
         return;
     }
     if (debug_print < 2 && decktype != DeckType::raid)
     {
-        ios << leading_chars << "-> " << card_description(all_cards, card->m_top_level_card) << "\n";
+        while (card->m_level != card_max_level)
+        { card = card->upgraded(); }
+        ios << leading_chars << "-> " << card_description(all_cards, card) << "\n";
         return;
     }
     // nCm * p^m / q^(n-m)
     double p = 1.0 * upgrade_points / upgrade_opportunities;
     double q = 1.0 - p;
-    unsigned n = card->m_top_level_card->m_level - card->m_level;
+    unsigned n = card_max_level - card->m_level;
     unsigned m = 0;
     double prob = 100.0 * pow(q, n);
     ios << leading_chars << std::fixed << std::setprecision(2) << std::setw(5) << prob << "% no up\n";
-    while (card != card->m_top_level_card)
+    while (card->m_level != card_max_level)
     {
         card = card->upgraded();
         ++m;
@@ -482,9 +485,9 @@ const Card* Deck::next()
     throw std::runtime_error("Unknown strategy for deck.");
 }
 
-const Card* Deck::upgrade_card(const Card* card, std::mt19937& re, unsigned &remaining_upgrade_points, unsigned &remaining_upgrade_opportunities)
+const Card* Deck::upgrade_card(const Card* card, unsigned card_max_level, std::mt19937& re, unsigned &remaining_upgrade_points, unsigned &remaining_upgrade_opportunities)
 {
-    unsigned oppos = card->m_top_level_card->m_level - card->m_level;
+    unsigned oppos = card_max_level - card->m_level;
     if (remaining_upgrade_points > 0)
     {
         for (; oppos > 0; -- oppos)
@@ -523,10 +526,10 @@ void Deck::shuffle(std::mt19937& re)
     {
         unsigned remaining_upgrade_points = upgrade_points;
         unsigned remaining_upgrade_opportunities = upgrade_opportunities;
-        shuffled_commander = upgrade_card(commander, re, remaining_upgrade_points, remaining_upgrade_opportunities);
+        shuffled_commander = upgrade_card(commander, commander_max_level, re, remaining_upgrade_points, remaining_upgrade_opportunities);
         for (auto && card: shuffled_cards)
         {
-            card = upgrade_card(card, re, remaining_upgrade_points, remaining_upgrade_opportunities);
+            card = upgrade_card(card, card->m_top_level_card->m_level, re, remaining_upgrade_points, remaining_upgrade_opportunities);
         }
     }
     if(strategy == DeckStrategy::ordered)

@@ -1,7 +1,6 @@
 #include "cards.h"
 
 #include <boost/tokenizer.hpp>
-#include <map>
 #include <sstream>
 #include <stdexcept>
 #include <cstring>
@@ -42,12 +41,12 @@ std::list<std::string> get_abbreviations(const std::string& name)
 //------------------------------------------------------------------------------
 Cards::~Cards()
 {
-    for(Card* c: cards) { delete(c); }
+    for (Card* c: all_cards) { delete(c); }
 }
 
 const Card* Cards::by_id(unsigned id) const
 {
-    std::map<unsigned, Card*>::const_iterator cardIter{cards_by_id.find(id)};
+    const auto cardIter = cards_by_id.find(id);
     if(cardIter == cards_by_id.end())
     {
         throw std::runtime_error("No card with id " + to_string(id));
@@ -62,17 +61,17 @@ void Cards::organize()
 {
     cards_by_id.clear();
     player_cards.clear();
-    player_cards_by_name.clear();
+    cards_by_name.clear();
     player_commanders.clear();
     player_assaults.clear();
     player_structures.clear();
     // Round 1: set cards_by_id
-    for(Card* card: cards)
+    for(Card* card: all_cards)
     {
         cards_by_id[card->m_id] = card;
     }
-    // Round 2: depend on cards_by_id / by_id(); update m_name, [TU] m_top_level_card etc.; set player_cards_by_name; 
-    for(Card* card: cards)
+    // Round 2: depend on cards_by_id / by_id(); update m_name, [TU] m_top_level_card etc.; set cards_by_name; 
+    for(Card* card: all_cards)
     {
         // Remove delimiters from card names
         size_t pos;
@@ -82,17 +81,56 @@ void Cards::organize()
         }
         // set m_top_level_card for non base cards
         card->m_top_level_card = by_id(card->m_base_id)->m_top_level_card;
-        // add a suffix of level to the name of cards; register as alias for the full-level cards (the formal name is without suffix)
+        // Cards available ("visible") to players have priority
+        std::string base_name = card->m_name;
         if (card == card->m_top_level_card)
         {
-            player_cards_by_name[simplify_name(card->m_name + "-" + to_string(card->m_level))] = card;
+            add_card(card, card->m_name + "-" + to_string(card->m_level));
         }
         else
         {
             card->m_name += "-" + to_string(card->m_level);
         }
-        // Card available to players
-        if(card->m_set != 0)
+        add_card(card, card->m_name);
+    }
+#if 0 // TODO refactor precedence
+    // Round 3: depend on cards_by_name; set abbreviations
+    for(Card* card: cards)
+    {
+        // generate abbreviations
+        if(card->m_set > 0)
+        {
+            for(auto&& abbr_name : get_abbreviations(card->m_name))
+            {
+                if(abbr_name.length() > 1 && cards_by_name.find(abbr_name) == cards_by_name.end())
+                {
+                    player_cards_abbr[abbr_name] = card->m_name;
+                }
+            }
+        }
+    }
+#endif
+}
+
+void Cards::add_card(Card * card, const std::string & name)
+{
+    std::string simple_name{simplify_name(name)};
+    auto card_itr = cards_by_name.find(simple_name);
+    signed old_visible = card_itr == cards_by_name.end() ? -1 : visible_cardset.count(card_itr->second->m_set);
+    signed new_visible = visible_cardset.count(card->m_set);
+    if (card_itr != cards_by_name.end())
+    {
+        if (old_visible == new_visible)
+        {
+            ambiguous_names.insert(simple_name);
+        }
+        _DEBUG_MSG(2, "Duplicated card name \"%s\" [%u] set=%u (visible=%u) : [%u] set=%u (visible=%u)\n", name.c_str(), card_itr->second->m_id, card_itr->second->m_set, old_visible, card->m_id, card->m_set, new_visible);
+    }
+    else if (old_visible < new_visible)
+    {
+        ambiguous_names.erase(simple_name);
+        cards_by_name[simple_name] = card;
+        if (new_visible)
         {
             player_cards.push_back(card);
             switch(card->m_type)
@@ -114,36 +152,8 @@ void Cards::organize()
                     break;
                 }
             }
-            std::string simple_name{simplify_name(card->m_name)};
-            auto card_itr = player_cards_by_name.find(simple_name);
-            if (card_itr == player_cards_by_name.end())
-            {
-                player_cards_by_name[simple_name] = card;
-            }
-            else
-            {
-                // TODO check set visible
-//                std::cerr << "Duplicated card name [" << card->m_name << "] " << card_itr->second->m_set << ":" << card->m_set << "\n"; // XXX
-            }
         }
     }
-#if 0 // TODO refactor precedence
-    // Round 3: depend on player_cards_by_name; set abbreviations
-    for(Card* card: cards)
-    {
-        // generate abbreviations
-        if(card->m_set > 0)
-        {
-            for(auto&& abbr_name : get_abbreviations(card->m_name))
-            {
-                if(abbr_name.length() > 1 && player_cards_by_name.find(abbr_name) == player_cards_by_name.end())
-                {
-                    player_cards_abbr[abbr_name] = card->m_name;
-                }
-            }
-        }
-    }
-#endif
 }
 
 // class Card

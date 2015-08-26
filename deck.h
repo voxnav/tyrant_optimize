@@ -51,6 +51,7 @@ public:
     DeckStrategy::DeckStrategy strategy;
 
     const Card* commander;
+    unsigned commander_max_level;
     std::vector<const Card*> cards;
     std::map<signed, char> card_marks;  // <positions of card, prefix mark>: -1 indicating the commander. E.g, used as a mark to be kept in attacking deck when optimizing.
 
@@ -94,11 +95,13 @@ public:
 
     void set(
         const Card* commander_,
+        unsigned commander_max_level_,
         const std::vector<const Card*>& cards_,
         std::vector<std::pair<unsigned, std::vector<const Card*>>> raid_cards_ = {},
         unsigned mission_req_ = 0)
     {
         commander = commander_;
+        commander_max_level = commander_max_level_;
         cards = std::vector<const Card*>(std::begin(cards_), std::end(cards_));
         raid_cards = std::vector<std::pair<unsigned, std::vector<const Card*>>>(raid_cards_);
         deck_size = cards.size();
@@ -127,9 +130,9 @@ public:
     std::string short_description() const;
     std::string medium_description() const;
     std::string long_description() const;
-    void show_upgrades(std::stringstream &ios, const Card* card, const char * leading_chars) const;
+    void show_upgrades(std::stringstream &ios, const Card* card, unsigned card_max_level, const char * leading_chars) const;
     const Card* next();
-    const Card* upgrade_card(const Card* card, std::mt19937& re, unsigned &remaining_upgrade_points, unsigned &remaining_upgrade_opportunities);
+    const Card* upgrade_card(const Card* card, unsigned card_max_level, std::mt19937& re, unsigned &remaining_upgrade_points, unsigned &remaining_upgrade_opportunities);
     void shuffle(std::mt19937& re);
     void place_at_bottom(const Card* card);
 };

@@ -817,7 +817,7 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
     // Non-commander cards
     auto non_commander_cards = proc.cards.player_assaults;
     non_commander_cards.insert(non_commander_cards.end(), proc.cards.player_structures.begin(), proc.cards.player_structures.end());
-    non_commander_cards.insert(non_commander_cards.end(), std::initializer_list<Card *>{NULL,});
+    non_commander_cards.insert(non_commander_cards.end(), std::initializer_list<Card*>{NULL,});
     const Card* best_commander = d1->commander;
     std::vector<const Card*> best_cards = d1->cards;
     unsigned deck_cost = get_deck_cost(d1);
@@ -976,7 +976,7 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
     // Non-commander cards
     auto non_commander_cards = proc.cards.player_assaults;
     non_commander_cards.insert(non_commander_cards.end(), proc.cards.player_structures.begin(), proc.cards.player_structures.end());
-    non_commander_cards.insert(non_commander_cards.end(), std::initializer_list<Card *>{NULL,});
+    non_commander_cards.insert(non_commander_cards.end(), std::initializer_list<Card*>{NULL,});
     const Card* best_commander = d1->commander;
     std::vector<const Card*> best_cards = d1->cards;
     unsigned deck_cost = get_deck_cost(d1);
@@ -1722,8 +1722,8 @@ int main(int argc, char** argv)
             }
             else if (type_str == "cs")
             {
-                auto card_it = all_cards.player_cards_by_name.find(simplify_name(key_str));
-                if (card_it != all_cards.player_cards_by_name.end())
+                auto card_it = all_cards.cards_by_name.find(simplify_name(key_str));
+                if (card_it != all_cards.cards_by_name.end())
                 {
                     quest.quest_type = QuestType::card_survival;
                     quest.quest_key = card_it->second->m_id;

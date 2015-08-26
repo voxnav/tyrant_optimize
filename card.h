@@ -1,9 +1,9 @@
 #ifndef CARD_H_INCLUDED
 #define CARD_H_INCLUDED
 
+#include <cstring>
 #include <string>
 #include <vector>
-#include <cstring>
 #include "tyrant.h"
 
 class Card
