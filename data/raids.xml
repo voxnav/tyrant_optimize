@@ -1370,27 +1370,27 @@
 		</deck>
 	</campaign>
 
-    <campaign>
-        <id>411</id>
-        <name>Deid101</name>
-        <name>Deidon Normal 1</name>
-        <commander>1022</commander>
-        <levels>1</levels>
-        <deck>
-            <always_include>
-                <card>4472</card>
-                <card>4472</card>
-                <card>6648</card>
-                <card>6648</card>
-                <card>12822</card>
-                <card>16054</card>
-                <card>16746</card>
-                <card>16768</card>
-                <card>16774</card>
-                <card>16780</card>
-            </always_include>
-        </deck>
-    </campaign>
+	<campaign>
+		<id>411</id>
+		<name>Deid101</name>
+		<name>Deidon Normal 1</name>
+		<commander>1022</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4472</card>
+				<card>4472</card>
+				<card>6648</card>
+				<card>6648</card>
+				<card>12822</card>
+				<card>16054</card>
+				<card>16746</card>
+				<card>16768</card>
+				<card>16774</card>
+				<card>16780</card>
+			</always_include>
+		</deck>
+	</campaign>
 
 	<campaign>
 		<id>412</id>
@@ -1524,49 +1524,49 @@
 		</deck>
 	</campaign>
 
-    <campaign>
-        <id>421</id>
-        <name>Deid201</name>
-        <name>Deidon Heroic 1</name>
-        <commander>1049</commander>
-        <levels>1</levels>
-        <deck>
-            <always_include>
-                <card>6929</card>
-                <card>7914</card>
-                <card>7920</card>
-                <card>12825</card>
-                <card>14426</card>
-                <card>16051</card>
-                <card>16749</card>
-                <card>16770</card>
-                <card>16776</card>
-                <card>16782</card>
-            </always_include>
-        </deck>
-    </campaign>
+	<campaign>
+		<id>421</id>
+		<name>Deid201</name>
+		<name>Deidon Heroic 1</name>
+		<commander>1049</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>6929</card>
+				<card>7914</card>
+				<card>7920</card>
+				<card>12825</card>
+				<card>14426</card>
+				<card>16051</card>
+				<card>16749</card>
+				<card>16770</card>
+				<card>16776</card>
+				<card>16782</card>
+			</always_include>
+		</deck>
+	</campaign>
 
-    <campaign>
-        <id>422</id>
-        <name>Deid202</name>
-        <name>Deidon Heroic 2</name>
-        <commander>1049</commander>
-        <levels>1</levels>
-        <deck>
-            <always_include>
-                <card>6932</card>
-                <card>6932</card>
-                <card>7328</card>
-                <card>12813</card>
-                <card>13418</card>
-                <card>14425</card>
-                <card>16755</card>
-                <card>16770</card>
-                <card>16776</card>
-                <card>16782</card>
-            </always_include>
-        </deck>
-    </campaign>
+	<campaign>
+		<id>422</id>
+		<name>Deid202</name>
+		<name>Deidon Heroic 2</name>
+		<commander>1049</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>6932</card>
+				<card>6932</card>
+				<card>7328</card>
+				<card>12813</card>
+				<card>13418</card>
+				<card>14425</card>
+				<card>16755</card>
+				<card>16770</card>
+				<card>16776</card>
+				<card>16782</card>
+			</always_include>
+		</deck>
+	</campaign>
 
 	<campaign>
 		<id>423</id>
@@ -1590,93 +1590,93 @@
 		</deck>
 	</campaign>
 
-    <campaign>
-        <id>424</id>
-        <name>Deid204</name>
-        <name>Deidon Heroic 4</name>
-        <commander>1051</commander>
-        <levels>1</levels>
-        <deck>
-            <always_include>
-                <card>2572</card>
-                <card>11816</card>
-                <card>14023</card>
-                <card>14136</card>
-                <card>15703</card>
-                <card>16045</card>
-                <card>16045</card>
-                <card>16770</card>
-                <card>16776</card>
-                <card>16782</card>
-            </always_include>
-        </deck>
-    </campaign>
+	<campaign>
+		<id>424</id>
+		<name>Deid204</name>
+		<name>Deidon Heroic 4</name>
+		<commander>1051</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>2572</card>
+				<card>11816</card>
+				<card>14023</card>
+				<card>14136</card>
+				<card>15703</card>
+				<card>16045</card>
+				<card>16045</card>
+				<card>16770</card>
+				<card>16776</card>
+				<card>16782</card>
+			</always_include>
+		</deck>
+	</campaign>
 
-    <campaign>
-        <id>425</id>
-        <name>Deid205</name>
-        <name>Deidon Heroic 5</name>
-        <commander>1051</commander>
-        <levels>1</levels>
-        <deck>
-            <always_include>
-                <card>14635</card>
-                <card>15320</card>
-                <card>15329</card>
-                <card>15709</card>
-                <card>16194</card>
-                <card>16449</card>
-                <card>16770</card>
-                <card>16776</card>
-                <card>16782</card>
-                <card>16921</card>
-            </always_include>
-        </deck>
-    </campaign>
+	<campaign>
+		<id>425</id>
+		<name>Deid205</name>
+		<name>Deidon Heroic 5</name>
+		<commander>1051</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>14635</card>
+				<card>15320</card>
+				<card>15329</card>
+				<card>15709</card>
+				<card>16194</card>
+				<card>16449</card>
+				<card>16770</card>
+				<card>16776</card>
+				<card>16782</card>
+				<card>16921</card>
+			</always_include>
+		</deck>
+	</campaign>
 
-    <campaign>
-        <id>426</id>
-        <name>Deid206</name>
-        <name>Deidon Heroic 6</name>
-        <commander>1750</commander>
-        <levels>1</levels>
-        <deck>
-            <always_include>
-                <card>247</card>
-                <card>10213</card>
-                <card>12445</card>
-                <card>15709</card>
-                <card>16551</card>
-                <card>16770</card>
-                <card>16779</card>
-                <card>16779</card>
-                <card>16782</card>
-                <card>16959</card>
-            </always_include>
-        </deck>
-    </campaign>
+	<campaign>
+		<id>426</id>
+		<name>Deid206</name>
+		<name>Deidon Heroic 6</name>
+		<commander>1750</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>247</card>
+				<card>10213</card>
+				<card>12445</card>
+				<card>15709</card>
+				<card>16551</card>
+				<card>16770</card>
+				<card>16779</card>
+				<card>16779</card>
+				<card>16782</card>
+				<card>16959</card>
+			</always_include>
+		</deck>
+	</campaign>
 
-    <campaign>
-        <id>427</id>
-        <name>Deid207</name>
-        <name>Deidon Heroic 7</name>
-        <commander>1756</commander>
-        <levels>1</levels>
-        <deck>
-            <always_include>
-                <card>2578</card>
-                <card>10782</card>
-                <card>13823</card>
-                <card>14032</card>
-                <card>14136</card>
-                <card>15084</card>
-                <card>16770</card>
-                <card>16776</card>
-                <card>16782</card>
-                <card>16782</card>
-            </always_include>
-        </deck>
-    </campaign>
+	<campaign>
+		<id>427</id>
+		<name>Deid207</name>
+		<name>Deidon Heroic 7</name>
+		<commander>1756</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>2578</card>
+				<card>10782</card>
+				<card>13823</card>
+				<card>14032</card>
+				<card>14136</card>
+				<card>15084</card>
+				<card>16770</card>
+				<card>16776</card>
+				<card>16782</card>
+				<card>16782</card>
+			</always_include>
+		</deck>
+	</campaign>
 
 	<campaign>
 		<id>431</id>
@@ -1700,27 +1700,27 @@
 		</deck>
 	</campaign>
 
-    <campaign>
-        <id>432</id>
-        <name>Deid302</name>
-        <name>Deidon Mythic 2</name>
-        <commander>1051</commander>
-        <levels>1</levels>
-        <deck>
-            <always_include>
-                <card>7334</card>
-                <card>7922</card>
-                <card>11546</card>
-                <card>11546</card>
-                <card>12819</card>
-                <card>12957</card>
-                <card>12957</card>
-                <card>16773</card>
-                <card>16779</card>
-                <card>16785</card>
-            </always_include>
-        </deck>
-    </campaign>
+	<campaign>
+		<id>432</id>
+		<name>Deid302</name>
+		<name>Deidon Mythic 2</name>
+		<commander>1051</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7334</card>
+				<card>7922</card>
+				<card>11546</card>
+				<card>11546</card>
+				<card>12819</card>
+				<card>12957</card>
+				<card>12957</card>
+				<card>16773</card>
+				<card>16779</card>
+				<card>16785</card>
+			</always_include>
+		</deck>
+	</campaign>
 
 	<campaign>
 		<id>433</id>
@@ -1788,27 +1788,27 @@
 		</deck>
 	</campaign>
 
-    <campaign>
-        <id>436</id>
-        <name>Deid306</name>
-        <name>Deidon Mythic 6</name>
-        <commander>1753</commander>
-        <levels>1</levels>
-        <deck>
-            <always_include>
-                <card>10788</card>
-                <card>13679</card>
-                <card>14269</card>
-                <card>15547</card>
-                <card>15709</card>
-                <card>16773</card>
-                <card>16779</card>
-                <card>16779</card>
-                <card>16785</card>
-                <card>16929</card>
-            </always_include>
-        </deck>
-    </campaign>
+	<campaign>
+		<id>436</id>
+		<name>Deid306</name>
+		<name>Deidon Mythic 6</name>
+		<commander>1753</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>10788</card>
+				<card>13679</card>
+				<card>14269</card>
+				<card>15547</card>
+				<card>15709</card>
+				<card>16773</card>
+				<card>16779</card>
+				<card>16779</card>
+				<card>16785</card>
+				<card>16929</card>
+			</always_include>
+		</deck>
+	</campaign>
 
 	<campaign>
 		<id>437</id>
@@ -2880,6 +2880,467 @@
 				<card>31430</card>
 				<card>31430</card>
 				<card>31670</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>711</id>
+		<name>Gate101</name>
+		<name>Gateway Normal 1</name>
+		<commander>1259</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4439</card>
+				<card>4439</card>
+				<card>4456</card>
+				<card>4456</card>
+				<card>6801</card>
+				<card>16692</card>
+				<card>16878</card>
+				<card>32299</card>
+				<card>32305</card>
+				<card>32311</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>712</id>
+		<name>Gate102</name>
+		<name>Gateway Normal 2</name>
+		<commander>1007</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4444</card>
+				<card>4444</card>
+				<card>4460</card>
+				<card>4460</card>
+				<card>8832</card>
+				<card>13580</card>
+				<card>32299</card>
+				<card>32305</card>
+				<card>32311</card>
+				<card>32823</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>713</id>
+		<name>Gate103</name>
+		<name>Gateway Normal 3</name>
+		<commander>1865</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>8835</card>
+				<card>13580</card>
+				<card>16620</card>
+				<card>16881</card>
+				<card>31343</card>
+				<card>32301</card>
+				<card>32301</card>
+				<card>32305</card>
+				<card>32311</card>
+				<card>32623</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>714</id>
+		<name>Gate104</name>
+		<name>Gateway Normal 4</name>
+		<commander>1011</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4439</card>
+				<card>4439</card>
+				<card>4456</card>
+				<card>30414</card>
+				<card>31601</card>
+				<card>31926</card>
+				<card>32299</card>
+				<card>32305</card>
+				<card>32311</card>
+				<card>32460</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>715</id>
+		<name>Gate105</name>
+		<name>Gateway Normal 5</name>
+		<commander>1015</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4444</card>
+				<card>4460</card>
+				<card>31277</card>
+				<card>31601</card>
+				<card>31926</card>
+				<card>32299</card>
+				<card>32305</card>
+				<card>32311</card>
+				<card>32460</card>
+				<card>32586</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>716</id>
+		<name>Gate106</name>
+		<name>Gateway Normal 6</name>
+		<commander>1871</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>31280</card>
+				<card>31310</card>
+				<card>31403</card>
+				<card>31745</card>
+				<card>32160</card>
+				<card>32299</card>
+				<card>32307</card>
+				<card>32307</card>
+				<card>32311</card>
+				<card>32586</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>717</id>
+		<name>Gate107</name>
+		<name>Gateway Normal 7</name>
+		<commander>1877</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>15869</card>
+				<card>30561</card>
+				<card>31310</card>
+				<card>31640</card>
+				<card>32163</card>
+				<card>32299</card>
+				<card>32305</card>
+				<card>32311</card>
+				<card>32311</card>
+				<card>32568</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>721</id>
+		<name>Gate201</name>
+		<name>Gateway Heroic 1</name>
+		<commander>1501</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>6813</card>
+				<card>6813</card>
+				<card>7799</card>
+				<card>14804</card>
+				<card>16704</card>
+				<card>16890</card>
+				<card>16890</card>
+				<card>32301</card>
+				<card>32307</card>
+				<card>32313</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>722</id>
+		<name>Gate202</name>
+		<name>Gateway Heroic 2</name>
+		<commander>1189</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>8844</card>
+				<card>13586</card>
+				<card>14809</card>
+				<card>31352</card>
+				<card>32301</card>
+				<card>32313</card>
+				<card>32631</card>
+				<card>32832</card>
+			</always_include>
+			<card_pool amount="1">
+				<card>7799</card>
+				<card>32307</card>
+			</card_pool>
+			<card_pool amount="1">
+				<card>7802</card>
+				<card>32310</card>
+			</card_pool>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>723</id>
+		<name>Gate203</name>
+		<name>Gateway Heroic 3</name>
+		<commander>1867</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>13583</card>
+				<card>13583</card>
+				<card>16626</card>
+				<card>16893</card>
+				<card>31704</card>
+				<card>32304</card>
+				<card>32304</card>
+				<card>32307</card>
+				<card>32313</card>
+				<card>32628</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>724</id>
+		<name>Gate204</name>
+		<name>Gateway Heroic 4</name>
+		<commander>1196</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>14154</card>
+				<card>30420</card>
+				<card>31364</card>
+				<card>31604</card>
+				<card>31604</card>
+				<card>31932</card>
+				<card>32301</card>
+				<card>32307</card>
+				<card>32313</card>
+				<card>32466</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>725</id>
+		<name>Gate205</name>
+		<name>Gateway Heroic 5</name>
+		<commander>1484</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>14157</card>
+				<card>30423</card>
+				<card>30531</card>
+				<card>31226</card>
+				<card>31286</card>
+				<card>31364</card>
+				<card>32301</card>
+				<card>32307</card>
+				<card>32313</card>
+				<card>32589</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>726</id>
+		<name>Gate206</name>
+		<name>Gateway Heroic 6</name>
+		<commander>1873</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>31313</card>
+				<card>31409</card>
+				<card>31436</card>
+				<card>31745</card>
+				<card>32166</card>
+				<card>32301</card>
+				<card>32310</card>
+				<card>32310</card>
+				<card>32313</card>
+				<card>32589</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>727</id>
+		<name>Gate207</name>
+		<name>Gateway Heroic 7</name>
+		<commander>1879</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>15874</card>
+				<card>30564</card>
+				<card>31319</card>
+				<card>31646</card>
+				<card>32163</card>
+				<card>32301</card>
+				<card>32307</card>
+				<card>32313</card>
+				<card>32313</card>
+				<card>32571</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>731</id>
+		<name>Gate301</name>
+		<commander>1503</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>6816</card>
+				<card>12215</card>
+				<card>16893</card>
+				<card>16893</card>
+				<card>31896</card>
+				<card>32304</card>
+				<card>32310</card>
+				<card>32316</card>
+				<card>32640</card>
+				<card>32640</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>732</id>
+		<name>Gate302</name>
+		<commander>1191</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>8847</card>
+				<card>13589</card>
+				<card>31358</card>
+				<card>31358</card>
+				<card>31712</card>
+				<card>31896</card>
+				<card>32304</card>
+				<card>32310</card>
+				<card>32316</card>
+				<card>32838</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>733</id>
+		<name>Gate303</name>
+		<commander>1870</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>13589</card>
+				<card>13589</card>
+				<card>16893</card>
+				<card>31718</card>
+				<card>32304</card>
+				<card>32304</card>
+				<card>32310</card>
+				<card>32316</card>
+				<card>32634</card>
+				<card>32634</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>734</id>
+		<name>Gate304</name>
+		<commander>1198</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>14166</card>
+				<card>31376</card>
+				<card>31610</card>
+				<card>31610</card>
+				<card>31938</card>
+				<card>31938</card>
+				<card>32304</card>
+				<card>32310</card>
+				<card>32316</card>
+				<card>32472</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>735</id>
+		<name>Gate305</name>
+		<commander>1486</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>14166</card>
+				<card>14166</card>
+				<card>30333</card>
+				<card>30429</card>
+				<card>31232</card>
+				<card>31286</card>
+				<card>32304</card>
+				<card>32310</card>
+				<card>32316</card>
+				<card>32598</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>736</id>
+		<name>Gate306</name>
+		<commander>1876</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>30333</card>
+				<card>31412</card>
+				<card>31448</card>
+				<card>31754</card>
+				<card>32304</card>
+				<card>32310</card>
+				<card>32310</card>
+				<card>32316</card>
+				<card>32598</card>
+				<card>32801</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>737</id>
+		<name>Gate307</name>
+		<commander>1882</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>15775</card>
+				<card>30573</card>
+				<card>30793</card>
+				<card>31992</card>
+				<card>32304</card>
+				<card>32310</card>
+				<card>32316</card>
+				<card>32316</card>
+				<card>32580</card>
+				<card>32801</card>
 			</always_include>
 		</deck>
 	</campaign>
