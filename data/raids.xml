@@ -3201,6 +3201,7 @@
 	<campaign>
 		<id>731</id>
 		<name>Gate301</name>
+		<name>Gateway Mythic 1</name>
 		<commander>1503</commander>
 		<levels>1</levels>
 		<deck>
@@ -3222,6 +3223,7 @@
 	<campaign>
 		<id>732</id>
 		<name>Gate302</name>
+		<name>Gateway Mythic 2</name>
 		<commander>1191</commander>
 		<levels>1</levels>
 		<deck>
@@ -3243,6 +3245,7 @@
 	<campaign>
 		<id>733</id>
 		<name>Gate303</name>
+		<name>Gateway Mythic 3</name>
 		<commander>1870</commander>
 		<levels>1</levels>
 		<deck>
@@ -3264,6 +3267,7 @@
 	<campaign>
 		<id>734</id>
 		<name>Gate304</name>
+		<name>Gateway Mythic 4</name>
 		<commander>1198</commander>
 		<levels>1</levels>
 		<deck>
@@ -3285,6 +3289,7 @@
 	<campaign>
 		<id>735</id>
 		<name>Gate305</name>
+		<name>Gateway Mythic 5</name>
 		<commander>1486</commander>
 		<levels>1</levels>
 		<deck>
@@ -3306,6 +3311,7 @@
 	<campaign>
 		<id>736</id>
 		<name>Gate306</name>
+		<name>Gateway Mythic 6</name>
 		<commander>1876</commander>
 		<levels>1</levels>
 		<deck>
@@ -3327,6 +3333,7 @@
 	<campaign>
 		<id>737</id>
 		<name>Gate307</name>
+		<name>Gateway Mythic 7</name>
 		<commander>1882</commander>
 		<levels>1</levels>
 		<deck>
