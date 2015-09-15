@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "2.10.7"
+#define TYRANT_OPTIMIZER_VERSION "2.10.8"
 
 #include <string>
 #include <sstream>
@@ -46,7 +46,7 @@ enum Skill
     legion,
     // Pseudo-Skill for BGE:
     BEGIN_BGE_SKILL,
-    bloodlust, reaping, metamorphosis, counterflux, fortification, turningtides, enduringrage,
+    bloodlust, counterflux, divert, enduringrage, fortification, metamorphosis, reaping, turningtides,
     END_BGE_SKILL,
     num_skills
 };

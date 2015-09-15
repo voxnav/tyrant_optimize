@@ -1146,12 +1146,13 @@ void print_available_effects()
 {
     std::cout << "Available effects besides activation skills:\n"
         "  Bloodlust X\n"
-        "  Reaping X\n"
-        "  Metamorphosis\n"
         "  Counterflux\n"
-        "  Fortification\n"
-        "  TurningTides\n"
+        "  Divert\n"
         "  EnduringRage\n"
+        "  Fortification\n"
+        "  Metamorphosis\n"
+        "  Reaping X\n"
+        "  TurningTides\n"
         ;
 }
 void usage(int argc, char** argv)
@@ -1722,14 +1723,19 @@ int main(int argc, char** argv)
             }
             else if (type_str == "cs")
             {
-                auto card_it = all_cards.cards_by_name.find(simplify_name(key_str));
-                if (card_it != all_cards.cards_by_name.end())
+                unsigned card_id;
+                unsigned card_num;
+                char num_sign;
+                char mark;
+                try
                 {
+                    parse_card_spec(all_cards, key_str, card_id, card_num, num_sign, mark);
                     quest.quest_type = QuestType::card_survival;
-                    quest.quest_key = card_it->second->m_id;
+                    quest.quest_key = card_id;
                 }
-                else {
-                    std::cerr << "Error: Expect card in quest \"" << opt_quest << "\".\n";
+                catch (const std::runtime_error& e)
+                {
+                    std::cerr << "Error: Expect a card in quest \"" << opt_quest << "\".\n";
                     return 0;
                 }
             }

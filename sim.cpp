@@ -1614,16 +1614,40 @@ template<Skill skill_id>
 void perform_targetted_allied_fast(Field* fd, CardStatus* src_status, const SkillSpec& s)
 {
     select_targets<skill_id>(fd, src_status, s);
+    unsigned num_inhibited = 0;
     bool has_counted_quest = false;
     for (CardStatus * dst: fd->selection_array)
     {
-        if(dst->m_inhibited > 0 && !src_status->m_overloaded)
+        if (dst->m_inhibited > 0 && !src_status->m_overloaded)
         {
             _DEBUG_MSG(1, "%s %s on %s but it is inhibited\n", status_description(src_status).c_str(), skill_short_description(s).c_str(), status_description(dst).c_str());
             -- dst->m_inhibited;
+            ++ num_inhibited;
             continue;
         }
         check_and_perform_skill<skill_id>(fd, src_status, dst, s, false, has_counted_quest);
+    }
+    if (num_inhibited > 0 && fd->bg_effects.count(divert))
+    {
+        SkillSpec diverted_ss = s;
+        diverted_ss.y = allfactions;
+        diverted_ss.n = 1;
+        diverted_ss.all = false;
+        for (auto i = 0; i < num_inhibited; ++ i)
+        {
+            select_targets<skill_id>(fd, &fd->tip->commander, diverted_ss);
+            for (CardStatus * dst: fd->selection_array)
+            {
+                if (dst->m_inhibited > 0)
+                {
+                    _DEBUG_MSG(1, "%s %s (Diverted) on %s but it is inhibited\n", status_description(src_status).c_str(), skill_short_description(diverted_ss).c_str(), status_description(dst).c_str());
+                    -- dst->m_inhibited;
+                    continue;
+                }
+                _DEBUG_MSG(1, "%s %s (Diverted) on %s\n", status_description(src_status).c_str(), skill_short_description(diverted_ss).c_str(), status_description(dst).c_str());
+                perform_skill<skill_id>(fd, src_status, dst, diverted_ss);
+            }
+        }
     }
 }
 
@@ -1653,7 +1677,7 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src_status, const Ski
         if (turningtides_value > 0)
         {
             SkillSpec ss_rally{rally, turningtides_value, allfactions, 0, 0, no_skill, no_skill, s.all,};
-            _DEBUG_MSG(1, "Turning Tides %u!\n", turningtides_value);
+            _DEBUG_MSG(1, "TurningTides %u!\n", turningtides_value);
             perform_targetted_allied_fast<rally>(fd, src_status, ss_rally);
         }
         for (CardStatus * pb_status: paybackers)
@@ -1666,7 +1690,7 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src_status, const Ski
             if (turningtides_value > 0)
             {
                 SkillSpec ss_rally{rally, turningtides_value, allfactions, 0, 0, no_skill, no_skill, false,};
-                _DEBUG_MSG(1, "Paybacked Turning Tides %u!\n", turningtides_value);
+                _DEBUG_MSG(1, "Paybacked TurningTides %u!\n", turningtides_value);
                 perform_targetted_allied_fast<rally>(fd, pb_status, ss_rally);
             }
         }
