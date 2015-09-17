@@ -1562,12 +1562,16 @@ int main(int argc, char** argv)
                     bg_skill.n = boost::lexical_cast<unsigned>(tokens[skill_index]);
                     skill_index += 1;
                 }
-                if (skill_index < tokens.size())
+                if (skill_index < tokens.size() && bg_skill.id == evolve)
                 {
                     bg_skill.s = skill_name_to_id(tokens[skill_index]);
                     if (bg_skill.s != no_skill)
                     {
                         skill_index += 1;
+                        if (skill_index < tokens.size() && boost::to_lower_copy(tokens[skill_index]) == "to")
+                        {
+                            skill_index += 1;
+                        }
                         if (skill_index < tokens.size())
                         {
                             bg_skill.s2 = skill_name_to_id(tokens[skill_index]);
