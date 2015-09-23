@@ -1047,8 +1047,14 @@ struct PerformAttack
                 }
             }
         }
+        unsigned rupture_value = att_status->skill(rupture);
+        if (rupture_value > 0)
+        {
+            if (debug_print > 0) { desc += "+" + to_string(rupture_value) + "(rupture)"; }
+            att_dmg += rupture_value;
+        }
         unsigned venom_value = att_status->skill(venom);
-        if (venom_value && def_status->m_poisoned > 0)
+        if (venom_value > 0 && def_status->m_poisoned > 0)
         {
             if (debug_print > 0) { desc += "+" + to_string(venom_value) + "(venom)"; }
             att_dmg += venom_value;
@@ -1084,10 +1090,11 @@ struct PerformAttack
             if(debug_print > 0) { reduced_desc += (reduced_desc.empty() ? "" : "+") + to_string(def_status->protected_value()) + "(protected)"; }
             reduced_dmg += def_status->protected_value();
         }
-        if(reduced_dmg > 0 && att_status->skill(pierce) > 0)
+        unsigned pierce_value = att_status->skill(pierce) + att_status->skill(rupture);
+        if (reduced_dmg > 0 && pierce_value > 0)
         {
-            if(debug_print > 0) { reduced_desc += "-" + to_string(att_status->skill(pierce)) + "(pierce)"; }
-            reduced_dmg = safe_minus(reduced_dmg, att_status->skill(pierce));
+            if (debug_print > 0) { reduced_desc += "-" + to_string(pierce_value) + "(pierce)"; }
+            reduced_dmg = safe_minus(reduced_dmg, pierce_value);
         }
         att_dmg = safe_minus(att_dmg, reduced_dmg);
         if(debug_print > 0)
