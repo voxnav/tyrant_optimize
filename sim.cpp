@@ -1640,7 +1640,7 @@ void perform_targetted_allied_fast(Field* fd, CardStatus* src_status, const Skil
         diverted_ss.y = allfactions;
         diverted_ss.n = 1;
         diverted_ss.all = false;
-        for (auto i = 0; i < num_inhibited; ++ i)
+        for (unsigned i = 0; i < num_inhibited; ++ i)
         {
             select_targets<skill_id>(fd, &fd->tip->commander, diverted_ss);
             for (CardStatus * dst: fd->selection_array)
