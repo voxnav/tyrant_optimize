@@ -294,6 +294,27 @@
 		</deck>
 	</raid>
 
+	<raid>
+		<id>14</id>
+		<name>Prometheus Raid</name>
+		<commander>1912</commander>
+		<levels>26</levels>
+		<deck>
+			<always_include>
+				<card>33813</card>
+				<card>33813</card>
+				<card>33823</card>
+				<card>33823</card>
+				<card>33833</card>
+				<card>33833</card>
+				<card>33843</card>
+				<card>33843</card>
+				<card>33853</card>
+				<card>33853</card>
+			</always_include>
+		</deck>
+	</raid>
+
 <!-- END of Raids -->
 
 
