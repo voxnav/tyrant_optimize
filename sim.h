@@ -200,6 +200,7 @@ struct Quest
 {
     QuestType::QuestType quest_type;
     unsigned quest_key;
+    unsigned quest_2nd_key;
     unsigned quest_value;
     unsigned quest_score; // score for quest goal
     unsigned win_score;   // score for win regardless quest goal
@@ -302,9 +303,9 @@ public:
     inline const std::vector<CardStatus *> adjacent_assaults(const CardStatus * status);
     inline void print_selection_array();
 
-    inline void inc_counter(QuestType::QuestType quest_type, unsigned quest_key, unsigned value = 1)
+    inline void inc_counter(QuestType::QuestType quest_type, unsigned quest_key, unsigned quest_2nd_key = 0, unsigned value = 1)
     {
-        if (quest.quest_type == quest_type && quest.quest_key == quest_key)
+        if (quest.quest_type == quest_type && quest.quest_key == quest_key && (quest.quest_2nd_key == 0 || quest.quest_2nd_key == quest_2nd_key))
         {
             quest_counter += value;
         }

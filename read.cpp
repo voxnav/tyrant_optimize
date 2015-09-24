@@ -161,7 +161,7 @@ DeckList parse_deck_list(std::string list_string, const Decks& decks)
     return res;
 }
 
-void parse_card_spec(const Cards& all_cards, std::string& card_spec, unsigned& card_id, unsigned& card_num, char& num_sign, char& mark)
+void parse_card_spec(const Cards& all_cards, const std::string& card_spec, unsigned& card_id, unsigned& card_num, char& num_sign, char& mark)
 {
 //    static std::set<std::string> recognized_abbr;
     auto card_spec_iter = card_spec.begin();

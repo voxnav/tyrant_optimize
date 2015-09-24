@@ -679,6 +679,7 @@ void print_score_info(const EvaluatedResults& results, std::vector<long double>&
             case OptimizationMode::campaign:
             case OptimizationMode::brawl:
             case OptimizationMode::war:
+            case OptimizationMode::quest:
                 std::cout << val.points << " ";
                 break;
             default:
@@ -1684,6 +1685,7 @@ int main(int argc, char** argv)
             auto type_str = boost::to_lower_copy(tokens[0]);
             quest.quest_value = boost::lexical_cast<unsigned>(tokens[1]);
             auto key_str = boost::to_lower_copy(tokens[2]);
+            unsigned quest_index = 3;
             if (type_str == "su" || type_str == "sd")
             {
                 Skill skill_id = skill_name_to_id(key_str);
@@ -1743,12 +1745,38 @@ int main(int argc, char** argv)
                     return 0;
                 }
             }
+            else if (type_str == "suoc" && tokens.size() >= 4)
+            {
+                Skill skill_id = skill_name_to_id(key_str);
+                if (skill_id == no_skill)
+                {
+                    std::cerr << "Error: Expect skill in quest \"" << opt_quest << "\".\n";
+                    return 0;
+                }
+                unsigned card_id;
+                unsigned card_num;
+                char num_sign;
+                char mark;
+                try
+                {
+                    parse_card_spec(all_cards, boost::to_lower_copy(tokens[3]), card_id, card_num, num_sign, mark);
+                    quest_index += 1;
+                    quest.quest_type = QuestType::skill_use;
+                    quest.quest_key = skill_id;
+                    quest.quest_2nd_key = card_id;
+                }
+                catch (const std::runtime_error& e)
+                {
+                    std::cerr << "Error: Expect a card in quest \"" << opt_quest << "\".\n";
+                    return 0;
+                }
+            }
             else
             {
                 throw std::runtime_error("Expect one of: su n skill; sd n skill; cu n faction/strcture; ck n structure");
             }
             quest.quest_score = quest.quest_value;
-            for (unsigned i = 3; i < tokens.size(); ++ i)
+            for (unsigned i = quest_index; i < tokens.size(); ++ i)
             {
                 const auto & token = tokens[i];
                 if (token == "each")

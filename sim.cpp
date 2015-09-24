@@ -871,7 +871,7 @@ void turn_end_phase(Field* fd)
                 {
                     if (status.m_player == 1)
                     {
-                        fd->inc_counter(QuestType::skill_damage, poison, poison_dmg);
+                        fd->inc_counter(QuestType::skill_damage, poison, 0, poison_dmg);
                     }
                     _DEBUG_MSG(1, "%s takes poison damage %u\n", status_description(&status).c_str(), poison_dmg);
                     remove_hp(fd, &status, poison_dmg);
@@ -976,7 +976,7 @@ struct PerformAttack
                 if (def_status->m_player == 0)
                 {
                     fd->inc_counter(QuestType::skill_use, counter);
-                    fd->inc_counter(QuestType::skill_damage, counter, counter_dmg);
+                    fd->inc_counter(QuestType::skill_damage, counter, 0, counter_dmg);
                 }
                 _DEBUG_MSG(1, "%s takes %u counter damage from %s\n", status_description(att_status).c_str(), counter_dmg, status_description(def_status).c_str());
                 remove_hp(fd, att_status, counter_dmg);
@@ -1507,7 +1507,7 @@ bool check_and_perform_skill(Field* fd, CardStatus* src_status, CardStatus* dst_
     {
         if (src_status->m_player == 0 && ! has_counted_quest)
         {
-            fd->inc_counter(QuestType::skill_use, skill_id);
+            fd->inc_counter(QuestType::skill_use, skill_id, dst_status->m_card->m_id);
             has_counted_quest = true;
         }
         if (is_evadable &&
