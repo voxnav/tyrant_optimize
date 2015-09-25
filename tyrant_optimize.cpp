@@ -1563,7 +1563,7 @@ int main(int argc, char** argv)
                     bg_skill.n = boost::lexical_cast<unsigned>(tokens[skill_index]);
                     skill_index += 1;
                 }
-                if (skill_index < tokens.size() && bg_skill.id == evolve)
+                if (skill_index < tokens.size())
                 {
                     bg_skill.s = skill_name_to_id(tokens[skill_index]);
                     if (bg_skill.s != no_skill)
