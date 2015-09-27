@@ -1180,10 +1180,12 @@ bool attack_phase(Field* fd)
 {
     CardStatus* att_status(&fd->tap->assaults[fd->current_ci]); // attacking card
     Storage<CardStatus>& def_assaults(fd->tip->assaults);
+#if 0 // Simulate bizarre in-game behavior: Swipe even if attack is 0
     if(attack_power(att_status) == 0)
     {
         return false;
     }
+#endif
 
     unsigned att_dmg = 0;
     if (alive_assault(def_assaults, fd->current_ci))
