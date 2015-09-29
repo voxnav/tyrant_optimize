@@ -23,11 +23,11 @@ std::string skill_names[Skill::num_skills] =
     "Armor", "Avenge", "Corrosive", "Counter", "Evade", "Payback", "Refresh", "Wall",
     "<Error>",
     // Combat-Modifier:
-    "Flurry", "Pierce", "Rupture", "Swipe", "Valor",
+    "Legion", "Pierce", "Rupture", "Swipe", "Venom",
     // Damage-Dependant:
-    "Berserk", "Inhibit", "Leech", "Poison", "Venom",
+    "Berserk", "Inhibit", "Leech", "Poison",
     // Triggered:
-    "Legion",
+    "Flurry", "Valor",
     // Pseudo-skill for passive BGEs:
     "<Error>",
     "Bloodlust", "Counterflux", "Divert", "EnduringRage", "Fortification", "Metamorphosis", "Reaping", "TurningTides",

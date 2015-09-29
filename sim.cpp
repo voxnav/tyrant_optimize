@@ -1180,12 +1180,10 @@ bool attack_phase(Field* fd)
 {
     CardStatus* att_status(&fd->tap->assaults[fd->current_ci]); // attacking card
     Storage<CardStatus>& def_assaults(fd->tip->assaults);
-#if 0 // Simulate bizarre in-game behavior: Swipe even if attack is 0
     if(attack_power(att_status) == 0)
     {
         return false;
     }
-#endif
 
     unsigned att_dmg = 0;
     if (alive_assault(def_assaults, fd->current_ci))
@@ -1251,7 +1249,6 @@ inline bool skill_predicate<enhance>(Field* fd, CardStatus* src, CardStatus* dst
 template<>
 inline bool skill_predicate<evolve>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
-    return dst->has_skill(s.s) && !dst->has_skill(s.s2);  // XXX in-game behavior
     return dst->has_skill(s.s) && !dst->has_skill(s.s2) && ((BEGIN_DEFENSIVE < s.s2 && s.s2 < END_DEFENSIVE) || is_active(dst));
 }
 
