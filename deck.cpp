@@ -330,7 +330,7 @@ std::string Deck::short_description() const
     if(!name.empty()) { ios << " \"" << name << "\""; }
     if(deck_string.empty())
     {
-        if(raid_cards.empty()) { ios << ": " << hash(); }
+        if(variable_cards.empty()) { ios << ": " << hash(); }
     }
     else
     {
@@ -356,9 +356,9 @@ std::string Deck::medium_description() const
         ios << ", " << card->m_name;
     }
     unsigned num_pool_cards = 0;
-    for(auto& pool: raid_cards)
+    for(auto& pool: variable_cards)
     {
-        num_pool_cards += pool.first;
+        num_pool_cards += std::get<0>(pool) * std::get<1>(pool);
     }
     if(num_pool_cards > 0)
     {
@@ -389,10 +389,14 @@ std::string Deck::long_description() const
     {
         show_upgrades(ios, card, card->m_top_level_card->m_level, "  ");
     }
-    for(auto& pool: raid_cards)
+    for(auto& pool: variable_cards)
     {
-        ios << pool.first << " of:\n";
-        for(auto& card: pool.second)
+		if (std::get<1>(pool) > 1)
+		{
+			ios << std::get<1>(pool) << " copies of each of ";
+		}
+        ios << std::get<0>(pool) << " in:\n";
+        for(auto& card: std::get<2>(pool))
         {
             show_upgrades(ios, card, card->m_top_level_card->m_level, "  ");
         }
@@ -509,17 +513,23 @@ void Deck::shuffle(std::mt19937& re)
     shuffled_commander = commander;
     shuffled_cards.clear();
     boost::insert(shuffled_cards, shuffled_cards.end(), cards);
-    if(!raid_cards.empty())
+    if(!variable_cards.empty())
     {
         if(strategy != DeckStrategy::random)
         {
             throw std::runtime_error("Support only random strategy for raid/quest deck.");
         }
-        for(auto& card_pool: raid_cards)
+        for(auto& card_pool: variable_cards)
         {
-            assert(card_pool.first <= card_pool.second.size());
-            partial_shuffle(card_pool.second.begin(), card_pool.second.begin() + card_pool.first, card_pool.second.end(), re);
-            shuffled_cards.insert(shuffled_cards.end(), card_pool.second.begin(), card_pool.second.begin() + card_pool.first);
+			auto & amount = std::get<0>(card_pool);
+			auto & replicates = std::get<1>(card_pool);
+			auto & card_list = std::get<2>(card_pool);
+            assert(amount <= card_list.size());
+            partial_shuffle(card_list.begin(), card_list.begin() + amount, card_list.end(), re);
+			for (unsigned rep = 0; rep < replicates; ++ rep)
+			{
+				shuffled_cards.insert(shuffled_cards.end(), card_list.begin(), card_list.begin() + amount);
+			}
         }
     }
     if (upgrade_points > 0)

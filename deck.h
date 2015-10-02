@@ -60,7 +60,7 @@ public:
 
     // card id -> card order
     std::map<unsigned, std::list<unsigned>> order;
-    std::vector<std::pair<unsigned, std::vector<const Card*>>> raid_cards;
+    std::vector<std::tuple<unsigned, unsigned, std::vector<const Card*>>> variable_cards;  // amount, replicates, card pool
     unsigned deck_size;
     unsigned mission_req;
 
@@ -97,17 +97,17 @@ public:
         const Card* commander_,
         unsigned commander_max_level_,
         const std::vector<const Card*>& cards_,
-        std::vector<std::pair<unsigned, std::vector<const Card*>>> raid_cards_ = {},
+        std::vector<std::tuple<unsigned, unsigned, std::vector<const Card*>>> variable_cards_ = {},
         unsigned mission_req_ = 0)
     {
         commander = commander_;
         commander_max_level = commander_max_level_;
         cards = std::vector<const Card*>(std::begin(cards_), std::end(cards_));
-        raid_cards = std::vector<std::pair<unsigned, std::vector<const Card*>>>(raid_cards_);
+        variable_cards = variable_cards_;
         deck_size = cards.size();
-        for (const auto & pool: raid_cards)
+        for (const auto & pool: variable_cards)
         {
-            deck_size += pool.first;
+            deck_size += std::get<0>(pool) * std::get<1>(pool);
         }
         mission_req = mission_req_;
     }

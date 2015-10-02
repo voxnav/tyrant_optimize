@@ -275,7 +275,7 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, DeckType
     unsigned commander_max_level = commander_max_level_node ? atoi(commander_max_level_node->value()) : commander_card->m_top_level_card->m_level;
     unsigned upgrade_opportunities = commander_max_level - card->m_level;
     std::vector<const Card*> always_cards;
-    std::vector<std::pair<unsigned, std::vector<const Card*>>> some_cards;
+    std::vector<std::tuple<unsigned, unsigned, std::vector<const Card*>>> some_cards;
     xml_node<>* deck_node(node->first_node("deck"));
     xml_node<>* levels_node(node->first_node("levels"));
     unsigned max_level = levels_node ? atoi(levels_node->value()) : 10;
@@ -293,6 +293,7 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, DeckType
             pool_node = pool_node->next_sibling("card_pool"))
     {
         unsigned num_cards_from_pool(atoi(pool_node->first_attribute("amount")->value()));
+        unsigned replicates(pool_node->first_attribute("replicates") ? atoi(pool_node->first_attribute("replicates")->value()) : 1);
         std::vector<const Card*> cards_from_pool;
         unsigned upgrade_points = 0;
         for(xml_node<>* card_node = pool_node->first_node("card");
@@ -303,8 +304,8 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, DeckType
             cards_from_pool.push_back(card);
             upgrade_points += card->m_top_level_card->m_level - card->m_level;
         }
-        some_cards.push_back(std::make_pair(num_cards_from_pool, cards_from_pool));
-        upgrade_opportunities += upgrade_points * num_cards_from_pool / cards_from_pool.size();
+        some_cards.push_back(std::make_tuple(num_cards_from_pool, replicates, cards_from_pool));
+        upgrade_opportunities += upgrade_points * num_cards_from_pool * replicates / cards_from_pool.size();
     }
     xml_node<>* mission_req_node(node->first_node(decktype == DeckType::mission ? "req" : "mission_req"));
     unsigned mission_req(mission_req_node ? atoi(mission_req_node->value()) : 0);
@@ -330,9 +331,9 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, DeckType
         { deck->commander = deck->commander->upgraded(); }
         for (auto && card: deck->cards)
         { card = card->m_top_level_card; }
-        for (auto && pool: deck->raid_cards)
+        for (auto && pool: deck->variable_cards)
         {
-            for (auto && card: pool.second)
+            for (auto && card: std::get<2>(pool))
             { card = card->m_top_level_card; }
         }
     }

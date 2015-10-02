@@ -1636,7 +1636,7 @@ int main(int argc, char** argv)
     {
         std::cerr << "Error: Invalid attack deck name/hash " << your_deck_name << ".\n";
     }
-    else if(!your_deck->raid_cards.empty())
+    else if(!your_deck->variable_cards.empty())
     {
         std::cerr << "Error: Invalid attack deck " << your_deck_name << ": has optional cards.\n";
         your_deck = nullptr;

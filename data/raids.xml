@@ -3373,6 +3373,483 @@
 		</deck>
 	</campaign>
 
-<!-- Campaigns -->
+	<campaign>
+		<id>811</id>
+		<name>Emry101</name>
+		<name>Emrys Ascended Normal 1</name>
+		<commander>1022</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>6648</card>
+				<card>6648</card>
+				<card>10243</card>
+				<card>14115</card>
+				<card>33305</card>
+				<card>33447</card>
+				<card>33453</card>
+				<card>33459</card>
+			</always_include>
+			<card_pool amount="1" replicates="2">
+				<card>443</card>
+				<card>471</card>
+				<card>4472</card>
+			</card_pool>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>812</id>
+		<name>Emry102</name>
+		<name>Emrys Ascended Normal 2</name>
+		<commander>1022</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>6652</card>
+				<card>6652</card>
+				<card>7109</card>
+				<card>15314</card>
+				<card>16956</card>
+				<card>33447</card>
+				<card>33453</card>
+				<card>33459</card>
+			</always_include>
+			<card_pool amount="1" replicates="2">
+				<card>443</card>
+				<card>4476</card>
+				<card>4552</card>
+				<card>4781</card>
+				<card>12503</card>
+				<card>13419</card>
+			</card_pool>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>813</id>
+		<name>Emry103</name>
+		<name>Emrys Ascended Normal 3</name>
+		<commander>1893</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7112</card>
+				<card>14118</card>
+				<card>16914</card>
+				<card>16956</card>
+				<card>31397</card>
+				<card>32053</card>
+				<card>33449</card>
+				<card>33449</card>
+				<card>33453</card>
+				<card>33459</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>814</id>
+		<name>Emry104</name>
+		<name>Emrys Ascended Normal 4</name>
+		<commander>1022</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>6648</card>
+				<card>8489</card>
+				<card>14629</card>
+				<card>15700</card>
+				<card>30871</card>
+				<card>33447</card>
+				<card>33453</card>
+				<card>33459</card>
+			</always_include>
+			<card_pool amount="1" replicates="2">
+				<card>443</card>
+				<card>471</card>
+				<card>4472</card>
+				<card>4552</card>
+			</card_pool>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>815</id>
+		<name>Emry105</name>
+		<name>Emrys Ascended Normal 5</name>
+		<commander>1022</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>6652</card>
+				<card>14629</card>
+				<card>15700</card>
+				<card>15799</card>
+				<card>30871</card>
+				<card>31947</card>
+				<card>33447</card>
+				<card>33453</card>
+				<card>33459</card>
+			</always_include>
+			<card_pool amount="1">
+				<card>443</card>
+				<card>4476</card>
+				<card>4552</card>
+			</card_pool>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>816</id>
+		<name>Emry106</name>
+		<name>Emrys Ascended Normal 6</name>
+		<commander>1900</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>15796</card>
+				<card>15802</card>
+				<card>31947</card>
+				<card>32475</card>
+				<card>33164</card>
+				<card>33447</card>
+				<card>33455</card>
+				<card>33455</card>
+				<card>33459</card>
+				<card>33704</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>817</id>
+		<name>Emry107</name>
+		<name>Emrys Ascended Normal 7</name>
+		<commander>1906</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>12673</card>
+				<card>15697</card>
+				<card>33167</card>
+				<card>33308</card>
+				<card>33434</card>
+				<card>33447</card>
+				<card>33453</card>
+				<card>33459</card>
+				<card>33459</card>
+				<card>33704</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>821</id>
+		<name>Emry201</name>
+		<name>Emrys Ascended Heroic 1</name>
+		<commander>1049</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>10255</card>
+				<card>14127</card>
+				<card>14127</card>
+				<card>31054</card>
+				<card>32719</card>
+				<card>33317</card>
+				<card>33317</card>
+				<card>33449</card>
+				<card>33455</card>
+				<card>33461</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>822</id>
+		<name>Emry202</name>
+		<name>Emrys Ascended Heroic 2</name>
+		<commander>1049</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7121</card>
+				<card>15323</card>
+				<card>16962</card>
+				<card>31059</card>
+				<card>32061</card>
+				<card>32722</card>
+				<card>33449</card>
+				<card>33455</card>
+				<card>33461</card>
+                <card>16923</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>823</id>
+		<name>Emry203</name>
+		<name>Emrys Ascended Heroic 3</name>
+		<commander>1895</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>5871</card>
+                <card>14130</card>
+				<card>16959</card>
+				<card>16959</card>
+				<card>31409</card>
+				<card>32061</card>
+				<card>33452</card>
+				<card>33452</card>
+				<card>33455</card>
+				<card>33461</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>824</id>
+		<name>Emry204</name>
+		<name>Emrys Ascended Heroic 4</name>
+		<commander>1050</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>8495</card>
+				<card>14635</card>
+				<card>15703</card>
+				<card>15703</card>
+				<card>16123</card>
+				<card>30877</card>
+				<card>33449</card>
+				<card>33455</card>
+				<card>33461</card>
+				<card>33596</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>825</id>
+		<name>Emry205</name>
+		<name>Emrys Ascended Heroic 5</name>
+		<commander>1050</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>8498</card>
+				<card>15802</card>
+				<card>16123</card>
+				<card>30681</card>
+				<card>31460</card>
+				<card>31956</card>
+				<card>33449</card>
+				<card>33455</card>
+				<card>33461</card>
+				<card>33599</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>826</id>
+		<name>Emry206</name>
+		<name>Emrys Ascended Heroic 6</name>
+		<commander>1902</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7880</card>
+				<card>15802</card>
+				<card>15802</card>
+				<card>32487</card>
+				<card>33170</card>
+				<card>33449</card>
+				<card>33458</card>
+				<card>33458</card>
+				<card>33461</card>
+				<card>33707</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>827</id>
+		<name>Emry207</name>
+		<name>Emrys Ascended Heroic 7</name>
+		<commander>1908</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>12678</card>
+				<card>15703</card>
+				<card>33167</card>
+				<card>33311</card>
+				<card>33437</card>
+				<card>33449</card>
+				<card>33455</card>
+				<card>33461</card>
+				<card>33461</card>
+				<card>33713</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>831</id>
+		<name>Emry301</name>
+		<name>Emrys Ascended Mythic 1</name>
+		<commander>1051</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>14130</card>
+				<card>14130</card>
+				<card>16557</card>
+				<card>31065</card>
+				<card>31065</card>
+				<card>32728</card>
+				<card>33320</card>
+				<card>33452</card>
+				<card>33458</card>
+				<card>33464</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>832</id>
+		<name>Emry302</name>
+		<name>Emrys Ascended Mythic 2</name>
+		<commander>1051</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>5877</card>
+				<card>7124</card>
+				<card>15329</card>
+				<card>16557</card>
+				<card>16929</card>
+				<card>16929</card>
+				<card>16965</card>
+				<card>33452</card>
+				<card>33458</card>
+				<card>33464</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>833</id>
+		<name>Emry303</name>
+		<name>Emrys Ascended Mythic 3</name>
+		<commander>1898</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>5883</card>
+				<card>14130</card>
+				<card>16965</card>
+				<card>32064</card>
+				<card>32064</card>
+				<card>33452</card>
+				<card>33452</card>
+				<card>33458</card>
+				<card>33458</card>
+				<card>33464</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>834</id>
+		<name>Emry304</name>
+		<name>Emrys Ascended Mythic 4</name>
+		<commander>32550</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>14641</card>
+				<card>14641</card>
+				<card>15709</card>
+				<card>15709</card>
+				<card>16135</card>
+				<card>30883</card>
+				<card>33452</card>
+				<card>33458</card>
+				<card>33464</card>
+				<card>33608</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>835</id>
+		<name>Emry305</name>
+		<name>Emrys Ascended Mythic 5</name>
+		<commander>32550</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>8504</card>
+				<card>15086</card>
+				<card>15811</card>
+				<card>30687</card>
+				<card>31956</card>
+				<card>33452</card>
+				<card>33458</card>
+				<card>33464</card>
+				<card>33608</card>
+				<card>33608</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>836</id>
+		<name>Emry306</name>
+		<name>Emrys Ascended Mythic 6</name>
+		<commander>1905</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>7892</card>
+				<card>15086</card>
+				<card>15811</card>
+				<card>32490</card>
+				<card>32820</card>
+				<card>33452</card>
+				<card>33452</card>
+				<card>33458</card>
+				<card>33458</card>
+				<card>33464</card>
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>837</id>
+		<name>Emry307</name>
+		<name>Emrys Ascended Mythic 7</name>
+		<commander>1911</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>6728</card>
+				<card>10698</card>
+				<card>12687</card>
+				<card>13871</card>
+				<card>32820</card>
+				<card>33446</card>
+				<card>33452</card>
+				<card>33458</card>
+				<card>33464</card>
+				<card>33464</card>
+			</always_include>
+		</deck>
+	</campaign>
 
 </root>
