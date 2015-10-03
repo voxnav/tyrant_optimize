@@ -952,7 +952,6 @@ struct PerformAttack
     unsigned op()
     {
         unsigned pre_modifier_dmg = attack_power(att_status);
-        if(pre_modifier_dmg == 0) { return 0; }
 
         // Evaluation order:
         // modify damage
@@ -962,60 +961,58 @@ struct PerformAttack
         // assaults only: (leech if still alive)
 
         modify_attack_damage<def_cardtype>(pre_modifier_dmg);
+        if (att_dmg == 0) { return 0; }
 
-        if(att_dmg > 0)
+        attack_damage<def_cardtype>();
+        if(__builtin_expect(fd->end, false)) { return att_dmg; }
+        damage_dependant_pre_oa<def_cardtype>();
+
+        if (att_status->m_hp > 0 && def_status->has_skill(counter) && skill_check<counter>(fd, def_status, att_status))
         {
-            attack_damage<def_cardtype>();
-            if(__builtin_expect(fd->end, false)) { return att_dmg; }
-            damage_dependant_pre_oa<def_cardtype>();
-
-            if (att_status->m_hp > 0 && def_status->has_skill(counter) && skill_check<counter>(fd, def_status, att_status))
+            // perform_skill_counter
+            unsigned counter_dmg(counter_damage(fd, att_status, def_status));
+            if (def_status->m_player == 0)
             {
-                // perform_skill_counter
-                unsigned counter_dmg(counter_damage(fd, att_status, def_status));
-                if (def_status->m_player == 0)
-                {
-                    fd->inc_counter(QuestType::skill_use, counter);
-                    fd->inc_counter(QuestType::skill_damage, counter, 0, counter_dmg);
-                }
-                _DEBUG_MSG(1, "%s takes %u counter damage from %s\n", status_description(att_status).c_str(), counter_dmg, status_description(def_status).c_str());
-                remove_hp(fd, att_status, counter_dmg);
-                if (def_cardtype == CardType::assault && def_status->m_hp > 0 && fd->bg_effects.count(counterflux))
-                {
-                    unsigned flux_denominator = fd->bg_effects.at(counterflux) ? fd->bg_effects.at(counterflux) : 4;
-                    unsigned flux_value = (def_status->skill(counter) - 1) / flux_denominator + 1;
-                    _DEBUG_MSG(1, "Counterflux: %s heals itself and berserks for %u\n", status_description(def_status).c_str(), flux_value);
-                    add_hp(fd, def_status, flux_value);
-                    def_status->m_attack += flux_value;
-                }
+                fd->inc_counter(QuestType::skill_use, counter);
+                fd->inc_counter(QuestType::skill_damage, counter, 0, counter_dmg);
             }
-            unsigned corrosive_value = def_status->skill(corrosive);
-            if (att_status->m_hp > 0 && corrosive_value > att_status->m_corroded_rate && skill_check<corrosive>(fd, def_status, att_status))
+            _DEBUG_MSG(1, "%s takes %u counter damage from %s\n", status_description(att_status).c_str(), counter_dmg, status_description(def_status).c_str());
+            remove_hp(fd, att_status, counter_dmg);
+            if (def_cardtype == CardType::assault && def_status->m_hp > 0 && fd->bg_effects.count(counterflux))
             {
-                // perform_skill_corrosive
-                _DEBUG_MSG(1, "%s corrodes %s by %u\n", status_description(def_status).c_str(), status_description(att_status).c_str(), corrosive_value);
-                att_status->m_corroded_rate = corrosive_value;
+                unsigned flux_denominator = fd->bg_effects.at(counterflux) ? fd->bg_effects.at(counterflux) : 4;
+                unsigned flux_value = (def_status->skill(counter) - 1) / flux_denominator + 1;
+                _DEBUG_MSG(1, "Counterflux: %s heals itself and berserks for %u\n", status_description(def_status).c_str(), flux_value);
+                add_hp(fd, def_status, flux_value);
+                def_status->m_attack += flux_value;
             }
-            unsigned berserk_value = att_status->skill(berserk);
-            if (att_status->m_hp > 0 && berserk_value > 0 && skill_check<berserk>(fd, att_status, nullptr))
-            {
-                // perform_skill_berserk
-                att_status->m_attack += berserk_value;
-                if (att_status->m_player == 0)
-                {
-                    fd->inc_counter(QuestType::skill_use, berserk);
-                }
-                if (fd->bg_effects.count(enduringrage))
-                {
-                    unsigned bge_denominator = fd->bg_effects.at(enduringrage) ? fd->bg_effects.at(enduringrage) : 2;
-                    unsigned bge_value = (berserk_value - 1) / bge_denominator + 1;
-                    _DEBUG_MSG(1, "EnduringRage: %s heals and protects itself for %u\n", status_description(att_status).c_str(), bge_value);
-                    add_hp(fd, att_status, bge_value);
-                    att_status->m_protected += bge_value;
-                }
-            }
-            do_leech<def_cardtype>();
         }
+        unsigned corrosive_value = def_status->skill(corrosive);
+        if (att_status->m_hp > 0 && corrosive_value > att_status->m_corroded_rate && skill_check<corrosive>(fd, def_status, att_status))
+        {
+            // perform_skill_corrosive
+            _DEBUG_MSG(1, "%s corrodes %s by %u\n", status_description(def_status).c_str(), status_description(att_status).c_str(), corrosive_value);
+            att_status->m_corroded_rate = corrosive_value;
+        }
+        unsigned berserk_value = att_status->skill(berserk);
+        if (att_status->m_hp > 0 && berserk_value > 0 && skill_check<berserk>(fd, att_status, nullptr))
+        {
+            // perform_skill_berserk
+            att_status->m_attack += berserk_value;
+            if (att_status->m_player == 0)
+            {
+                fd->inc_counter(QuestType::skill_use, berserk);
+            }
+            if (fd->bg_effects.count(enduringrage))
+            {
+                unsigned bge_denominator = fd->bg_effects.at(enduringrage) ? fd->bg_effects.at(enduringrage) : 2;
+                unsigned bge_value = (berserk_value - 1) / bge_denominator + 1;
+                _DEBUG_MSG(1, "EnduringRage: %s heals and protects itself for %u\n", status_description(att_status).c_str(), bge_value);
+                add_hp(fd, att_status, bge_value);
+                att_status->m_protected += bge_value;
+            }
+        }
+        do_leech<def_cardtype>();
         prepend_on_death(fd);
         resolve_skill(fd);
         return att_dmg;
@@ -1025,8 +1022,8 @@ struct PerformAttack
     void modify_attack_damage(unsigned pre_modifier_dmg)
     {
         assert(att_status->m_card->m_type == CardType::assault);
-        assert(pre_modifier_dmg > 0);
         att_dmg = pre_modifier_dmg;
+        if (att_dmg == 0) { return; }
         std::string desc;
         // enhance damage
         unsigned legion_base = att_status->skill(legion);
@@ -1180,10 +1177,6 @@ bool attack_phase(Field* fd)
 {
     CardStatus* att_status(&fd->tap->assaults[fd->current_ci]); // attacking card
     Storage<CardStatus>& def_assaults(fd->tip->assaults);
-    if(attack_power(att_status) == 0)
-    {
-        return false;
-    }
 
     unsigned att_dmg = 0;
     if (alive_assault(def_assaults, fd->current_ci))
@@ -1191,7 +1184,8 @@ bool attack_phase(Field* fd)
         CardStatus * def_status = &fd->tip->assaults[fd->current_ci];
         att_dmg = PerformAttack{fd, att_status, def_status}.op<CardType::assault>();
         unsigned swipe_value = att_status->skill(swipe);
-        if (swipe_value > 0)
+//        if (att_dmg > 0 && swipe_value > 0)
+        if (att_status->m_attack + att_status->m_rallied > att_status->m_weakened && swipe_value > 0) // Bizarre behavior: Swipe activates if attack is corroded to 0
         {
             for (auto && adj_status: fd->adjacent_assaults(def_status))
             {
