@@ -3756,10 +3756,13 @@
 				<card>32064</card>
 				<card>32064</card>
 				<card>33452</card>
-				<card>33452</card>
-				<card>33458</card>
 				<card>33458</card>
 				<card>33464</card>
+				<card_pool amount="2">
+					<card>16965</card>
+					<card>33452</card>
+					<card>33458</card>
+				</card_pool>
 			</always_include>
 		</deck>
 	</campaign>

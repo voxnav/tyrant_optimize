@@ -542,6 +542,7 @@ public:
     {
         destroy_threads = false;
         unsigned seed(sim_seed ? sim_seed : time(0));
+        std::cout << "seed " << seed << std::endl;
         for(unsigned i(0); i < num_threads; ++i)
         {
             threads_data.push_back(new SimulationData(seed + i, cards, decks, enemy_decks.size(), factors, gamemode, quest, bg_effects, bg_skills));
