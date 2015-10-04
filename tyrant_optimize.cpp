@@ -63,6 +63,7 @@ namespace {
     unsigned use_fused_card_level{0};
     bool show_ci{false};
     bool use_harmonic_mean{false};
+    unsigned sim_seed{0};
     Requirement requirement;
     Quest quest;
 }
@@ -540,7 +541,7 @@ public:
         bg_skills(bg_skills_)
     {
         destroy_threads = false;
-        unsigned seed(time(0));
+        unsigned seed(sim_seed ? sim_seed : time(0));
         for(unsigned i(0); i < num_threads; ++i)
         {
             threads_data.push_back(new SimulationData(seed + i, cards, decks, enemy_decks.size(), factors, gamemode, quest, bg_effects, bg_skills));
@@ -1412,6 +1413,11 @@ int main(int argc, char** argv)
         else if(strcmp(argv[argIndex], "+hm") == 0)
         {
             use_harmonic_mean = true;
+        }
+        else if(strcmp(argv[argIndex], "seed") == 0)
+        {
+            sim_seed = atoi(argv[argIndex+1]);
+            argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "-v") == 0)
         {

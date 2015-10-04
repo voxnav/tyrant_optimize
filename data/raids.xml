@@ -3822,10 +3822,13 @@
 				<card>32490</card>
 				<card>32820</card>
 				<card>33452</card>
-				<card>33452</card>
-				<card>33458</card>
 				<card>33458</card>
 				<card>33464</card>
+				<card_pool amount="2">
+					<card>15811</card>
+					<card>33452</card>
+					<card>33458</card>
+				</card_pool>
 			</always_include>
 		</deck>
 	</campaign>
