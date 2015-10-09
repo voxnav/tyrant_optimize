@@ -14,17 +14,18 @@
 //#define NDEBUG
 #define BOOST_THREAD_USE_LIB
 #include <cassert>
+#include <chrono>
 #include <cstring>
 #include <ctime>
+#include <functional>
 #include <iostream>
-#include <vector>
-#include <string>
 #include <map>
-#include <unordered_map>
 #include <set>
 #include <stack>
+#include <string>
 #include <tuple>
-#include <chrono>
+#include <unordered_map>
+#include <vector>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
@@ -541,8 +542,11 @@ public:
         bg_skills(bg_skills_)
     {
         destroy_threads = false;
-        unsigned seed(sim_seed ? sim_seed : time(0));
-        std::cout << "seed " << seed << std::endl;
+        unsigned seed(sim_seed ? sim_seed : std::chrono::system_clock::now().time_since_epoch().count() * 2654435761);  // Knuth multiplicative hash
+        if (num_threads_ == 1)
+        {
+            std::cout << "RNG seed " << seed << std::endl;
+        }
         for(unsigned i(0); i < num_threads; ++i)
         {
             threads_data.push_back(new SimulationData(seed + i, cards, decks, enemy_decks.size(), factors, gamemode, quest, bg_effects, bg_skills));
@@ -826,7 +830,7 @@ void hill_climbing(unsigned num_min_iterations, unsigned num_iterations, Deck* d
     unsigned deck_cost = get_deck_cost(d1);
     fund = std::max(fund, deck_cost);
     print_deck_inline(deck_cost, best_score, d1);
-    std::mt19937 re(std::chrono::system_clock::now().time_since_epoch().count());
+    std::mt19937 & re = proc.threads_data[0]->re;
     unsigned best_gap = check_requirement(d1, requirement, quest);
     bool deck_has_been_improved = true;
     unsigned long skipped_simulations = 0;
@@ -985,7 +989,7 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
     unsigned deck_cost = get_deck_cost(d1);
     fund = std::max(fund, deck_cost);
     print_deck_inline(deck_cost, best_score, d1);
-    std::mt19937 re(std::chrono::system_clock::now().time_since_epoch().count());
+    std::mt19937 & re = proc.threads_data[0]->re;
     unsigned best_gap = check_requirement(d1, requirement, quest);
     bool deck_has_been_improved = true;
     unsigned long skipped_simulations = 0;
@@ -1137,11 +1141,12 @@ void hill_climbing_ordered(unsigned num_min_iterations, unsigned num_iterations,
 }
 //------------------------------------------------------------------------------
 enum Operation {
+    noop,
     simulate,
     climb,
     reorder,
     debug,
-    debuguntil
+    debuguntil,
 };
 //------------------------------------------------------------------------------
 extern void(*skill_table[num_skills])(Field*, CardStatus* src_status, const SkillSpec&);
@@ -1226,7 +1231,7 @@ int main(int argc, char** argv)
     std::vector<std::string> opt_owned_cards_str_list;
     bool opt_do_optimization(false);
     bool opt_keep_commander{false};
-    std::vector<std::tuple<unsigned, unsigned, Operation>> opt_todo;
+    std::tuple<unsigned, unsigned, Operation> opt_todo;
     std::vector<std::string> opt_effects;
     std::unordered_map<unsigned, unsigned> opt_bg_effects;
     std::vector<SkillSpec> opt_bg_skills;
@@ -1455,35 +1460,41 @@ int main(int argc, char** argv)
         }
         else if(strcmp(argv[argIndex], "sim") == 0)
         {
-            opt_todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), 0u, simulate));
+            opt_todo = std::make_tuple((unsigned)atoi(argv[argIndex + 1]), 0u, simulate);
+            if (std::get<0>(opt_todo) < 10) { opt_num_threads = 1; }
             argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "climbex") == 0)
         {
-            opt_todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), (unsigned)atoi(argv[argIndex + 2]), climb));
+            opt_todo = std::make_tuple((unsigned)atoi(argv[argIndex + 1]), (unsigned)atoi(argv[argIndex + 2]), climb);
+            if (std::get<1>(opt_todo) < 10) { opt_num_threads = 1; }
             opt_do_optimization = true;
             argIndex += 2;
         }
         else if(strcmp(argv[argIndex], "climb") == 0)
         {
-            opt_todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), (unsigned)atoi(argv[argIndex + 1]), climb));
+            opt_todo = std::make_tuple((unsigned)atoi(argv[argIndex + 1]), (unsigned)atoi(argv[argIndex + 1]), climb);
+            if (std::get<1>(opt_todo) < 10) { opt_num_threads = 1; }
             opt_do_optimization = true;
             argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "reorder") == 0)
         {
-            opt_todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), (unsigned)atoi(argv[argIndex + 1]), reorder));
+            opt_todo = std::make_tuple((unsigned)atoi(argv[argIndex + 1]), (unsigned)atoi(argv[argIndex + 1]), reorder);
+            if (std::get<1>(opt_todo) < 10) { opt_num_threads = 1; }
             argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "debug") == 0)
         {
-            opt_todo.push_back(std::make_tuple(0u, 0u, debug));
+            opt_todo = std::make_tuple(0u, 0u, debug);
+            opt_num_threads = 1;
         }
         else if(strcmp(argv[argIndex], "debuguntil") == 0)
         {
             // output the debug info for the first battle that min_score <= score <= max_score.
             // E.g., 0 0: lose; 100 100: win (non-raid); 20 100: at least 20 damage (raid).
-            opt_todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), (unsigned)atoi(argv[argIndex + 2]), debuguntil));
+            opt_todo = std::make_tuple((unsigned)atoi(argv[argIndex + 1]), (unsigned)atoi(argv[argIndex + 2]), debuguntil);
+            opt_num_threads = 1;
             argIndex += 2;
         }
         else
@@ -1948,76 +1959,74 @@ int main(int argc, char** argv)
     Process p(opt_num_threads, all_cards, decks, your_deck, enemy_decks, enemy_decks_factors, gamemode, quest, opt_bg_effects, opt_bg_skills);
 
     {
-        //ScopeClock timer;
-        for(auto op: opt_todo)
+        switch(std::get<2>(opt_todo))
         {
-            switch(std::get<2>(op))
+        case noop:
+            break;
+        case simulate: {
+            EvaluatedResults results = { EvaluatedResults::first_type(enemy_decks.size()), 0 };
+            results = p.evaluate(std::get<0>(opt_todo), results);
+            print_results(results, p.factors);
+            break;
+        }
+        case climb: {
+            switch (opt_your_strategy)
             {
-			case simulate: {
-				EvaluatedResults results = { EvaluatedResults::first_type(enemy_decks.size()), 0 };
-                results = p.evaluate(std::get<0>(op), results);
-                print_results(results, p.factors);
+            case DeckStrategy::random:
+                hill_climbing(std::get<0>(opt_todo), std::get<1>(opt_todo), your_deck, p, requirement, quest);
                 break;
-            }
-            case climb: {
-                switch (opt_your_strategy)
-                {
-                case DeckStrategy::random:
-                    hill_climbing(std::get<0>(op), std::get<1>(op), your_deck, p, requirement, quest);
-                    break;
 //                case DeckStrategy::ordered:
 //                case DeckStrategy::exact_ordered:
-                default:
-                    hill_climbing_ordered(std::get<0>(op), std::get<1>(op), your_deck, p, requirement, quest);
-                    break;
-                }
+            default:
+                hill_climbing_ordered(std::get<0>(opt_todo), std::get<1>(opt_todo), your_deck, p, requirement, quest);
                 break;
             }
-            case reorder: {
-                your_deck->strategy = DeckStrategy::ordered;
-                use_owned_cards = true;
-                if (min_deck_len == 1 && max_deck_len == 10)
-                {
-                    min_deck_len = max_deck_len = your_deck->cards.size();
-                }
-                fund = 0;
-                debug_print = -1;
-                owned_cards.clear();
-                claim_cards({your_deck->commander});
-                claim_cards(your_deck->cards);
-                hill_climbing_ordered(std::get<0>(op), std::get<1>(op), your_deck, p, requirement, quest);
-                break;
+            break;
+        }
+        case reorder: {
+            your_deck->strategy = DeckStrategy::ordered;
+            use_owned_cards = true;
+            if (min_deck_len == 1 && max_deck_len == 10)
+            {
+                min_deck_len = max_deck_len = your_deck->cards.size();
             }
-            case debug: {
-                ++ debug_print;
+            fund = 0;
+            debug_print = -1;
+            owned_cards.clear();
+            claim_cards({your_deck->commander});
+            claim_cards(your_deck->cards);
+            hill_climbing_ordered(std::get<0>(opt_todo), std::get<1>(opt_todo), your_deck, p, requirement, quest);
+            break;
+        }
+        case debug: {
+            ++ debug_print;
+            debug_str.clear();
+            EvaluatedResults results{EvaluatedResults::first_type(enemy_decks.size()), 0};
+            results = p.evaluate(1, results);
+            print_results(results, p.factors);
+            -- debug_print;
+            break;
+        }
+        case debuguntil: {
+            ++ debug_print;
+            ++ debug_cached;
+            while(1)
+            {
                 debug_str.clear();
                 EvaluatedResults results{EvaluatedResults::first_type(enemy_decks.size()), 0};
                 results = p.evaluate(1, results);
-                print_results(results, p.factors);
-                -- debug_print;
-                break;
-            }
-            case debuguntil: {
-                ++ debug_print;
-                ++ debug_cached;
-                while(1)
+                auto score = compute_score(results, p.factors);
+                if(score.points >= std::get<0>(opt_todo) && score.points <= std::get<1>(opt_todo))
                 {
-                    debug_str.clear();
-                    EvaluatedResults results{EvaluatedResults::first_type(enemy_decks.size()), 0};
-                    results = p.evaluate(1, results);
-                    auto score = compute_score(results, p.factors);
-                    if(score.points >= std::get<0>(op) && score.points <= std::get<1>(op))
-                    {
-                        std::cout << debug_str << std::flush;
-                        print_results(results, p.factors);
-                        break;
-                    }
+                    std::cout << debug_str << std::flush;
+                    print_results(results, p.factors);
+                    break;
                 }
-                -- debug_cached;
-                -- debug_print;
-                break;
             }
-            }
+            -- debug_cached;
+            -- debug_print;
+            break;
+        }
         }
     }
     return 0;
