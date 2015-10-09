@@ -141,6 +141,8 @@ typedef std::map<std::string, long double> DeckList;
 class Decks
 {
 public:
+    void add_deck(Deck* deck, const std::string& deck_name);
+    Deck* find_deck_by_name(const std::string& deck_name);
     std::list<Deck> decks;
     std::map<std::pair<DeckType::DeckType, unsigned>, Deck*> by_type_id;
     std::map<std::string, Deck*> by_name;

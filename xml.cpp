@@ -316,8 +316,8 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, DeckType
         decks.decks.push_back(Deck{all_cards, decktype, id, deck_name, (upgrade_opportunities + 1) * (level - 1) / (max_level - 1), upgrade_opportunities});
         Deck* deck = &decks.decks.back();
         deck->set(commander_card, commander_max_level, always_cards, some_cards, mission_req);
-        decks.by_name[deck_name] = deck;
-        decks.by_name[decktype_names[decktype] + " #" + to_string(id) + "-" + to_string(level)] = deck;
+        decks.add_deck(deck, deck_name);
+        decks.add_deck(deck, decktype_names[decktype] + " #" + to_string(id) + "-" + to_string(level));
     }
 
     decks.decks.push_back(Deck{all_cards, decktype, id, base_deck_name});
@@ -338,10 +338,10 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, DeckType
         }
     }
 
-    decks.by_name[base_deck_name] = deck;
-    decks.by_name[base_deck_name + "-" + to_string(max_level)] = deck;
-    decks.by_name[decktype_names[decktype] + " #" + to_string(id)] = deck;
-    decks.by_name[decktype_names[decktype] + " #" + to_string(id) + "-" + to_string(max_level)] = deck;
+    decks.add_deck(deck, base_deck_name);
+    decks.add_deck(deck, base_deck_name + "-" + to_string(max_level));
+    decks.add_deck(deck, decktype_names[decktype] + " #" + to_string(id));
+    decks.add_deck(deck, decktype_names[decktype] + " #" + to_string(id) + "-" + to_string(max_level));
     decks.by_type_id[{decktype, id}] = deck;
     return deck;
 }

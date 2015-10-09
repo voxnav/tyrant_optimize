@@ -105,14 +105,14 @@ std::string card_slot_id_names(const std::vector<std::pair<signed, const Card *>
 //------------------------------------------------------------------------------
 Deck* find_deck(Decks& decks, const Cards& all_cards, std::string deck_name)
 {
-    auto it = decks.by_name.find(deck_name);
-    if(it != decks.by_name.end())
+    Deck* deck = decks.find_deck_by_name(deck_name);
+    if (deck != nullptr)
     {
-        it->second->resolve();
-        return(it->second);
+        deck->resolve();
+        return(deck);
     }
-    decks.decks.push_back(Deck{all_cards});
-    Deck* deck = &decks.decks.back();
+    decks.decks.emplace_back(Deck{all_cards});
+    deck = &decks.decks.back();
     deck->set(deck_name);
     deck->resolve();
     return(deck);

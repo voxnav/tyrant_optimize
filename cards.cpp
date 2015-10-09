@@ -15,7 +15,7 @@ std::string simplify_name(const std::string& card_name)
     std::string simple_name;
     for(auto c : card_name)
     {
-        if(!strchr(";:,\"' ", c))
+        if(!strchr(";:,\"'! ", c))
         {
             simple_name += ::tolower(c);
         }

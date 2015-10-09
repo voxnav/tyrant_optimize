@@ -583,3 +583,15 @@ void Deck::place_at_bottom(const Card* card)
     shuffled_cards.push_back(card);
 }
 
+void Decks::add_deck(Deck* deck, const std::string& deck_name)
+{
+    by_name[deck_name] = deck;
+    by_name[simplify_name(deck_name)] = deck;
+}
+
+Deck* Decks::find_deck_by_name(const std::string& deck_name)
+{
+    auto it = by_name.find(simplify_name(deck_name));
+    return it == by_name.end() ? nullptr : it->second;
+}
+

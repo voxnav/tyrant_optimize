@@ -74,7 +74,7 @@ DeckList & normalize(DeckList & decklist)
     return decklist;
 }
 
-DeckList expand_deck_to_list(std::string deck_name, const Decks& decks)
+DeckList expand_deck_to_list(std::string deck_name, Decks& decks)
 {
     static std::unordered_set<std::string> expanding_decks;
     if (expanding_decks.count(deck_name))
@@ -83,11 +83,11 @@ DeckList expand_deck_to_list(std::string deck_name, const Decks& decks)
         return DeckList();
     }
     auto deck_string = deck_name;
-    const auto & deck = decks.by_name.find(deck_name);
-    if (deck != decks.by_name.end())
+    Deck* deck = decks.find_deck_by_name(deck_name);
+    if (deck != nullptr)
     {
-        deck_string = deck->second->deck_string;
-        if (deck_string.find_first_of(";:") != std::string::npos || decks.by_name.find(deck_string) != decks.by_name.end())
+        deck_string = deck->deck_string;
+        if (deck_string.find_first_of(";:") != std::string::npos || decks.find_deck_by_name(deck_string) != nullptr)
         {
             // deck_name refers to a deck list
             expanding_decks.insert(deck_name);
@@ -105,11 +105,11 @@ DeckList expand_deck_to_list(std::string deck_name, const Decks& decks)
         boost::regex regex(regex_string);
         boost::smatch smatch;
         expanding_decks.insert(deck_name);
-        for (const auto & deck: decks.by_name)
+        for (const auto & deck_it: decks.by_name)
         {
-            if (boost::regex_search(deck.first, smatch, regex))
+            if (boost::regex_search(deck_it.first, smatch, regex))
             {
-                auto && decklist = expand_deck_to_list(deck.first, decks);
+                auto && decklist = expand_deck_to_list(deck_it.first, decks);
                 for (const auto & it : decklist)
                 {
                     res[it.first] += it.second;
@@ -129,7 +129,7 @@ DeckList expand_deck_to_list(std::string deck_name, const Decks& decks)
     }
 }
 
-DeckList parse_deck_list(std::string list_string, const Decks& decks)
+DeckList parse_deck_list(std::string list_string, Decks& decks)
 {
     DeckList res;
     boost::tokenizer<boost::char_delimiters_separator<char>> list_tokens{list_string, boost::char_delimiters_separator<char>{false, ";", ""}};
@@ -383,18 +383,18 @@ unsigned load_custom_decks(Decks& decks, Cards& all_cards, const std::string & f
                 continue;
             }
             deck_string_iter = advance_until(deck_string_iter + 1, deck_string.end(), [](const char& c){return(c != ' ');});
-            auto deck_iter = decks.by_name.find(deck_name);
-            if(deck_iter != decks.by_name.end())
+            Deck* deck = decks.find_deck_by_name(deck_name);
+            if (deck != nullptr)
             {
-                std::cerr << "Warning in custom deck file " << filename << " at line " << num_line << ", name conflicts, overrides " << deck_iter->second->short_description() << std::endl;
+                std::cerr << "Warning in custom deck file " << filename << " at line " << num_line << ", name conflicts, overrides " << deck->short_description() << std::endl;
             }
             decks.decks.push_back(Deck{all_cards, DeckType::custom_deck, num_line, deck_name});
-            Deck* deck = &decks.decks.back();
+            deck = &decks.decks.back();
             deck->set(std::string{deck_string_iter, deck_string.end()});
-            decks.by_name[deck_name] = deck;
+            decks.add_deck(deck, deck_name);
             std::stringstream alt_name;
             alt_name << decktype_names[deck->decktype] << " #" << deck->id;
-            decks.by_name[alt_name.str()] = deck;
+            decks.add_deck(deck, alt_name.str());
         }
     }
     catch (std::exception& e)
