@@ -313,11 +313,9 @@ void resolve_skill(Field* fd)
 }
 //------------------------------------------------------------------------------
 inline bool has_attacked(CardStatus* c) { return(c->m_step == CardStep::attacked); }
-inline bool is_jammed(CardStatus* c) { return(c->m_jammed); }
-inline bool is_active(CardStatus* c) { return(c->m_delay == 0); }
-inline bool is_active_next_turn(CardStatus* c) { return(c->m_delay <= 1); }
-inline bool can_act(CardStatus* c) { return(c->m_hp > 0 && !is_jammed(c)); }
-inline bool can_attack(CardStatus* c) { return(can_act(c)); }
+inline bool can_act(CardStatus* c) { return(c->m_hp > 0 && !c->m_jammed); }
+inline bool is_active(CardStatus* c) { return(can_act(c) && c->m_delay == 0); }
+inline bool is_active_next_turn(CardStatus* c) { return(can_act(c) && c->m_delay <= 1); }
 // Can be healed / repaired
 inline bool can_be_healed(CardStatus* c) { return(c->m_hp > 0 && c->m_hp < c->m_max_hp); }
 //------------------------------------------------------------------------------
@@ -350,7 +348,7 @@ void evaluate_skills(Field* fd, CardStatus* status, const std::vector<SkillSpec>
         if (type == CardType::assault)
         {
             // Attack
-            if (can_attack(status))
+            if (can_act(status))
             {
                 if (attack_phase(fd) && !*attacked)
                 {
@@ -515,7 +513,7 @@ Results<uint64_t> play(Field* fd)
         for(fd->current_ci = 0; !fd->end && fd->current_ci < fd->tap->structures.size(); ++fd->current_ci)
         {
             CardStatus* current_status(&fd->tap->structures[fd->current_ci]);
-            if(!is_active(current_status) || !can_act(current_status))
+            if (!is_active(current_status))
             {
                 _DEBUG_MSG(2, "%s cannot take action.\n", status_description(current_status).c_str());
             }
@@ -532,7 +530,7 @@ Results<uint64_t> play(Field* fd)
             // ca: current assault
             CardStatus* current_status(&fd->tap->assaults[fd->current_ci]);
             bool attacked = false;
-            if(!is_active(current_status) || !can_act(current_status))
+            if (!is_active(current_status))
             {
                 _DEBUG_MSG(2, "%s cannot take action.\n", status_description(current_status).c_str());
             }
@@ -661,6 +659,12 @@ template<>
 inline bool skill_check<leech>(Field* fd, CardStatus* c, CardStatus* ref)
 {
     return(can_be_healed(c));
+}
+
+template<>
+inline bool skill_check<legion>(Field* fd, CardStatus* c, CardStatus* ref)
+{
+    return(is_active(c));
 }
 
 template<>
@@ -1033,15 +1037,11 @@ struct PerformAttack
             unsigned legion_size = 0;
             legion_size += att_status->m_index > 0 && assaults[att_status->m_index - 1].m_hp > 0 && assaults[att_status->m_index - 1].m_faction == att_status->m_faction;
             legion_size += att_status->m_index + 1 < assaults.size() && assaults[att_status->m_index + 1].m_hp > 0 && assaults[att_status->m_index + 1].m_faction == att_status->m_faction;
-            if (legion_size > 0)
+            if (legion_size > 0 && skill_check<legion>(fd, att_status, nullptr))
             {
-                // skill_check<legion>
-                if (att_status->m_hp > 0 && is_active(att_status))
-                {
-                    unsigned legion_value = legion_base * legion_size;
-                    if (debug_print > 0) { desc += "+" + to_string(legion_value) + "(legion)"; }
-                    att_dmg += legion_value;
-                }
+                unsigned legion_value = legion_base * legion_size;
+                if (debug_print > 0) { desc += "+" + to_string(legion_value) + "(legion)"; }
+                att_dmg += legion_value;
             }
         }
         unsigned rupture_value = att_status->skill(rupture);
@@ -1274,13 +1274,13 @@ inline bool skill_predicate<heal>(Field* fd, CardStatus* src, CardStatus* dst, c
 template<>
 inline bool skill_predicate<jam>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
-    return can_act(dst) && is_active_next_turn(dst);
+    return is_active_next_turn(dst);
 }
 
 template<>
 inline bool skill_predicate<overload>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
-    if (dst->m_overloaded || has_attacked(dst) || !(is_active(dst) && can_act(dst)))
+    if (dst->m_overloaded || has_attacked(dst) || !is_active(dst))
     {
         return false;
     }
@@ -1315,13 +1315,13 @@ inline bool skill_predicate<overload>(Field* fd, CardStatus* src, CardStatus* ds
 template<>
 inline bool skill_predicate<rally>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
-    return can_attack(dst) && (fd->tapi == dst->m_player ? is_active(dst) && !has_attacked(dst) : is_active_next_turn(dst));
+    return fd->tapi == dst->m_player ? is_active(dst) && !has_attacked(dst) : is_active_next_turn(dst);
 }
 
 template<>
 inline bool skill_predicate<weaken>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
-    return can_attack(dst) && attack_power(dst) > 0 && is_active_next_turn(dst);
+    return attack_power(dst) > 0 && is_active_next_turn(dst);
 }
 
 template<unsigned skill_id>
