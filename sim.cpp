@@ -1259,13 +1259,17 @@ inline bool skill_predicate(Field* fd, CardStatus* src, CardStatus* dst, const S
 template<>
 inline bool skill_predicate<enhance>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
-    return dst->has_skill(s.s) && ((BEGIN_DEFENSIVE < s.s && s.s < END_DEFENSIVE) || is_active(dst));
+    return dst->has_skill(s.s) && (!(BEGIN_ACTIVATION < s.s && s.s < END_ACTIVATION) || is_active(dst));
 }
 
+/*
+ * Target active units: Activation (Mortar)
+ * Target everything: Defensive (Refresh), Combat-Modifier (Rupture, Venom)
+ */
 template<>
 inline bool skill_predicate<evolve>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
-    return dst->has_skill(s.s) && !dst->has_skill(s.s2) && ((BEGIN_DEFENSIVE < s.s2 && s.s2 < END_DEFENSIVE) || is_active(dst));
+    return dst->has_skill(s.s) && !dst->has_skill(s.s2) && (!(BEGIN_ACTIVATION < s.s2 && s.s2 < END_ACTIVATION) || is_active(dst));
 }
 
 template<>

@@ -12,12 +12,12 @@ std::string skill_names[Skill::num_skills] =
     // Attack:
     "0",
     // Activation:
-    "<Error>",
+    "<Error>", "<Error>",
     "Enfeeble", "Jam", "Mortar", "Siege", "Strike", "Weaken",
     "<Error>",
     "<Error>",
     "Enhance", "Evolve", "Heal", "Mend", "Overload", "Protect", "Rally",
-    "<Error>",
+    "<Error>", "<Error>",
     // Defensive:
     "<Error>",
     "Armor", "Avenge", "Corrosive", "Counter", "Evade", "Payback", "Refresh", "Wall",

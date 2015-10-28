@@ -28,12 +28,12 @@ enum Skill
     // Attack:
     attack,
     // Activation:
-    BEGIN_ACTIVATION_HARMFUL, // TODO skill traits
+    BEGIN_ACTIVATION, BEGIN_ACTIVATION_HARMFUL, // TODO skill traits
     enfeeble, jam, mortar, siege, strike, weaken,
     END_ACTIVATION_HARMFUL,
     BEGIN_ACTIVATION_HELPFUL,
     enhance, evolve, heal, mend, overload, protect, rally,
-    END_ACTIVATION_HELPFUL,
+    END_ACTIVATION_HELPFUL, END_ACTIVATION,
     // Defensive:
     BEGIN_DEFENSIVE,
     armor, avenge, corrosive, counter, evade, payback, refresh, wall,
