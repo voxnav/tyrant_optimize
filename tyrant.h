@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "2.11.0"
+#define TYRANT_OPTIMIZER_VERSION "2.11.1"
 
 #include <string>
 #include <sstream>
@@ -40,13 +40,13 @@ enum Skill
     END_DEFENSIVE,
     // Combat-Modifier:
     legion, pierce, rupture, swipe, venom,
-    // Damage-Dependant:
+    // Damage-Dependent:
     berserk, inhibit, leech, poison,
     // Triggered:
     flurry, valor,
     // Pseudo-Skill for BGE:
     BEGIN_BGE_SKILL,
-    bloodlust, counterflux, divert, enduringrage, fortification, metamorphosis, reaping, turningtides,
+    bloodlust, brigade, counterflux, divert, enduringrage, fortification, metamorphosis, reaping, turningtides,
     END_BGE_SKILL,
     num_skills
 };

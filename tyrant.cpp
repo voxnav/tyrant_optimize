@@ -30,7 +30,7 @@ std::string skill_names[Skill::num_skills] =
     "Flurry", "Valor",
     // Pseudo-skill for passive BGEs:
     "<Error>",
-    "Bloodlust", "Counterflux", "Divert", "EnduringRage", "Fortification", "Metamorphosis", "Reaping", "TurningTides",
+    "Bloodlust", "Brigade", "Counterflux", "Divert", "EnduringRage", "Fortification", "Metamorphosis", "Reaping", "TurningTides",
     "<Error>",
 };
 

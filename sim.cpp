@@ -1030,16 +1030,16 @@ struct PerformAttack
         if (att_dmg == 0) { return; }
         std::string desc;
         // enhance damage
+        unsigned legion_value = 0;
         unsigned legion_base = att_status->skill(legion);
         if (legion_base > 0)
         {
             auto & assaults = fd->tap->assaults;
-            unsigned legion_size = 0;
-            legion_size += att_status->m_index > 0 && assaults[att_status->m_index - 1].m_hp > 0 && assaults[att_status->m_index - 1].m_faction == att_status->m_faction;
-            legion_size += att_status->m_index + 1 < assaults.size() && assaults[att_status->m_index + 1].m_hp > 0 && assaults[att_status->m_index + 1].m_faction == att_status->m_faction;
-            if (legion_size > 0 && skill_check<legion>(fd, att_status, nullptr))
+            legion_value += att_status->m_index > 0 && assaults[att_status->m_index - 1].m_hp > 0 && assaults[att_status->m_index - 1].m_faction == att_status->m_faction;
+            legion_value += att_status->m_index + 1 < assaults.size() && assaults[att_status->m_index + 1].m_hp > 0 && assaults[att_status->m_index + 1].m_faction == att_status->m_faction;
+            if (legion_value > 0 && skill_check<legion>(fd, att_status, nullptr))
             {
-                unsigned legion_value = legion_base * legion_size;
+                legion_value *= legion_base;
                 if (debug_print > 0) { desc += "+" + to_string(legion_value) + "(legion)"; }
                 att_dmg += legion_value;
             }
@@ -1099,6 +1099,11 @@ struct PerformAttack
             if(!reduced_desc.empty()) { desc += "-[" + reduced_desc + "]"; }
             if(!desc.empty()) { desc += "=" + to_string(att_dmg); }
             _DEBUG_MSG(1, "%s attacks %s for %u%s damage\n", status_description(att_status).c_str(), status_description(def_status).c_str(), pre_modifier_dmg, desc.c_str());
+        }
+        if (legion_value > 0 && can_be_healed(att_status) && fd->bg_effects.count(brigade))
+        {
+            _DEBUG_MSG(1, "Brigade: %s heals itself for %u\n", status_description(att_status).c_str(), legion_value);
+            add_hp(fd, att_status, legion_value);
         }
     }
 
