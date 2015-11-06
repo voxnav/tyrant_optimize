@@ -235,7 +235,27 @@ void parse_card_node(Cards& all_cards, Card* card, xml_node<>* card_node)
     card->m_top_level_card = top_card;
 }
 
-void load_cards_xml(Cards & all_cards, const std::string & filename, bool do_warn_on_missing=true)
+void load_cards_xml(Cards & all_cards, const std::string & filename, bool do_warn_on_missing)
+{
+    std::vector<char> buffer;
+    xml_document<> doc;
+    parse_file(filename, buffer, doc, do_warn_on_missing);
+    xml_node<>* root = doc.first_node();
+
+    if(!root)
+    {
+        return;
+    }
+    for (xml_node<>* card_node = root->first_node("unit");
+        card_node;
+        card_node = card_node->next_sibling("unit"))
+    {
+        auto card = new Card();
+        parse_card_node(all_cards, card, card_node);
+    }
+}
+
+void load_skills_set_xml(Cards & all_cards, const std::string & filename, bool do_warn_on_missing)
 {
     std::vector<char> buffer;
     xml_document<> doc;
@@ -256,13 +276,6 @@ void load_cards_xml(Cards & all_cards, const std::string & filename, bool do_war
         {
             all_cards.visible_cardset.insert(atoi(id_node->value()));
         }
-    }
-    for (xml_node<>* card_node = root->first_node("unit");
-        card_node;
-        card_node = card_node->next_sibling("unit"))
-    {
-        auto card = new Card();
-        parse_card_node(all_cards, card, card_node);
     }
 }
 //------------------------------------------------------------------------------

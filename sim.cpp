@@ -418,7 +418,10 @@ struct PlayCard
         status->m_player = fd->tapi;
         if (status->m_player == 0)
         {
-            fd->inc_counter(QuestType::faction_card_use, card->m_faction);
+            if (status->m_card->m_type == CardType::assault)
+            {
+                fd->inc_counter(QuestType::faction_assault_card_use, card->m_faction);
+            }
             fd->inc_counter(QuestType::type_card_use, type);
         }
         _DEBUG_MSG(1, "%s plays %s %u [%s]\n", status_description(&fd->tap->commander).c_str(), cardtype_names[type].c_str(), static_cast<unsigned>(storage->size() - 1), card_description(fd->cards, card).c_str());

@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "2.11.1"
+#define TYRANT_OPTIMIZER_VERSION "2.12.0"
 
 #include <string>
 #include <sstream>
@@ -94,7 +94,7 @@ enum QuestType
     none,
     skill_use,
     skill_damage,
-    faction_card_use,
+    faction_assault_card_use,
     type_card_use,
     faction_assault_card_kill,
     type_card_kill,

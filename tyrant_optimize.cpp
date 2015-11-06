@@ -344,7 +344,7 @@ unsigned check_requirement(const Deck* deck, const Requirement & requirement, co
                         }
                     }
                     break;
-                case QuestType::faction_card_use:
+                case QuestType::faction_assault_card_use:
                     potential_value += (quest.quest_key == card->m_faction);
                     break;
                 case QuestType::type_card_use:
@@ -1154,6 +1154,7 @@ void print_available_effects()
 {
     std::cout << "Available effects besides activation skills:\n"
         "  Bloodlust X\n"
+        "  Brigade\n"
         "  Counterflux\n"
         "  Divert\n"
         "  EnduringRage\n"
@@ -1506,9 +1507,10 @@ int main(int argc, char** argv)
 
     Cards all_cards;
     Decks decks;
-    for (const auto & suffix: fn_suffix_list)
+    load_skills_set_xml(all_cards, "data/skills_set.xml", true);
+    for (unsigned section = 1; section <= 9; ++ section)
     {
-        load_cards_xml(all_cards, "data/cards" + suffix + ".xml", suffix.empty());
+        load_cards_xml(all_cards, "data/cards_section_" + to_string(section) + ".xml", false);
     }
     all_cards.organize();
     for (const auto & suffix: fn_suffix_list)
@@ -1733,7 +1735,7 @@ int main(int argc, char** argv)
                     {
                         if (key_str == boost::to_lower_copy(faction_names[i]))
                         {
-                            quest.quest_type = type_str == "cu" ? QuestType::faction_card_use : QuestType::faction_assault_card_kill;
+                            quest.quest_type = type_str == "cu" ? QuestType::faction_assault_card_use : QuestType::faction_assault_card_kill;
                             quest.quest_key = i;
                             break;
                         }
