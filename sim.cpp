@@ -1337,7 +1337,7 @@ inline bool skill_predicate<rally>(Field* fd, CardStatus* src, CardStatus* dst, 
 template<>
 inline bool skill_predicate<rush>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
-    return ! src->m_rush_attempted && dst->m_delay >= 1 + (src->m_card->m_type == CardType::assault && dst->m_index < src->m_index);
+    return ! src->m_rush_attempted && dst->m_delay >= 1u + (src->m_card->m_type == CardType::assault && dst->m_index < src->m_index);
 }
 
 template<>
