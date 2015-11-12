@@ -1427,6 +1427,10 @@ template<>
 inline void perform_skill<rush>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
     dst->m_delay -= 1;
+    if (dst->m_delay == 0)
+    {
+        check_and_perform_valor(fd, dst);
+    }
 }
 
 template<>
