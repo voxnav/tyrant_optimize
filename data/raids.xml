@@ -315,6 +315,27 @@
 		</deck>
 	</raid>
 
+	<raid>
+		<id>15</id>
+		<name>Lithid Raid</name>
+		<commander>1952</commander>
+		<levels>26</levels>
+		<deck>
+			<always_include>
+				<card>35130</card>
+				<card>35130</card>
+				<card>35140</card>
+				<card>35140</card>
+				<card>35150</card>
+				<card>35150</card>
+				<card>35160</card>
+				<card>35160</card>
+				<card>35170</card>
+				<card>35170</card>
+			</always_include>
+		</deck>
+	</raid>
+
 <!-- END of Raids -->
 
 

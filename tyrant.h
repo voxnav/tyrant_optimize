@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "2.12.0"
+#define TYRANT_OPTIMIZER_VERSION "2.13.0"
 
 #include <string>
 #include <sstream>
@@ -29,10 +29,10 @@ enum Skill
     attack,
     // Activation:
     BEGIN_ACTIVATION, BEGIN_ACTIVATION_HARMFUL, // TODO skill traits
-    enfeeble, jam, mortar, siege, strike, weaken,
+    enfeeble, jam, mortar, siege, strike, sunder, weaken,
     END_ACTIVATION_HARMFUL,
     BEGIN_ACTIVATION_HELPFUL,
-    enhance, evolve, heal, mend, overload, protect, rally,
+    enhance, evolve, heal, mend, overload, protect, rally, rush,
     END_ACTIVATION_HELPFUL, END_ACTIVATION,
     // Defensive:
     BEGIN_DEFENSIVE,

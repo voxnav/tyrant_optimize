@@ -116,6 +116,7 @@ inline void CardStatus::set(const Card& card)
     m_poisoned = 0;
     m_protected = 0;
     m_rallied = 0;
+    m_rush_attempted = false;
     m_weakened = 0;
 
     std::memset(m_primary_skill_offset, 0, sizeof m_primary_skill_offset);
@@ -206,8 +207,10 @@ std::string CardStatus::description() const
     if(m_delay > 0) {
         desc += " cd:" + to_string(m_delay);
     }
+    // Status w/o value
     if(m_jammed) { desc += ", jammed"; }
     if(m_overloaded) { desc += ", overloaded"; }
+    // Status w/ value
     if(m_corroded_rate > 0) { desc += ", corroded " + to_string(m_corroded_rate); }
     if(m_enfeebled > 0) { desc += ", enfeebled " + to_string(m_enfeebled); }
     if(m_inhibited > 0) { desc += ", inhibited " + to_string(m_inhibited); }
@@ -709,6 +712,7 @@ void remove_hp(Field* fd, CardStatus* status, unsigned dmg)
         }
     }
 }
+
 inline bool is_it_dead(CardStatus& c)
 {
     if(c.m_hp == 0) // yes it is
@@ -1331,6 +1335,12 @@ inline bool skill_predicate<rally>(Field* fd, CardStatus* src, CardStatus* dst, 
 }
 
 template<>
+inline bool skill_predicate<rush>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
+{
+    return ! src->m_rush_attempted && dst->m_delay >= 1 + (src->m_card->m_type == CardType::assault && dst->m_index < src->m_index);
+}
+
+template<>
 inline bool skill_predicate<weaken>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
     return attack_power(dst) > 0 && is_active_next_turn(dst);
@@ -1411,6 +1421,12 @@ template<>
 inline void perform_skill<rally>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
     dst->m_rallied += s.x;
+}
+
+template<>
+inline void perform_skill<rush>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
+{
+    dst->m_delay -= 1;
 }
 
 template<>
@@ -1511,6 +1527,9 @@ template<> std::vector<CardStatus*>& skill_targets<protect>(Field* fd, CardStatu
 { return(skill_targets_allied_assault(fd, src_status)); }
 
 template<> std::vector<CardStatus*>& skill_targets<rally>(Field* fd, CardStatus* src_status)
+{ return(skill_targets_allied_assault(fd, src_status)); }
+
+template<> std::vector<CardStatus*>& skill_targets<rush>(Field* fd, CardStatus* src_status)
 { return(skill_targets_allied_assault(fd, src_status)); }
 
 template<> std::vector<CardStatus*>& skill_targets<siege>(Field* fd, CardStatus* src_status)
@@ -1680,6 +1699,18 @@ void perform_targetted_allied_fast(Field* fd, CardStatus* src_status, const Skil
     }
 }
 
+void perform_targetted_allied_fast_rush(Field* fd, CardStatus* src_status, const SkillSpec& s)
+{
+    if (src_status->m_rush_attempted)
+    {
+        _DEBUG_MSG(2, "%s does not check Rush again.\n", status_description(src_status).c_str());
+        return;
+    }
+    _DEBUG_MSG(1, "%s attempts to activate Rush.\n", status_description(src_status).c_str());
+    perform_targetted_allied_fast<rush>(fd, src_status, s);
+    src_status->m_rush_attempted = true;
+}
+
 template<Skill skill_id>
 void perform_targetted_hostile_fast(Field* fd, CardStatus* src_status, const SkillSpec& s)
 {
@@ -1761,6 +1792,7 @@ void fill_skill_table()
     skill_table[overload] = perform_targetted_allied_fast<overload>;
     skill_table[protect] = perform_targetted_allied_fast<protect>;
     skill_table[rally] = perform_targetted_allied_fast<rally>;
+    skill_table[rush] = perform_targetted_allied_fast_rush;
     skill_table[siege] = perform_targetted_hostile_fast<siege>;
     skill_table[strike] = perform_targetted_hostile_fast<strike>;
     skill_table[weaken] = perform_targetted_hostile_fast<weaken>;

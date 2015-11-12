@@ -156,6 +156,7 @@ struct CardStatus
     unsigned m_poisoned;
     unsigned m_protected;
     unsigned m_rallied;
+    bool m_rush_attempted;
     unsigned m_weakened;
 
     signed m_primary_skill_offset[num_skills];
