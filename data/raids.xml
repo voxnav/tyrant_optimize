@@ -324,22 +324,20 @@
 			<always_include>
 				<card>35130</card>
 				<card>35140</card>
+				<card>35150</card>
+				<card>35160</card>
 			</always_include>
 			<card_pool amount="2">
-				<card>35140</card>
-				<card>35140</card>
+				<card>35150</card>
 				<card>35160</card>
 			</card_pool>
-			<card_pool amount="3">
+			<card_pool amount="5">
 				<card>35130</card>
-				<card>35150</card>
+				<card>35130</card>
+				<card>35140</card>
+				<card>35140</card>
 				<card>35160</card>
 				<card>35170</card>
-			</card_pool>
-			<card_pool amount="3">
-				<card>35130</card>
-				<card>35150</card>
-				<card>35160</card>
 				<card>35170</card>
 			</card_pool>
 		</deck>
