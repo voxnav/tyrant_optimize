@@ -3887,4 +3887,466 @@
 		</deck>
 	</campaign>
 
+	<campaign>
+		<id>911</id>
+		<name>Meph101</name>
+		<name>Mephisopheles Normal 1</name>
+		<commander>1014</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4456</card><!-- Brood Lackey -->
+				<card>4456</card><!-- Brood Lackey -->
+				<card>6632</card><!-- Savage Scorpion -->
+				<card>6632</card><!-- Savage Scorpion -->
+				<card>11090</card><!-- Contagion Wing-1 -->
+				<card>16396</card><!-- Mantis-1 -->
+				<card>34229</card><!-- Sulfuris Seeker-1 -->
+				<card>34235</card><!-- Cavern Pest-1 -->
+				<card>34241</card><!-- Hunter Unearthed-1 -->
+				<card>34663</card><!-- Peirthius-3 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>912</id>
+		<name>Meph102</name>
+		<name>Mephisopheles Normal 2</name>
+		<commander>1014</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4460</card><!-- Brood Minion -->
+				<card>4460</card><!-- Brood Minion -->
+				<card>6636</card><!-- Vicious Scorpion -->
+				<card>6636</card><!-- Vicious Scorpion -->
+				<card>16876</card><!-- Repurposed Husk-1 -->
+				<card>31020</card><!-- Sleek Shot-3 -->
+				<card>32821</card><!-- Foro-1 -->
+				<card>34229</card><!-- Sulfuris Seeker-1 -->
+				<card>34235</card><!-- Cavern Pest-1 -->
+				<card>34241</card><!-- Hunter Unearthed-1 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>913</id>
+		<name>Meph103</name>
+		<name>Mephisopheles Normal 3</name>
+		<commander>1928</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>16398</card><!-- Mantis-3 -->
+				<card>30730</card><!-- Carnal Gethar-1 -->
+				<card>31018</card><!-- Sleek Shot-1 -->
+				<card>32137</card><!-- Fallen Angel-1 -->
+				<card>32823</card><!-- Foro-3 -->
+				<card>34229</card><!-- Sulfuris Seeker-1 -->
+				<card>34229</card><!-- Sulfuris Seeker-1 -->
+				<card>34235</card><!-- Cavern Pest-1 -->
+				<card>34241</card><!-- Hunter Unearthed-1 -->
+				<card>34717</card><!-- Overwhelmer-3 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>914</id>
+		<name>Meph104</name>
+		<name>Mephisopheles Normal 4</name>
+		<commander>1014</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4456</card><!-- Brood Lackey -->
+				<card>4456</card><!-- Brood Lackey -->
+				<card>6632</card><!-- Savage Scorpion -->
+				<card>14690</card><!-- Soot Breath-1 -->
+				<card>14974</card><!-- Zomboid-3 -->
+				<card>15712</card><!-- Bloater-3 -->
+				<card>30224</card><!-- Claret Pest-1 -->
+				<card>34229</card><!-- Sulfuris Seeker-1 -->
+				<card>34235</card><!-- Cavern Pest-1 -->
+				<card>34241</card><!-- Hunter Unearthed-1 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>915</id>
+		<name>Meph105</name>
+		<name>Mephisopheles Normal 5</name>
+		<commander>1014</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4460</card><!-- Brood Minion -->
+				<card>6636</card><!-- Vicious Scorpion -->
+				<card>14977</card><!-- Zomboid -->
+				<card>15712</card><!-- Bloater-3 -->
+				<card>30224</card><!-- Claret Pest-1 -->
+				<card>33471</card><!-- Entangler Gore-1 -->
+				<card>34229</card><!-- Sulfuris Seeker-1 -->
+				<card>34235</card><!-- Cavern Pest-1 -->
+				<card>34241</card><!-- Hunter Unearthed-1 -->
+				<card>35078</card><!-- Abscess Vagrant-3 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>916</id>
+		<name>Meph106</name>
+		<name>Mephisopheles Normal 6</name>
+		<commander>1934</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>33399</card><!-- Araneae Hive-1 -->
+				<card>33473</card><!-- Entangler Gore-3 -->
+				<card>33557</card><!-- Unislicer-3 -->
+				<card>34229</card><!-- Sulfuris Seeker-1 -->
+				<card>34235</card><!-- Cavern Pest-1 -->
+				<card>34235</card><!-- Cavern Pest-1 -->
+				<card>34241</card><!-- Hunter Unearthed-1 -->
+				<card>34483</card><!-- Engulfed Responder-3 -->
+				<card>34541</card><!-- Sulfuris Mite-1 -->
+				<card>35081</card><!-- Abscess Vagrant -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>917</id>
+		<name>Meph107</name>
+		<name>Mephisopheles Normal 7</name>
+		<commander>1940</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>30799</card><!-- Rust Chomper -->
+				<card>31778</card><!-- Walking Hatchery -->
+				<card>31890</card><!-- Infected Megalodon -->
+				<card>33563</card><!-- Unislasher-3 -->
+				<card>34126</card><!-- Boon of Spikes -->
+				<card>34229</card><!-- Sulfuris Seeker-1 -->
+				<card>34235</card><!-- Cavern Pest-1 -->
+				<card>34241</card><!-- Hunter Unearthed-1 -->
+				<card>34241</card><!-- Hunter Unearthed-1 -->
+				<card>34486</card><!-- Engulfed Responder -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>921</id>
+		<name>Meph201</name>
+		<name>Mephisopheles Heroic 1</name>
+		<commander>1037</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>11102</card><!-- Tainted Wing-1 -->
+				<card>11102</card><!-- Tainted Wing-1 -->
+				<card>16408</card><!-- Mantis Thresher-1 -->
+				<card>16408</card><!-- Mantis Thresher-1 -->
+				<card>16518</card><!-- Metagoblin-3 -->
+				<card>34231</card><!-- Sulfuris Seeker-3 -->
+				<card>34237</card><!-- Cavern Pest-3 -->
+				<card>34243</card><!-- Hunter Unearthed-3 -->
+				<card>34673</card><!-- Pithius-1 -->
+				<card>34795</card><!-- Riktox Extractor-3 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>922</id>
+		<name>Meph202</name>
+		<name>Mephisopheles Heroic 2</name>
+		<commander>1037</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>16518</card><!-- Metagoblin-3 -->
+				<card>16884</card><!-- Deformed Husk-3 -->
+				<card>31024</card><!-- Sleek Beamshot-1 -->
+				<card>32145</card><!-- Risen Demon-3 -->
+				<card>32833</card><!-- Foro Jacker-1 -->
+				<card>34231</card><!-- Sulfuris Seeker-3 -->
+				<card>34237</card><!-- Cavern Pest-3 -->
+				<card>34243</card><!-- Hunter Unearthed-3 -->
+				<card>34727</card><!-- Overwhelmer Orga-1 -->
+				<card>34795</card><!-- Riktox Extractor-3 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>923</id>
+		<name>Meph203</name>
+		<name>Mephisopheles Heroic 3</name>
+		<commander>1930</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>14482</card><!-- Graverobber-3 -->
+				<card>16408</card><!-- Mantis Thresher-1 -->
+				<card>30738</card><!-- Gethar the Monster-3 -->
+				<card>31020</card><!-- Sleek Shot-3 -->
+				<card>31020</card><!-- Sleek Shot-3 -->
+				<card>34234</card><!-- Sulfuris Seeker -->
+				<card>34234</card><!-- Sulfuris Seeker -->
+				<card>34237</card><!-- Cavern Pest-3 -->
+				<card>34243</card><!-- Hunter Unearthed-3 -->
+				<card>34723</card><!-- Overwhelmer Mecha-3 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>924</id>
+		<name>Meph204</name>
+		<name>Mephisopheles Heroic 4</name>
+		<commander>1038</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>14698</card><!-- Smolder Breath-3 -->
+				<card>14980</card><!-- Blight Zomboid-3 -->
+				<card>15718</card><!-- Fueled Bloater-3 -->
+				<card>30226</card><!-- Claret Pest-3 -->
+				<card>30226</card><!-- Claret Pest-3 -->
+				<card>31364</card><!-- Lull Fiend -->
+				<card>33506</card><!-- The Haunted -->
+				<card>34231</card><!-- Sulfuris Seeker-3 -->
+				<card>34237</card><!-- Cavern Pest-3 -->
+				<card>34243</card><!-- Hunter Unearthed-3 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>925</id>
+		<name>Meph205</name>
+		<name>Mephisopheles Heroic 5</name>
+		<commander>1038</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>14698</card><!-- Smolder Breath-3 -->
+				<card>31364</card><!-- Lull Fiend -->
+				<card>32535</card><!-- Harpy Hunting-3 -->
+				<card>33257</card><!-- Deep Horror-3 -->
+				<card>33477</card><!-- Entangler Vast-1 -->
+				<card>33509</card><!-- Haunted Mass-3 -->
+				<card>34231</card><!-- Sulfuris Seeker-3 -->
+				<card>34237</card><!-- Cavern Pest-3 -->
+				<card>34243</card><!-- Hunter Unearthed-3 -->
+				<card>35084</card><!-- Abscess Wanderer-3 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>926</id>
+		<name>Meph206</name>
+		<name>Mephisopheles Heroic 6</name>
+		<commander>1936</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>32439</card><!-- Budding Saurus-3 -->
+				<card>33405</card><!-- Araneae Widow-1 -->
+				<card>33563</card><!-- Unislasher-3 -->
+				<card>34231</card><!-- Sulfuris Seeker-3 -->
+				<card>34240</card><!-- Cavern Pest -->
+				<card>34240</card><!-- Cavern Pest -->
+				<card>34243</card><!-- Hunter Unearthed-3 -->
+				<card>34489</card><!-- Consumed Envoy-3 -->
+				<card>34543</card><!-- Sulfuris Mite-3 -->
+				<card>35082</card><!-- Abscess Wanderer-1 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>927</id>
+		<name>Meph207</name>
+		<name>Mephisopheles Heroic 7</name>
+		<commander>1942</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>30802</card><!-- Rust Swallower-3 -->
+				<card>31781</card><!-- Carrier Hatchery-3 -->
+				<card>31891</card><!-- Tainted Megalodon-1 -->
+				<card>33563</card><!-- Unislasher-3 -->
+				<card>34129</card><!-- Boon of Hells-3 -->
+				<card>34231</card><!-- Sulfuris Seeker-3 -->
+				<card>34237</card><!-- Cavern Pest-3 -->
+				<card>34243</card><!-- Hunter Unearthed-3 -->
+				<card>34243</card><!-- Hunter Unearthed-3 -->
+				<card>34493</card><!-- Assimilated Envoy-1 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>931</id>
+		<name>Meph301</name>
+		<name>Mephisopheles Mythic 1</name>
+		<commander>1039</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>11107</card><!-- Tainted Wing -->
+				<card>16413</card><!-- Mantis Thresher -->
+				<card>16413</card><!-- Mantis Thresher -->
+				<card>16527</card><!-- Disgorger -->
+				<card>16527</card><!-- Disgorger -->
+				<card>30931</card><!-- Baelzon -->
+				<card>34234</card><!-- Sulfuris Seeker -->
+				<card>34240</card><!-- Cavern Pest -->
+				<card>34246</card><!-- Hunter Unearthed -->
+				<card>34804</card><!-- Riktox Liquefier -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>932</id>
+		<name>Meph302</name>
+		<name>Mephisopheles Mythic 2</name>
+		<commander>1039</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>14491</card><!-- Graveswindler -->
+				<card>16893</card><!-- Malformed Husk -->
+				<card>30931</card><!-- Baelzon -->
+				<card>31029</card><!-- Sleek Beamshot -->
+				<card>32154</card><!-- Succubus the Siren -->
+				<card>32154</card><!-- Succubus the Siren -->
+				<card>32838</card><!-- Foro Jacker -->
+				<card>34234</card><!-- Sulfuris Seeker -->
+				<card>34240</card><!-- Cavern Pest -->
+				<card>34246</card><!-- Hunter Unearthed -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>933</id>
+		<name>Meph303</name>
+		<name>Mephisopheles Mythic 3</name>
+		<commander>1933</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>14497</card><!-- Grave Marauder -->
+				<card>16413</card><!-- Mantis Thresher -->
+				<card>16413</card><!-- Mantis Thresher -->
+				<card>31029</card><!-- Sleek Beamshot -->
+				<card>31029</card><!-- Sleek Beamshot -->
+				<card>34234</card><!-- Sulfuris Seeker -->
+				<card>34234</card><!-- Sulfuris Seeker -->
+				<card>34240</card><!-- Cavern Pest -->
+				<card>34246</card><!-- Hunter Unearthed -->
+				<card>34732</card><!-- Overwhelmer Orga -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>934</id>
+		<name>Meph304</name>
+		<name>Mephisopheles Mythic 4</name>
+		<commander>1040</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>14989</card><!-- Infectious Zomboid -->
+				<card>14989</card><!-- Infectious Zomboid -->
+				<card>15727</card><!-- Toxic Fueled Bloater -->
+				<card>30235</card><!-- Claret Wasp -->
+				<card>30235</card><!-- Claret Wasp -->
+				<card>31376</card><!-- Sloth Fiend -->
+				<card>33518</card><!-- Haunted Incarnation -->
+				<card>34234</card><!-- Sulfuris Seeker -->
+				<card>34240</card><!-- Cavern Pest -->
+				<card>34246</card><!-- Hunter Unearthed -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>935</id>
+		<name>Meph305</name>
+		<name>Mephisopheles Mythic 5</name>
+		<commander>1040</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>14707</card><!-- Smoke Breath -->
+				<card>30315</card><!-- Overmind of Ghast -->
+				<card>33266</card><!-- Deep Lurker -->
+				<card>33482</card><!-- Entangler Vast -->
+				<card>33518</card><!-- Haunted Incarnation -->
+				<card>33518</card><!-- Haunted Incarnation -->
+				<card>34234</card><!-- Sulfuris Seeker -->
+				<card>34240</card><!-- Cavern Pest -->
+				<card>34246</card><!-- Hunter Unearthed -->
+				<card>35093</card><!-- Abscess Derelict -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>936</id>
+		<name>Meph306</name>
+		<name>Mephisopheles Mythic 6</name>
+		<commander>1939</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>30315</card><!-- Overmind of Ghast -->
+				<card>32454</card><!-- Cannib the Saurus -->
+				<card>33068</card><!-- Ramming Goreherth -->
+				<card>33410</card><!-- Araneae Widow -->
+				<card>34234</card><!-- Sulfuris Seeker -->
+				<card>34240</card><!-- Cavern Pest -->
+				<card>34240</card><!-- Cavern Pest -->
+				<card>34246</card><!-- Hunter Unearthed -->
+				<card>34552</card><!-- Sulfuris Acarid -->
+				<card>35093</card><!-- Abscess Derelict -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>937</id>
+		<name>Meph307</name>
+		<name>Mephisopheles Mythic 7</name>
+		<commander>1945</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>11516</card><!-- Ugolroth -->
+				<card>14058</card><!-- Abaddeon Hungers -->
+				<card>30811</card><!-- Rust Engulfer -->
+				<card>31902</card><!-- Predator Megalodon -->
+				<card>33068</card><!-- Ramming Goreherth -->
+				<card>34138</card><!-- Boon of Devils -->
+				<card>34234</card><!-- Sulfuris Seeker -->
+				<card>34246</card><!-- Hunter Unearthed -->
+				<card>34246</card><!-- Hunter Unearthed -->
+				<card>34354</card><!-- Loathe Abysswing -->
+			</always_include>
+		</deck>
+	</campaign>
+
 </root>
