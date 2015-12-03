@@ -323,6 +323,8 @@ inline bool is_active_next_turn(CardStatus* c) { return(can_act(c) && c->m_delay
 inline bool can_be_healed(CardStatus* c) { return(c->m_hp > 0 && c->m_hp < c->m_max_hp); }
 //------------------------------------------------------------------------------
 bool attack_phase(Field* fd);
+template<Skill skill_id>
+bool check_and_perform_skill(Field* fd, CardStatus* src_status, CardStatus* dst_status, const SkillSpec& s, bool is_evadable, bool & has_counted_quest);
 bool check_and_perform_valor(Field* fd, CardStatus* src_status);
 template <enum CardType::CardType type>
 void evaluate_skills(Field* fd, CardStatus* status, const std::vector<SkillSpec>& skills, bool* attacked=nullptr)
@@ -499,6 +501,26 @@ Results<uint64_t> play(Field* fd)
             }
         }
         if(__builtin_expect(fd->end, false)) { break; }
+
+        // Evaluate Heroism Battleground skills
+        if (fd->bg_effects.count(heroism))
+        {
+            for (CardStatus * status: fd->tap->assaults.m_indirect)
+            {
+                unsigned valor_value = status->skill(valor);
+                if (valor_value <= 0)
+                { continue; }
+                SkillSpec ss_protect{protect, valor_value, allfactions, 0, 0, no_skill, no_skill, false,};
+                if (status->m_inhibited > 0 && !status->m_overloaded)
+                {
+                    _DEBUG_MSG(1, "Heroism: %s %s on itself but it is inhibited\n", status_description(status).c_str(), skill_short_description(ss_protect).c_str());
+                    -- status->m_inhibited;
+                    continue;
+                }
+                bool has_counted_quest = false;
+                check_and_perform_skill<protect>(fd, status, status, ss_protect, false, has_counted_quest);
+            }
+        }
 
         // Evaluate activation Battleground skills
         for (const auto & bg_skill: fd->bg_skills)
@@ -1024,6 +1046,12 @@ struct PerformAttack
             }
         }
         do_leech<def_cardtype>();
+        unsigned valor_value = att_status->skill(valor);
+        if (valor_value > 0 && fd->bg_effects.count(heroism))
+        {
+            _DEBUG_MSG(1, "Heroism: %s gain %u attack\n", status_description(att_status).c_str(), valor_value);
+            att_status->m_attack += valor_value;
+        }
         prepend_on_death(fd);
         resolve_skill(fd);
         return att_dmg;

@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "2.13.0"
+#define TYRANT_OPTIMIZER_VERSION "2.14.0"
 
 #include <string>
 #include <sstream>
@@ -46,7 +46,7 @@ enum Skill
     flurry, valor,
     // Pseudo-Skill for BGE:
     BEGIN_BGE_SKILL,
-    bloodlust, brigade, counterflux, divert, enduringrage, fortification, metamorphosis, reaping, turningtides,
+    bloodlust, brigade, counterflux, divert, enduringrage, fortification, heroism, metamorphosis, reaping, turningtides,
     END_BGE_SKILL,
     num_skills
 };

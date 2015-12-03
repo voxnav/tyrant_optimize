@@ -1159,6 +1159,7 @@ void print_available_effects()
         "  Divert\n"
         "  EnduringRage\n"
         "  Fortification\n"
+        "  Heroism\n"
         "  Metamorphosis\n"
         "  Reaping X\n"
         "  TurningTides\n"
