@@ -280,10 +280,10 @@ void prepend_on_death(Field* fd)
                 }
             }
         }
-        if (fd->bg_effects.count(reaping))
+        if (fd->bg_effects.count(revenge))
         {
-            SkillSpec ss_heal{heal, fd->bg_effects.at(reaping), allfactions, 0, 0, no_skill, no_skill, true,};
-            SkillSpec ss_rally{rally, fd->bg_effects.at(reaping), allfactions, 0, 0, no_skill, no_skill, true,};
+            SkillSpec ss_heal{heal, fd->bg_effects.at(revenge), allfactions, 0, 0, no_skill, no_skill, true,};
+            SkillSpec ss_rally{rally, fd->bg_effects.at(revenge), allfactions, 0, 0, no_skill, no_skill, true,};
             _DEBUG_MSG(2, "Reaping: Preparing %s skill %s and %s\n", status_description(status).c_str(), skill_description(fd->cards, ss_heal).c_str(), skill_description(fd->cards, ss_rally).c_str());
             od_skills.emplace_back(status, ss_heal);
             od_skills.emplace_back(status, ss_rally);

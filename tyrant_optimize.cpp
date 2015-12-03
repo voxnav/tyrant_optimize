@@ -1161,7 +1161,7 @@ void print_available_effects()
         "  Fortification\n"
         "  Heroism\n"
         "  Metamorphosis\n"
-        "  Reaping X\n"
+        "  Revenge X\n"
         "  TurningTides\n"
         ;
 }
