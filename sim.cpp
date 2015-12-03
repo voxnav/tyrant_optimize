@@ -505,20 +505,20 @@ Results<uint64_t> play(Field* fd)
         // Evaluate Heroism Battleground skills
         if (fd->bg_effects.count(heroism))
         {
-            for (CardStatus * status: fd->tap->assaults.m_indirect)
+            for (CardStatus * dst_status: fd->tap->assaults.m_indirect)
             {
-                unsigned valor_value = status->skill(valor);
+                unsigned valor_value = dst_status->skill(valor);
                 if (valor_value <= 0)
                 { continue; }
                 SkillSpec ss_protect{protect, valor_value, allfactions, 0, 0, no_skill, no_skill, false,};
-                if (status->m_inhibited > 0 && !status->m_overloaded)
+                if (dst_status->m_inhibited > 0)
                 {
-                    _DEBUG_MSG(1, "Heroism: %s %s on itself but it is inhibited\n", status_description(status).c_str(), skill_short_description(ss_protect).c_str());
-                    -- status->m_inhibited;
+                    _DEBUG_MSG(1, "Heroism: %s on %s but it is inhibited\n", skill_short_description(ss_protect).c_str(), status_description(dst_status).c_str());
+                    -- dst_status->m_inhibited;
                     continue;
                 }
                 bool has_counted_quest = false;
-                check_and_perform_skill<protect>(fd, status, status, ss_protect, false, has_counted_quest);
+                check_and_perform_skill<protect>(fd, &fd->tap->commander, dst_status, ss_protect, false, has_counted_quest);
             }
         }
 
