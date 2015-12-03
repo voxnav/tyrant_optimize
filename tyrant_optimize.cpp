@@ -1233,7 +1233,7 @@ int main(int argc, char** argv)
     std::vector<std::string> opt_owned_cards_str_list;
     bool opt_do_optimization(false);
     bool opt_keep_commander{false};
-    std::tuple<unsigned, unsigned, Operation> opt_todo;
+    std::vector<std::tuple<unsigned, unsigned, Operation>> opt_todo;
     std::vector<std::string> opt_effects;
     std::unordered_map<unsigned, unsigned> opt_bg_effects;
     std::vector<SkillSpec> opt_bg_skills;
@@ -1462,40 +1462,40 @@ int main(int argc, char** argv)
         }
         else if(strcmp(argv[argIndex], "sim") == 0)
         {
-            opt_todo = std::make_tuple((unsigned)atoi(argv[argIndex + 1]), 0u, simulate);
-            if (std::get<0>(opt_todo) < 10) { opt_num_threads = 1; }
+            opt_todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), 0u, simulate));
+            if (std::get<0>(opt_todo.back()) < 10) { opt_num_threads = 1; }
             argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "climbex") == 0)
         {
-            opt_todo = std::make_tuple((unsigned)atoi(argv[argIndex + 1]), (unsigned)atoi(argv[argIndex + 2]), climb);
-            if (std::get<1>(opt_todo) < 10) { opt_num_threads = 1; }
+            opt_todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), (unsigned)atoi(argv[argIndex + 2]), climb));
+            if (std::get<1>(opt_todo.back()) < 10) { opt_num_threads = 1; }
             opt_do_optimization = true;
             argIndex += 2;
         }
         else if(strcmp(argv[argIndex], "climb") == 0)
         {
-            opt_todo = std::make_tuple((unsigned)atoi(argv[argIndex + 1]), (unsigned)atoi(argv[argIndex + 1]), climb);
-            if (std::get<1>(opt_todo) < 10) { opt_num_threads = 1; }
+            opt_todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), (unsigned)atoi(argv[argIndex + 1]), climb));
+            if (std::get<1>(opt_todo.back()) < 10) { opt_num_threads = 1; }
             opt_do_optimization = true;
             argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "reorder") == 0)
         {
-            opt_todo = std::make_tuple((unsigned)atoi(argv[argIndex + 1]), (unsigned)atoi(argv[argIndex + 1]), reorder);
-            if (std::get<1>(opt_todo) < 10) { opt_num_threads = 1; }
+            opt_todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), (unsigned)atoi(argv[argIndex + 1]), reorder));
+            if (std::get<1>(opt_todo.back()) < 10) { opt_num_threads = 1; }
             argIndex += 1;
         }
         else if(strcmp(argv[argIndex], "debug") == 0)
         {
-            opt_todo = std::make_tuple(0u, 0u, debug);
+            opt_todo.push_back(std::make_tuple(0u, 0u, debug));
             opt_num_threads = 1;
         }
         else if(strcmp(argv[argIndex], "debuguntil") == 0)
         {
             // output the debug info for the first battle that min_score <= score <= max_score.
             // E.g., 0 0: lose; 100 100: win (non-raid); 20 100: at least 20 damage (raid).
-            opt_todo = std::make_tuple((unsigned)atoi(argv[argIndex + 1]), (unsigned)atoi(argv[argIndex + 2]), debuguntil);
+            opt_todo.push_back(std::make_tuple((unsigned)atoi(argv[argIndex + 1]), (unsigned)atoi(argv[argIndex + 2]), debuguntil));
             opt_num_threads = 1;
             argIndex += 2;
         }
@@ -1961,14 +1961,15 @@ int main(int argc, char** argv)
 
     Process p(opt_num_threads, all_cards, decks, your_deck, enemy_decks, enemy_decks_factors, gamemode, quest, opt_bg_effects, opt_bg_skills);
 
+    for(auto op: opt_todo)
     {
-        switch(std::get<2>(opt_todo))
+        switch(std::get<2>(op))
         {
         case noop:
             break;
         case simulate: {
             EvaluatedResults results = { EvaluatedResults::first_type(enemy_decks.size()), 0 };
-            results = p.evaluate(std::get<0>(opt_todo), results);
+            results = p.evaluate(std::get<0>(op), results);
             print_results(results, p.factors);
             break;
         }
@@ -1976,12 +1977,12 @@ int main(int argc, char** argv)
             switch (opt_your_strategy)
             {
             case DeckStrategy::random:
-                hill_climbing(std::get<0>(opt_todo), std::get<1>(opt_todo), your_deck, p, requirement, quest);
+                hill_climbing(std::get<0>(op), std::get<1>(op), your_deck, p, requirement, quest);
                 break;
 //                case DeckStrategy::ordered:
 //                case DeckStrategy::exact_ordered:
             default:
-                hill_climbing_ordered(std::get<0>(opt_todo), std::get<1>(opt_todo), your_deck, p, requirement, quest);
+                hill_climbing_ordered(std::get<0>(op), std::get<1>(op), your_deck, p, requirement, quest);
                 break;
             }
             break;
@@ -1998,7 +1999,7 @@ int main(int argc, char** argv)
             owned_cards.clear();
             claim_cards({your_deck->commander});
             claim_cards(your_deck->cards);
-            hill_climbing_ordered(std::get<0>(opt_todo), std::get<1>(opt_todo), your_deck, p, requirement, quest);
+            hill_climbing_ordered(std::get<0>(op), std::get<1>(op), your_deck, p, requirement, quest);
             break;
         }
         case debug: {
@@ -2019,7 +2020,7 @@ int main(int argc, char** argv)
                 EvaluatedResults results{EvaluatedResults::first_type(enemy_decks.size()), 0};
                 results = p.evaluate(1, results);
                 auto score = compute_score(results, p.factors);
-                if(score.points >= std::get<0>(opt_todo) && score.points <= std::get<1>(opt_todo))
+                if(score.points >= std::get<0>(op) && score.points <= std::get<1>(op))
                 {
                     std::cout << debug_str << std::flush;
                     print_results(results, p.factors);
