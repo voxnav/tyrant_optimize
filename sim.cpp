@@ -284,7 +284,7 @@ void prepend_on_death(Field* fd)
         {
             SkillSpec ss_heal{heal, fd->bg_effects.at(revenge), allfactions, 0, 0, no_skill, no_skill, true,};
             SkillSpec ss_rally{rally, fd->bg_effects.at(revenge), allfactions, 0, 0, no_skill, no_skill, true,};
-            _DEBUG_MSG(2, "Reaping: Preparing %s skill %s and %s\n", status_description(status).c_str(), skill_description(fd->cards, ss_heal).c_str(), skill_description(fd->cards, ss_rally).c_str());
+            _DEBUG_MSG(2, "Revenge: Preparing skill %s and %s\n", skill_description(fd->cards, ss_heal).c_str(), skill_description(fd->cards, ss_rally).c_str());
             od_skills.emplace_back(status, ss_heal);
             od_skills.emplace_back(status, ss_rally);
         }
@@ -293,7 +293,7 @@ void prepend_on_death(Field* fd)
     fd->killed_units.clear();
 }
 //------------------------------------------------------------------------------
-void(*skill_table[num_skills])(Field*, CardStatus* src_status, const SkillSpec&);
+void(*skill_table[num_skills])(Field*, CardStatus* src, const SkillSpec&);
 void resolve_skill(Field* fd)
 {
     while(!fd->skill_queue.empty())
@@ -324,8 +324,8 @@ inline bool can_be_healed(CardStatus* c) { return(c->m_hp > 0 && c->m_hp < c->m_
 //------------------------------------------------------------------------------
 bool attack_phase(Field* fd);
 template<Skill skill_id>
-bool check_and_perform_skill(Field* fd, CardStatus* src_status, CardStatus* dst_status, const SkillSpec& s, bool is_evadable, bool & has_counted_quest);
-bool check_and_perform_valor(Field* fd, CardStatus* src_status);
+bool check_and_perform_skill(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s, bool is_evadable, bool & has_counted_quest);
+bool check_and_perform_valor(Field* fd, CardStatus* src);
 template <enum CardType::CardType type>
 void evaluate_skills(Field* fd, CardStatus* status, const std::vector<SkillSpec>& skills, bool* attacked=nullptr)
 {
@@ -505,20 +505,20 @@ Results<uint64_t> play(Field* fd)
         // Evaluate Heroism Battleground skills
         if (fd->bg_effects.count(heroism))
         {
-            for (CardStatus * dst_status: fd->tap->assaults.m_indirect)
+            for (CardStatus * dst: fd->tap->assaults.m_indirect)
             {
-                unsigned valor_value = dst_status->skill(valor);
+                unsigned valor_value = dst->skill(valor);
                 if (valor_value <= 0)
                 { continue; }
                 SkillSpec ss_protect{protect, valor_value, allfactions, 0, 0, no_skill, no_skill, false,};
-                if (dst_status->m_inhibited > 0)
+                if (dst->m_inhibited > 0)
                 {
-                    _DEBUG_MSG(1, "Heroism: %s on %s but it is inhibited\n", skill_short_description(ss_protect).c_str(), status_description(dst_status).c_str());
-                    -- dst_status->m_inhibited;
+                    _DEBUG_MSG(1, "Heroism: %s on %s but it is inhibited\n", skill_short_description(ss_protect).c_str(), status_description(dst).c_str());
+                    -- dst->m_inhibited;
                     continue;
                 }
                 bool has_counted_quest = false;
-                check_and_perform_skill<protect>(fd, &fd->tap->commander, dst_status, ss_protect, false, has_counted_quest);
+                check_and_perform_skill<protect>(fd, &fd->tap->commander, dst, ss_protect, false, has_counted_quest);
             }
         }
 
@@ -1365,7 +1365,7 @@ inline bool skill_predicate<rally>(Field* fd, CardStatus* src, CardStatus* dst, 
 template<>
 inline bool skill_predicate<rush>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
-    return ! src->m_rush_attempted && dst->m_delay >= 1u + (src->m_card->m_type == CardType::assault && dst->m_index < src->m_index);
+    return ! src->m_rush_attempted && dst->m_delay >= (src->m_card->m_type == CardType::assault && dst->m_index < src->m_index ? 2u : 1u);
 }
 
 template<>
@@ -1481,25 +1481,25 @@ inline void perform_skill<weaken>(Field* fd, CardStatus* src, CardStatus* dst, c
 }
 
 template<unsigned skill_id>
-inline unsigned select_fast(Field* fd, CardStatus* src_status, const std::vector<CardStatus*>& cards, const SkillSpec& s)
+inline unsigned select_fast(Field* fd, CardStatus* src, const std::vector<CardStatus*>& cards, const SkillSpec& s)
 {
     if (s.y == allfactions || fd->bg_effects.count(metamorphosis))
     {
-        return(fd->make_selection_array(cards.begin(), cards.end(), [fd, src_status, s](CardStatus* c){return(skill_predicate<skill_id>(fd, src_status, c, s));}));
+        return(fd->make_selection_array(cards.begin(), cards.end(), [fd, src, s](CardStatus* c){return(skill_predicate<skill_id>(fd, src, c, s));}));
     }
     else
     {
-        return(fd->make_selection_array(cards.begin(), cards.end(), [fd, src_status, s](CardStatus* c){return((c->m_faction == s.y || c->m_faction == progenitor) && skill_predicate<skill_id>(fd, src_status, c, s));}));
+        return(fd->make_selection_array(cards.begin(), cards.end(), [fd, src, s](CardStatus* c){return((c->m_faction == s.y || c->m_faction == progenitor) && skill_predicate<skill_id>(fd, src, c, s));}));
     }
 }
 
 template<>
-inline unsigned select_fast<mend>(Field* fd, CardStatus* src_status, const std::vector<CardStatus*>& cards, const SkillSpec& s)
+inline unsigned select_fast<mend>(Field* fd, CardStatus* src, const std::vector<CardStatus*>& cards, const SkillSpec& s)
 {
     fd->selection_array.clear();
-    for (auto && adj_status: fd->adjacent_assaults(src_status))
+    for (auto && adj_status: fd->adjacent_assaults(src))
     {
-        if (skill_predicate<mend>(fd, src_status, adj_status, s))
+        if (skill_predicate<mend>(fd, src, adj_status, s))
         {
             fd->selection_array.push_back(adj_status);
         }
@@ -1507,137 +1507,137 @@ inline unsigned select_fast<mend>(Field* fd, CardStatus* src_status, const std::
     return fd->selection_array.size();
 }
 
-inline std::vector<CardStatus*>& skill_targets_hostile_assault(Field* fd, CardStatus* src_status)
+inline std::vector<CardStatus*>& skill_targets_hostile_assault(Field* fd, CardStatus* src)
 {
-    return(fd->players[opponent(src_status->m_player)]->assaults.m_indirect);
+    return(fd->players[opponent(src->m_player)]->assaults.m_indirect);
 }
 
-inline std::vector<CardStatus*>& skill_targets_allied_assault(Field* fd, CardStatus* src_status)
+inline std::vector<CardStatus*>& skill_targets_allied_assault(Field* fd, CardStatus* src)
 {
-    return(fd->players[src_status->m_player]->assaults.m_indirect);
+    return(fd->players[src->m_player]->assaults.m_indirect);
 }
 
-inline std::vector<CardStatus*>& skill_targets_hostile_structure(Field* fd, CardStatus* src_status)
+inline std::vector<CardStatus*>& skill_targets_hostile_structure(Field* fd, CardStatus* src)
 {
-    return(fd->players[opponent(src_status->m_player)]->structures.m_indirect);
+    return(fd->players[opponent(src->m_player)]->structures.m_indirect);
 }
 
-inline std::vector<CardStatus*>& skill_targets_allied_structure(Field* fd, CardStatus* src_status)
+inline std::vector<CardStatus*>& skill_targets_allied_structure(Field* fd, CardStatus* src)
 {
-    return(fd->players[src_status->m_player]->structures.m_indirect);
+    return(fd->players[src->m_player]->structures.m_indirect);
 }
 
 template<unsigned skill>
-std::vector<CardStatus*>& skill_targets(Field* fd, CardStatus* src_status)
+std::vector<CardStatus*>& skill_targets(Field* fd, CardStatus* src)
 {
     std::cerr << "skill_targets: Error: no specialization for " << skill_names[skill] << "\n";
     throw;
 }
 
-template<> std::vector<CardStatus*>& skill_targets<enfeeble>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_hostile_assault(fd, src_status)); }
+template<> std::vector<CardStatus*>& skill_targets<enfeeble>(Field* fd, CardStatus* src)
+{ return(skill_targets_hostile_assault(fd, src)); }
 
-template<> std::vector<CardStatus*>& skill_targets<enhance>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_allied_assault(fd, src_status)); }
+template<> std::vector<CardStatus*>& skill_targets<enhance>(Field* fd, CardStatus* src)
+{ return(skill_targets_allied_assault(fd, src)); }
 
-template<> std::vector<CardStatus*>& skill_targets<evolve>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_allied_assault(fd, src_status)); }
+template<> std::vector<CardStatus*>& skill_targets<evolve>(Field* fd, CardStatus* src)
+{ return(skill_targets_allied_assault(fd, src)); }
 
-template<> std::vector<CardStatus*>& skill_targets<heal>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_allied_assault(fd, src_status)); }
+template<> std::vector<CardStatus*>& skill_targets<heal>(Field* fd, CardStatus* src)
+{ return(skill_targets_allied_assault(fd, src)); }
 
-template<> std::vector<CardStatus*>& skill_targets<jam>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_hostile_assault(fd, src_status)); }
+template<> std::vector<CardStatus*>& skill_targets<jam>(Field* fd, CardStatus* src)
+{ return(skill_targets_hostile_assault(fd, src)); }
 
-template<> std::vector<CardStatus*>& skill_targets<mend>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_allied_assault(fd, src_status)); }
+template<> std::vector<CardStatus*>& skill_targets<mend>(Field* fd, CardStatus* src)
+{ return(skill_targets_allied_assault(fd, src)); }
 
-template<> std::vector<CardStatus*>& skill_targets<overload>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_allied_assault(fd, src_status)); }
+template<> std::vector<CardStatus*>& skill_targets<overload>(Field* fd, CardStatus* src)
+{ return(skill_targets_allied_assault(fd, src)); }
 
-template<> std::vector<CardStatus*>& skill_targets<protect>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_allied_assault(fd, src_status)); }
+template<> std::vector<CardStatus*>& skill_targets<protect>(Field* fd, CardStatus* src)
+{ return(skill_targets_allied_assault(fd, src)); }
 
-template<> std::vector<CardStatus*>& skill_targets<rally>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_allied_assault(fd, src_status)); }
+template<> std::vector<CardStatus*>& skill_targets<rally>(Field* fd, CardStatus* src)
+{ return(skill_targets_allied_assault(fd, src)); }
 
-template<> std::vector<CardStatus*>& skill_targets<rush>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_allied_assault(fd, src_status)); }
+template<> std::vector<CardStatus*>& skill_targets<rush>(Field* fd, CardStatus* src)
+{ return(skill_targets_allied_assault(fd, src)); }
 
-template<> std::vector<CardStatus*>& skill_targets<siege>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_hostile_structure(fd, src_status)); }
+template<> std::vector<CardStatus*>& skill_targets<siege>(Field* fd, CardStatus* src)
+{ return(skill_targets_hostile_structure(fd, src)); }
 
-template<> std::vector<CardStatus*>& skill_targets<strike>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_hostile_assault(fd, src_status)); }
+template<> std::vector<CardStatus*>& skill_targets<strike>(Field* fd, CardStatus* src)
+{ return(skill_targets_hostile_assault(fd, src)); }
 
-template<> std::vector<CardStatus*>& skill_targets<weaken>(Field* fd, CardStatus* src_status)
-{ return(skill_targets_hostile_assault(fd, src_status)); }
+template<> std::vector<CardStatus*>& skill_targets<weaken>(Field* fd, CardStatus* src)
+{ return(skill_targets_hostile_assault(fd, src)); }
 
 template<Skill skill_id>
-bool check_and_perform_skill(Field* fd, CardStatus* src_status, CardStatus* dst_status, const SkillSpec& s, bool is_evadable, bool & has_counted_quest)
+bool check_and_perform_skill(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s, bool is_evadable, bool & has_counted_quest)
 {
-    if(skill_check<skill_id>(fd, src_status, dst_status))
+    if(skill_check<skill_id>(fd, src, dst))
     {
-        if (src_status->m_player == 0 && ! has_counted_quest)
+        if (src->m_player == 0 && ! has_counted_quest)
         {
-            fd->inc_counter(QuestType::skill_use, skill_id, dst_status->m_card->m_id);
+            fd->inc_counter(QuestType::skill_use, skill_id, dst->m_card->m_id);
             has_counted_quest = true;
         }
         if (is_evadable &&
-                dst_status->m_evaded < dst_status->skill(evade) &&
-                skill_check<evade>(fd, dst_status, src_status))
+                dst->m_evaded < dst->skill(evade) &&
+                skill_check<evade>(fd, dst, src))
         {
-            ++ dst_status->m_evaded;
-            _DEBUG_MSG(1, "%s %s on %s but it evades\n", status_description(src_status).c_str(), skill_short_description(s).c_str(), status_description(dst_status).c_str());
+            ++ dst->m_evaded;
+            _DEBUG_MSG(1, "%s %s on %s but it evades\n", status_description(src).c_str(), skill_short_description(s).c_str(), status_description(dst).c_str());
             return(false);
         }
-        _DEBUG_MSG(1, "%s %s on %s\n", status_description(src_status).c_str(), skill_short_description(s).c_str(), status_description(dst_status).c_str());
-        perform_skill<skill_id>(fd, src_status, dst_status, s);
+        _DEBUG_MSG(1, "%s %s on %s\n", status_description(src).c_str(), skill_short_description(s).c_str(), status_description(dst).c_str());
+        perform_skill<skill_id>(fd, src, dst, s);
         if (s.c > 0)
         {
-            src_status->m_skill_cd[skill_id] = s.c;
+            src->m_skill_cd[skill_id] = s.c;
         }
         return(true);
     }
-    _DEBUG_MSG(1, "(CANCELLED) %s %s on %s\n", status_description(src_status).c_str(), skill_short_description(s).c_str(), status_description(dst_status).c_str());
+    _DEBUG_MSG(1, "(CANCELLED) %s %s on %s\n", status_description(src).c_str(), skill_short_description(s).c_str(), status_description(dst).c_str());
     return(false);
 }
 
-bool check_and_perform_valor(Field* fd, CardStatus* src_status)
+bool check_and_perform_valor(Field* fd, CardStatus* src)
 {
-    unsigned valor_value = src_status->skill(valor);
-    if (valor_value > 0 && skill_check<valor>(fd, src_status, nullptr))
+    unsigned valor_value = src->skill(valor);
+    if (valor_value > 0 && skill_check<valor>(fd, src, nullptr))
     {
-        unsigned opponent_player = opponent(src_status->m_player);
-        const CardStatus * dst_status = fd->players[opponent_player]->assaults.size() > src_status->m_index ?
-            &fd->players[opponent_player]->assaults[src_status->m_index] :
+        unsigned opponent_player = opponent(src->m_player);
+        const CardStatus * dst = fd->players[opponent_player]->assaults.size() > src->m_index ?
+            &fd->players[opponent_player]->assaults[src->m_index] :
             nullptr;
-        if (dst_status == nullptr || dst_status->m_hp <= 0)
+        if (dst == nullptr || dst->m_hp <= 0)
         {
-            _DEBUG_MSG(1, "%s loses Valor (no blocker)\n", status_description(src_status).c_str());
+            _DEBUG_MSG(1, "%s loses Valor (no blocker)\n", status_description(src).c_str());
             return false;
         }
-        else if (attack_power(dst_status) <= attack_power(src_status))
+        else if (attack_power(dst) <= attack_power(src))
         {
-            _DEBUG_MSG(1, "%s loses Valor (weak blocker %s)\n", status_description(src_status).c_str(), status_description(dst_status).c_str());
+            _DEBUG_MSG(1, "%s loses Valor (weak blocker %s)\n", status_description(src).c_str(), status_description(dst).c_str());
             return false;
         }
-        if (src_status->m_player == 0)
+        if (src->m_player == 0)
         {
             fd->inc_counter(QuestType::skill_use, valor);
         }
-        _DEBUG_MSG(1, "%s activates Valor %u\n", status_description(src_status).c_str(), valor_value);
-        src_status->m_attack += valor_value;
+        _DEBUG_MSG(1, "%s activates Valor %u\n", status_description(src).c_str(), valor_value);
+        src->m_attack += valor_value;
         return true;
     }
     return false;
 }
 
 template<Skill skill_id>
-size_t select_targets(Field* fd, CardStatus* src_status, const SkillSpec& s)
+size_t select_targets(Field* fd, CardStatus* src, const SkillSpec& s)
 {
-    std::vector<CardStatus*>& cards(skill_targets<skill_id>(fd, src_status));
-    size_t n_candidates = select_fast<skill_id>(fd, src_status, cards, s);
+    std::vector<CardStatus*>& cards(skill_targets<skill_id>(fd, src));
+    size_t n_candidates = select_fast<skill_id>(fd, src, cards, s);
     if (n_candidates == 0)
     {
         return n_candidates;
@@ -1661,12 +1661,12 @@ size_t select_targets(Field* fd, CardStatus* src_status, const SkillSpec& s)
 }
 
 template<>
-size_t select_targets<mortar>(Field* fd, CardStatus* src_status, const SkillSpec& s)
+size_t select_targets<mortar>(Field* fd, CardStatus* src, const SkillSpec& s)
 {
-    size_t n_candidates = select_fast<siege>(fd, src_status, skill_targets<siege>(fd, src_status), s);
+    size_t n_candidates = select_fast<siege>(fd, src, skill_targets<siege>(fd, src), s);
     if (n_candidates == 0)
     {
-        n_candidates = select_fast<strike>(fd, src_status, skill_targets<strike>(fd, src_status), s);
+        n_candidates = select_fast<strike>(fd, src, skill_targets<strike>(fd, src), s);
         if (n_candidates == 0)
         {
             return n_candidates;
@@ -1691,21 +1691,21 @@ size_t select_targets<mortar>(Field* fd, CardStatus* src_status, const SkillSpec
 }
 
 template<Skill skill_id>
-void perform_targetted_allied_fast(Field* fd, CardStatus* src_status, const SkillSpec& s)
+void perform_targetted_allied_fast(Field* fd, CardStatus* src, const SkillSpec& s)
 {
-    select_targets<skill_id>(fd, src_status, s);
+    select_targets<skill_id>(fd, src, s);
     unsigned num_inhibited = 0;
     bool has_counted_quest = false;
     for (CardStatus * dst: fd->selection_array)
     {
-        if (dst->m_inhibited > 0 && !src_status->m_overloaded)
+        if (dst->m_inhibited > 0 && !src->m_overloaded)
         {
-            _DEBUG_MSG(1, "%s %s on %s but it is inhibited\n", status_description(src_status).c_str(), skill_short_description(s).c_str(), status_description(dst).c_str());
+            _DEBUG_MSG(1, "%s %s on %s but it is inhibited\n", status_description(src).c_str(), skill_short_description(s).c_str(), status_description(dst).c_str());
             -- dst->m_inhibited;
             ++ num_inhibited;
             continue;
         }
-        check_and_perform_skill<skill_id>(fd, src_status, dst, s, false, has_counted_quest);
+        check_and_perform_skill<skill_id>(fd, src, dst, s, false, has_counted_quest);
     }
     if (num_inhibited > 0 && fd->bg_effects.count(divert))
     {
@@ -1720,49 +1720,49 @@ void perform_targetted_allied_fast(Field* fd, CardStatus* src_status, const Skil
             {
                 if (dst->m_inhibited > 0)
                 {
-                    _DEBUG_MSG(1, "%s %s (Diverted) on %s but it is inhibited\n", status_description(src_status).c_str(), skill_short_description(diverted_ss).c_str(), status_description(dst).c_str());
+                    _DEBUG_MSG(1, "%s %s (Diverted) on %s but it is inhibited\n", status_description(src).c_str(), skill_short_description(diverted_ss).c_str(), status_description(dst).c_str());
                     -- dst->m_inhibited;
                     continue;
                 }
-                _DEBUG_MSG(1, "%s %s (Diverted) on %s\n", status_description(src_status).c_str(), skill_short_description(diverted_ss).c_str(), status_description(dst).c_str());
-                perform_skill<skill_id>(fd, src_status, dst, diverted_ss);
+                _DEBUG_MSG(1, "%s %s (Diverted) on %s\n", status_description(src).c_str(), skill_short_description(diverted_ss).c_str(), status_description(dst).c_str());
+                perform_skill<skill_id>(fd, src, dst, diverted_ss);
             }
         }
     }
 }
 
-void perform_targetted_allied_fast_rush(Field* fd, CardStatus* src_status, const SkillSpec& s)
+void perform_targetted_allied_fast_rush(Field* fd, CardStatus* src, const SkillSpec& s)
 {
-    if (src_status->m_rush_attempted)
+    if (src->m_rush_attempted)
     {
-        _DEBUG_MSG(2, "%s does not check Rush again.\n", status_description(src_status).c_str());
+        _DEBUG_MSG(2, "%s does not check Rush again.\n", status_description(src).c_str());
         return;
     }
-    _DEBUG_MSG(1, "%s attempts to activate Rush.\n", status_description(src_status).c_str());
-    perform_targetted_allied_fast<rush>(fd, src_status, s);
-    src_status->m_rush_attempted = true;
+    _DEBUG_MSG(1, "%s attempts to activate Rush.\n", status_description(src).c_str());
+    perform_targetted_allied_fast<rush>(fd, src, s);
+    src->m_rush_attempted = true;
 }
 
 template<Skill skill_id>
-void perform_targetted_hostile_fast(Field* fd, CardStatus* src_status, const SkillSpec& s)
+void perform_targetted_hostile_fast(Field* fd, CardStatus* src, const SkillSpec& s)
 {
-    select_targets<skill_id>(fd, src_status, s);
+    select_targets<skill_id>(fd, src, s);
     bool has_counted_quest = false;
     std::vector<CardStatus *> paybackers;
     if (fd->bg_effects.count(turningtides) && skill_id == weaken)
     {
         unsigned turningtides_value = 0;
-        for (CardStatus * dst_status: fd->selection_array)
+        for (CardStatus * dst: fd->selection_array)
         {
-            unsigned old_attack = attack_power(dst_status);
-            if (check_and_perform_skill<skill_id>(fd, src_status, dst_status, s, ! src_status->m_overloaded, has_counted_quest))
+            unsigned old_attack = attack_power(dst);
+            if (check_and_perform_skill<skill_id>(fd, src, dst, s, ! src->m_overloaded, has_counted_quest))
             {
-                turningtides_value = std::max(turningtides_value, safe_minus(old_attack, attack_power(dst_status)));
+                turningtides_value = std::max(turningtides_value, safe_minus(old_attack, attack_power(dst)));
                 // Payback
-                if(dst_status->m_paybacked < dst_status->skill(payback) && skill_check<payback>(fd, dst_status, src_status) &&
-                        skill_predicate<skill_id>(fd, src_status, src_status, s) && skill_check<skill_id>(fd, src_status, dst_status))
+                if(dst->m_paybacked < dst->skill(payback) && skill_check<payback>(fd, dst, src) &&
+                        skill_predicate<skill_id>(fd, src, src, s) && skill_check<skill_id>(fd, src, dst))
                 {
-                    paybackers.push_back(dst_status);
+                    paybackers.push_back(dst);
                 }
             }
         }
@@ -1770,15 +1770,15 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src_status, const Ski
         {
             SkillSpec ss_rally{rally, turningtides_value, allfactions, 0, 0, no_skill, no_skill, s.all,};
             _DEBUG_MSG(1, "TurningTides %u!\n", turningtides_value);
-            perform_targetted_allied_fast<rally>(fd, src_status, ss_rally);
+            perform_targetted_allied_fast<rally>(fd, src, ss_rally);
         }
         for (CardStatus * pb_status: paybackers)
         {
             ++ pb_status->m_paybacked;
-            unsigned old_attack = attack_power(src_status);
-            _DEBUG_MSG(1, "%s Payback %s on %s\n", status_description(pb_status).c_str(), skill_short_description(s).c_str(), status_description(src_status).c_str());
-            perform_skill<skill_id>(fd, pb_status, src_status, s);
-            turningtides_value = std::max(turningtides_value, safe_minus(old_attack, attack_power(src_status)));
+            unsigned old_attack = attack_power(src);
+            _DEBUG_MSG(1, "%s Payback %s on %s\n", status_description(pb_status).c_str(), skill_short_description(s).c_str(), status_description(src).c_str());
+            perform_skill<skill_id>(fd, pb_status, src, s);
+            turningtides_value = std::max(turningtides_value, safe_minus(old_attack, attack_power(src)));
             if (turningtides_value > 0)
             {
                 SkillSpec ss_rally{rally, turningtides_value, allfactions, 0, 0, no_skill, no_skill, false,};
@@ -1789,23 +1789,23 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src_status, const Ski
         prepend_on_death(fd);
         return;
     }
-    for (CardStatus * dst_status: fd->selection_array)
+    for (CardStatus * dst: fd->selection_array)
     {
-        if (check_and_perform_skill<skill_id>(fd, src_status, dst_status, s, ! src_status->m_overloaded, has_counted_quest))
+        if (check_and_perform_skill<skill_id>(fd, src, dst, s, ! src->m_overloaded, has_counted_quest))
         {
             // Payback
-            if(dst_status->m_paybacked < dst_status->skill(payback) && skill_check<payback>(fd, dst_status, src_status) &&
-                    skill_predicate<skill_id>(fd, src_status, src_status, s) && skill_check<skill_id>(fd, src_status, dst_status))
+            if(dst->m_paybacked < dst->skill(payback) && skill_check<payback>(fd, dst, src) &&
+                    skill_predicate<skill_id>(fd, src, src, s) && skill_check<skill_id>(fd, src, dst))
             {
-                paybackers.push_back(dst_status);
+                paybackers.push_back(dst);
             }
         }
     }
     for (CardStatus * pb_status: paybackers)
     {
         ++ pb_status->m_paybacked;
-        _DEBUG_MSG(1, "%s Payback %s on %s\n", status_description(pb_status).c_str(), skill_short_description(s).c_str(), status_description(src_status).c_str());
-        perform_skill<skill_id>(fd, pb_status, src_status, s);
+        _DEBUG_MSG(1, "%s Payback %s on %s\n", status_description(pb_status).c_str(), skill_short_description(s).c_str(), status_description(src).c_str());
+        perform_skill<skill_id>(fd, pb_status, src, s);
     }
     prepend_on_death(fd);
 }
