@@ -284,9 +284,10 @@ void prepend_on_death(Field* fd)
         {
             SkillSpec ss_heal{heal, fd->bg_effects.at(revenge), allfactions, 0, 0, no_skill, no_skill, true,};
             SkillSpec ss_rally{rally, fd->bg_effects.at(revenge), allfactions, 0, 0, no_skill, no_skill, true,};
+            CardStatus * commander = &fd->players[status->m_player]->commander;
             _DEBUG_MSG(2, "Revenge: Preparing skill %s and %s\n", skill_description(fd->cards, ss_heal).c_str(), skill_description(fd->cards, ss_rally).c_str());
-            od_skills.emplace_back(status, ss_heal);
-            od_skills.emplace_back(status, ss_rally);
+            od_skills.emplace_back(commander, ss_heal);
+            od_skills.emplace_back(commander, ss_rally);
         }
     }
     fd->skill_queue.insert(fd->skill_queue.begin(), od_skills.begin(), od_skills.end());
@@ -1770,7 +1771,7 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src, const SkillSpec&
         {
             SkillSpec ss_rally{rally, turningtides_value, allfactions, 0, 0, no_skill, no_skill, s.all,};
             _DEBUG_MSG(1, "TurningTides %u!\n", turningtides_value);
-            perform_targetted_allied_fast<rally>(fd, src, ss_rally);
+            perform_targetted_allied_fast<rally>(fd, &fd->players[src->m_player]->commander, ss_rally);
         }
         for (CardStatus * pb_status: paybackers)
         {
@@ -1783,7 +1784,7 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src, const SkillSpec&
             {
                 SkillSpec ss_rally{rally, turningtides_value, allfactions, 0, 0, no_skill, no_skill, false,};
                 _DEBUG_MSG(1, "Paybacked TurningTides %u!\n", turningtides_value);
-                perform_targetted_allied_fast<rally>(fd, pb_status, ss_rally);
+                perform_targetted_allied_fast<rally>(fd, &fd->players[pb_status->m_player]->commander, ss_rally);
             }
         }
         prepend_on_death(fd);
