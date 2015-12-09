@@ -508,10 +508,10 @@ Results<uint64_t> play(Field* fd)
         {
             for (CardStatus * dst: fd->tap->assaults.m_indirect)
             {
-                unsigned valor_value = dst->skill(valor);
-                if (valor_value <= 0)
+                unsigned bge_value = (dst->skill(valor) + 1) / 2;
+                if (bge_value <= 0)
                 { continue; }
-                SkillSpec ss_protect{protect, valor_value, allfactions, 0, 0, no_skill, no_skill, false,};
+                SkillSpec ss_protect{protect, bge_value, allfactions, 0, 0, no_skill, no_skill, false,};
                 if (dst->m_inhibited > 0)
                 {
                     _DEBUG_MSG(1, "Heroism: %s on %s but it is inhibited\n", skill_short_description(ss_protect).c_str(), status_description(dst).c_str());
