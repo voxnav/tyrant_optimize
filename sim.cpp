@@ -1048,7 +1048,7 @@ struct PerformAttack
         }
         do_leech<def_cardtype>();
         unsigned valor_value = att_status->skill(valor);
-        if (valor_value > 0 && fd->bg_effects.count(heroism))
+        if (valor_value > 0 && fd->bg_effects.count(heroism) && def_cardtype == CardType::assault && def_status->m_hp <= 0)
         {
             _DEBUG_MSG(1, "Heroism: %s gain %u attack\n", status_description(att_status).c_str(), valor_value);
             att_status->m_attack += valor_value;
