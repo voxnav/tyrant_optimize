@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "2.14.1"
+#define TYRANT_OPTIMIZER_VERSION "2.14.2"
 
 #include <string>
 #include <sstream>
