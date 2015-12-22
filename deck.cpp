@@ -401,10 +401,11 @@ std::string Deck::long_description() const
             show_upgrades(ios, card, card->m_top_level_card->m_level, "  ");
         }
     }
-    for (const Card * fort: fort_cards)
+    for (const Card * card: fort_cards)
     {
-        ios << card_description(all_cards, fort) << "\n";
+        show_upgrades(ios, card, card->m_top_level_card->m_level, "");
     }
+    ios << "\n";
     return ios.str();
 }
 
@@ -511,6 +512,8 @@ const Card* Deck::upgrade_card(const Card* card, unsigned card_max_level, std::m
 void Deck::shuffle(std::mt19937& re)
 {
     shuffled_commander = commander;
+    shuffled_forts.clear();
+    boost::insert(shuffled_forts, shuffled_forts.end(), fort_cards);
     shuffled_cards.clear();
     boost::insert(shuffled_cards, shuffled_cards.end(), cards);
     if(!variable_cards.empty())
@@ -537,6 +540,10 @@ void Deck::shuffle(std::mt19937& re)
         unsigned remaining_upgrade_points = upgrade_points;
         unsigned remaining_upgrade_opportunities = upgrade_opportunities;
         shuffled_commander = upgrade_card(commander, commander_max_level, re, remaining_upgrade_points, remaining_upgrade_opportunities);
+        for (auto && card: shuffled_forts)
+        {
+            card = upgrade_card(card, card->m_top_level_card->m_level, re, remaining_upgrade_points, remaining_upgrade_opportunities);
+        }
         for (auto && card: shuffled_cards)
         {
             card = upgrade_card(card, card->m_top_level_card->m_level, re, remaining_upgrade_points, remaining_upgrade_opportunities);

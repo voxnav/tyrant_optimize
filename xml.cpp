@@ -151,39 +151,24 @@ void parse_card_node(Cards& all_cards, Card* card, xml_node<>* card_node)
     if (cost_node) { card->m_delay = atoi(cost_node->value()); }
     if (id_node)
     {
-        if (cost_node)
-        {
-            if (attack_node)
-            {
-                if (card->m_attack == 0)
-                {
-                    if (card->m_id < 1000)
-                    { card->m_type = CardType::assault; }
-                    else if (card->m_id < 2000)
-                    { card->m_type = CardType::commander; }
-                    else if (card->m_id < 3000)
-                    { card->m_type = CardType::structure; }
-                    else if (card->m_id < 8000)
-                    { card->m_type = CardType::assault; }
-                    else if (card->m_id < 10000)
-                    { card->m_type = CardType::structure; }
-                    else if (card->m_id < 17000)
-                    { card->m_type = CardType::assault; }
-                    else if (card->m_id < 25000)
-                    { card->m_type = CardType::structure; }
-                    else if (card->m_id < 30000)
-                    { card->m_type = CardType::commander; }
-                    else
-                    { card->m_type = CardType::assault; }
-                }
-                else  // attack > 0: must be assault
-                { card->m_type = CardType::assault; }
-            }
-            else  // no attack_node: must be structure
-            { card->m_type = CardType::structure; }
-        }
-        else  // no cost_node: must be commander
+        if (card->m_id < 1000)
+        { card->m_type = CardType::assault; }
+        else if (card->m_id < 2000)
         { card->m_type = CardType::commander; }
+        else if (card->m_id < 3000)
+        { card->m_type = CardType::structure; }
+        else if (card->m_id < 8000)
+        { card->m_type = CardType::assault; }
+        else if (card->m_id < 10000)
+        { card->m_type = CardType::structure; }
+        else if (card->m_id < 17000)
+        { card->m_type = CardType::assault; }
+        else if (card->m_id < 25000)
+        { card->m_type = CardType::structure; }
+        else if (card->m_id < 30000)
+        { card->m_type = CardType::commander; }
+        else
+        { card->m_type = CardType::assault; }
     }
     if(rarity_node) { card->m_rarity = atoi(rarity_node->value()); }
     if(type_node) { card->m_faction = static_cast<Faction>(atoi(type_node->value())); }
@@ -287,6 +272,15 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, DeckType
     xml_node<>* commander_max_level_node(node->first_node("commander_max_level"));
     unsigned commander_max_level = commander_max_level_node ? atoi(commander_max_level_node->value()) : commander_card->m_top_level_card->m_level;
     unsigned upgrade_opportunities = commander_max_level - card->m_level;
+    std::vector<const Card*> fort_cards;
+    for (xml_node<>* fortress_card_node = node->first_node("fortress_card");
+            fortress_card_node;
+            fortress_card_node = fortress_card_node->next_sibling("fortress_card"))
+    {
+        const Card * card = all_cards.by_id(atoi(fortress_card_node->first_attribute("id")->value()));
+        fort_cards.push_back(card);
+        upgrade_opportunities += card->m_top_level_card->m_level - card->m_level;
+    }
     std::vector<const Card*> always_cards;
     std::vector<std::tuple<unsigned, unsigned, std::vector<const Card*>>> some_cards;
     xml_node<>* deck_node(node->first_node("deck"));
@@ -329,6 +323,7 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, DeckType
         decks.decks.push_back(Deck{all_cards, decktype, id, deck_name, (upgrade_opportunities + 1) * (level - 1) / (max_level - 1), upgrade_opportunities});
         Deck* deck = &decks.decks.back();
         deck->set(commander_card, commander_max_level, always_cards, some_cards, mission_req);
+        deck->fort_cards = fort_cards;
         decks.add_deck(deck, deck_name);
         decks.add_deck(deck, decktype_names[decktype] + " #" + to_string(id) + "-" + to_string(level));
     }
@@ -336,12 +331,15 @@ Deck* read_deck(Decks& decks, const Cards& all_cards, xml_node<>* node, DeckType
     decks.decks.push_back(Deck{all_cards, decktype, id, base_deck_name});
     Deck* deck = &decks.decks.back();
     deck->set(commander_card, commander_max_level, always_cards, some_cards, mission_req);
+    deck->fort_cards = fort_cards;
 
     // upgrade cards for full-level missions/raids
     if (max_level > 1)
     {
         while (deck->commander->m_level < commander_max_level)
         { deck->commander = deck->commander->upgraded(); }
+        for (auto && card: deck->fort_cards)
+        { card = card->m_top_level_card; }
         for (auto && card: deck->cards)
         { card = card->m_top_level_card; }
         for (auto && pool: deck->variable_cards)

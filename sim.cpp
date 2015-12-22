@@ -466,7 +466,7 @@ Results<uint64_t> play(Field* fd)
     // Play fortresses
     for (unsigned _ = 0; _ < 2; ++ _)
     {
-        for (const Card* played_card: fd->tap->deck->fort_cards)
+        for (const Card* played_card: fd->tap->deck->shuffled_forts)
         {
             PlayCard(played_card, fd).op<CardType::structure>();
         }

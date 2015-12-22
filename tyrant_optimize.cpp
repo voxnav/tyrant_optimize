@@ -1509,7 +1509,7 @@ int main(int argc, char** argv)
     Cards all_cards;
     Decks decks;
     load_skills_set_xml(all_cards, "data/skills_set.xml", true);
-    for (unsigned section = 1; section <= 9; ++ section)
+    for (unsigned section = 1; section <= 10; ++ section)
     {
         load_cards_xml(all_cards, "data/cards_section_" + to_string(section) + ".xml", false);
     }
