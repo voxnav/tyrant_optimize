@@ -1369,7 +1369,7 @@ inline bool skill_predicate<overload>(Field* fd, CardStatus* src, CardStatus* ds
 template<>
 inline bool skill_predicate<rally>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
-    return fd->tapi == dst->m_player ? is_active(dst) && !has_attacked(dst) : is_active_next_turn(dst);
+    return ! dst->m_sundered && (fd->tapi == dst->m_player ? is_active(dst) && !has_attacked(dst) : is_active_next_turn(dst));
 }
 
 template<>
