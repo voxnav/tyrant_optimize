@@ -296,10 +296,9 @@ void Deck::set_given_hand(const std::string& deck_string)
     given_hand = id_marks.first;
 }
 
-void Deck::set_forts(const std::string& deck_string)
+void Deck::add_forts(const std::string& deck_string)
 {
     auto && id_marks = string_to_ids(all_cards, deck_string, "fort_cards");
-    fort_cards.clear();
     for (auto id: id_marks.first)
     {
        fort_cards.push_back(all_cards.by_id(id));
@@ -351,6 +350,10 @@ std::string Deck::medium_description() const
     {
         ios << "No commander";
     }
+    for (const Card * card: fort_cards)
+    {
+        ios << ", " << card->m_name;
+    }
     for(const Card * card: cards)
     {
         ios << ", " << card->m_name;
@@ -385,6 +388,10 @@ std::string Deck::long_description() const
     {
         ios << "No commander\n";
     }
+    for (const Card * card: fort_cards)
+    {
+        show_upgrades(ios, card, card->m_top_level_card->m_level, "");
+    }
     for(const Card* card: cards)
     {
         show_upgrades(ios, card, card->m_top_level_card->m_level, "  ");
@@ -400,10 +407,6 @@ std::string Deck::long_description() const
         {
             show_upgrades(ios, card, card->m_top_level_card->m_level, "  ");
         }
-    }
-    for (const Card * card: fort_cards)
-    {
-        show_upgrades(ios, card, card->m_top_level_card->m_level, "");
     }
     ios << "\n";
     return ios.str();

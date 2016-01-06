@@ -117,6 +117,7 @@ inline void CardStatus::set(const Card& card)
     m_protected = 0;
     m_rallied = 0;
     m_rush_attempted = false;
+    m_sundered = false;
     m_weakened = 0;
 
     std::memset(m_primary_skill_offset, 0, sizeof m_primary_skill_offset);
@@ -210,6 +211,7 @@ std::string CardStatus::description() const
     // Status w/o value
     if(m_jammed) { desc += ", jammed"; }
     if(m_overloaded) { desc += ", overloaded"; }
+    if(m_sundered) { desc += ", sundered"; }
     // Status w/ value
     if(m_corroded_rate > 0) { desc += ", corroded " + to_string(m_corroded_rate); }
     if(m_enfeebled > 0) { desc += ", enfeebled " + to_string(m_enfeebled); }
@@ -274,7 +276,8 @@ void prepend_on_death(Field* fd)
                 if (avenge_value > 0)
                 {
                     _DEBUG_MSG(1, "%s activates Avenge %u\n", status_description(adj_status).c_str(), avenge_value);
-                    adj_status->m_attack += avenge_value;
+                    if (! adj_status->m_sundered)
+                    { adj_status->m_attack += avenge_value; }
                     adj_status->m_max_hp += avenge_value;
                     adj_status->m_hp += avenge_value;
                 }
@@ -914,6 +917,7 @@ void turn_end_phase(Field* fd)
             // end of the opponent's next turn for enemy units
             status.m_jammed = false;
             status.m_rallied = 0;
+            status.m_sundered = false;
             status.m_weakened = 0;
             status.m_inhibited = 0;
             status.m_overloaded = false;
@@ -1018,7 +1022,8 @@ struct PerformAttack
                 unsigned flux_value = (def_status->skill(counter) - 1) / flux_denominator + 1;
                 _DEBUG_MSG(1, "Counterflux: %s heals itself and berserks for %u\n", status_description(def_status).c_str(), flux_value);
                 add_hp(fd, def_status, flux_value);
-                def_status->m_attack += flux_value;
+                if (! def_status->m_sundered)
+                { def_status->m_attack += flux_value; }
             }
         }
         unsigned corrosive_value = def_status->skill(corrosive);
@@ -1029,7 +1034,7 @@ struct PerformAttack
             att_status->m_corroded_rate = corrosive_value;
         }
         unsigned berserk_value = att_status->skill(berserk);
-        if (att_status->m_hp > 0 && berserk_value > 0 && skill_check<berserk>(fd, att_status, nullptr))
+        if (att_status->m_hp > 0 && ! att_status->m_sundered && berserk_value > 0 && skill_check<berserk>(fd, att_status, nullptr))
         {
             // perform_skill_berserk
             att_status->m_attack += berserk_value;
@@ -1048,7 +1053,7 @@ struct PerformAttack
         }
         do_leech<def_cardtype>();
         unsigned valor_value = att_status->skill(valor);
-        if (valor_value > 0 && fd->bg_effects.count(heroism) && def_cardtype == CardType::assault && def_status->m_hp <= 0)
+        if (valor_value > 0 && ! att_status->m_sundered && fd->bg_effects.count(heroism) && def_cardtype == CardType::assault && def_status->m_hp <= 0)
         {
             _DEBUG_MSG(1, "Heroism: %s gain %u attack\n", status_description(att_status).c_str(), valor_value);
             att_status->m_attack += valor_value;
@@ -1063,44 +1068,48 @@ struct PerformAttack
     {
         assert(att_status->m_card->m_type == CardType::assault);
         att_dmg = pre_modifier_dmg;
-        if (att_dmg == 0) { return; }
+        if (att_dmg == 0)
+        { return; }
         std::string desc;
-        // enhance damage
         unsigned legion_value = 0;
-        unsigned legion_base = att_status->skill(legion);
-        if (legion_base > 0)
+        if (! att_status->m_sundered)
         {
-            auto & assaults = fd->tap->assaults;
-            legion_value += att_status->m_index > 0 && assaults[att_status->m_index - 1].m_hp > 0 && assaults[att_status->m_index - 1].m_faction == att_status->m_faction;
-            legion_value += att_status->m_index + 1 < assaults.size() && assaults[att_status->m_index + 1].m_hp > 0 && assaults[att_status->m_index + 1].m_faction == att_status->m_faction;
-            if (legion_value > 0 && skill_check<legion>(fd, att_status, nullptr))
+            // enhance damage
+            unsigned legion_base = att_status->skill(legion);
+            if (legion_base > 0)
             {
-                legion_value *= legion_base;
-                if (debug_print > 0) { desc += "+" + to_string(legion_value) + "(legion)"; }
-                att_dmg += legion_value;
+                auto & assaults = fd->tap->assaults;
+                legion_value += att_status->m_index > 0 && assaults[att_status->m_index - 1].m_hp > 0 && assaults[att_status->m_index - 1].m_faction == att_status->m_faction;
+                legion_value += att_status->m_index + 1 < assaults.size() && assaults[att_status->m_index + 1].m_hp > 0 && assaults[att_status->m_index + 1].m_faction == att_status->m_faction;
+                if (legion_value > 0 && skill_check<legion>(fd, att_status, nullptr))
+                {
+                    legion_value *= legion_base;
+                    if (debug_print > 0) { desc += "+" + to_string(legion_value) + "(legion)"; }
+                    att_dmg += legion_value;
+                }
             }
-        }
-        unsigned rupture_value = att_status->skill(rupture);
-        if (rupture_value > 0)
-        {
-            if (debug_print > 0) { desc += "+" + to_string(rupture_value) + "(rupture)"; }
-            att_dmg += rupture_value;
-        }
-        unsigned venom_value = att_status->skill(venom);
-        if (venom_value > 0 && def_status->m_poisoned > 0)
-        {
-            if (debug_print > 0) { desc += "+" + to_string(venom_value) + "(venom)"; }
-            att_dmg += venom_value;
-        }
-        if (fd->bloodlust_value > 0)
-        {
-            if (debug_print > 0) { desc += "+" + to_string(fd->bloodlust_value) + "(bloodlust)"; }
-            att_dmg += fd->bloodlust_value;
-        }
-        if(def_status->m_enfeebled > 0)
-        {
-            if(debug_print > 0) { desc += "+" + to_string(def_status->m_enfeebled) + "(enfeebled)"; }
-            att_dmg += def_status->m_enfeebled;
+            unsigned rupture_value = att_status->skill(rupture);
+            if (rupture_value > 0)
+            {
+                if (debug_print > 0) { desc += "+" + to_string(rupture_value) + "(rupture)"; }
+                att_dmg += rupture_value;
+            }
+            unsigned venom_value = att_status->skill(venom);
+            if (venom_value > 0 && def_status->m_poisoned > 0)
+            {
+                if (debug_print > 0) { desc += "+" + to_string(venom_value) + "(venom)"; }
+                att_dmg += venom_value;
+            }
+            if (fd->bloodlust_value > 0)
+            {
+                if (debug_print > 0) { desc += "+" + to_string(fd->bloodlust_value) + "(bloodlust)"; }
+                att_dmg += fd->bloodlust_value;
+            }
+            if(def_status->m_enfeebled > 0)
+            {
+                if(debug_print > 0) { desc += "+" + to_string(def_status->m_enfeebled) + "(enfeebled)"; }
+                att_dmg += def_status->m_enfeebled;
+            }
         }
         // prevent damage
         std::string reduced_desc;
@@ -1370,6 +1379,12 @@ inline bool skill_predicate<rush>(Field* fd, CardStatus* src, CardStatus* dst, c
 }
 
 template<>
+inline bool skill_predicate<sunder>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
+{
+    return attack_power(dst) > 0 && is_active_next_turn(dst);
+}
+
+template<>
 inline bool skill_predicate<weaken>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
     return attack_power(dst) > 0 && is_active_next_turn(dst);
@@ -1476,6 +1491,13 @@ inline void perform_skill<strike>(Field* fd, CardStatus* src, CardStatus* dst, c
 }
 
 template<>
+inline void perform_skill<sunder>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
+{
+    dst->m_sundered = true;
+    dst->m_weakened += std::min(s.x, attack_power(dst));
+}
+
+template<>
 inline void perform_skill<weaken>(Field* fd, CardStatus* src, CardStatus* dst, const SkillSpec& s)
 {
     dst->m_weakened += std::min(s.x, attack_power(dst));
@@ -1571,6 +1593,9 @@ template<> std::vector<CardStatus*>& skill_targets<siege>(Field* fd, CardStatus*
 template<> std::vector<CardStatus*>& skill_targets<strike>(Field* fd, CardStatus* src)
 { return(skill_targets_hostile_assault(fd, src)); }
 
+template<> std::vector<CardStatus*>& skill_targets<sunder>(Field* fd, CardStatus* src)
+{ return(skill_targets_hostile_assault(fd, src)); }
+
 template<> std::vector<CardStatus*>& skill_targets<weaken>(Field* fd, CardStatus* src)
 { return(skill_targets_hostile_assault(fd, src)); }
 
@@ -1607,7 +1632,7 @@ bool check_and_perform_skill(Field* fd, CardStatus* src, CardStatus* dst, const 
 bool check_and_perform_valor(Field* fd, CardStatus* src)
 {
     unsigned valor_value = src->skill(valor);
-    if (valor_value > 0 && skill_check<valor>(fd, src, nullptr))
+    if (valor_value > 0 && ! src->m_sundered && skill_check<valor>(fd, src, nullptr))
     {
         unsigned opponent_player = opponent(src->m_player);
         const CardStatus * dst = fd->players[opponent_player]->assaults.size() > src->m_index ?
@@ -1828,5 +1853,6 @@ void fill_skill_table()
     skill_table[rush] = perform_targetted_allied_fast_rush;
     skill_table[siege] = perform_targetted_hostile_fast<siege>;
     skill_table[strike] = perform_targetted_hostile_fast<strike>;
+    skill_table[sunder] = perform_targetted_hostile_fast<sunder>;
     skill_table[weaken] = perform_targetted_hostile_fast<weaken>;
 }

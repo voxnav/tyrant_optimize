@@ -1673,7 +1673,7 @@ int main(int argc, char** argv)
     {
         try
         {
-            your_deck->set_forts(opt_forts + ",");
+            your_deck->add_forts(opt_forts + ",");
         }
         catch(const std::runtime_error& e)
         {
@@ -1893,7 +1893,7 @@ int main(int argc, char** argv)
         {
             try
             {
-                enemy_deck->set_forts(opt_enemy_forts + ",");
+                enemy_deck->add_forts(opt_enemy_forts + ",");
             }
             catch(const std::runtime_error& e)
             {
