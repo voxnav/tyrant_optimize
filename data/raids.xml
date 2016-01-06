@@ -343,6 +343,27 @@
 		</deck>
 	</raid>
 
+	<raid>
+		<id>16</id>
+		<name>Calamity Raid</name>
+		<commander>1986</commander>
+		<levels>26</levels>
+		<deck>
+			<always_include>
+				<card>36344</card>
+				<card>36344</card>
+				<card>36354</card>
+				<card>36354</card>
+				<card>36364</card>
+				<card>36364</card>
+				<card>36374</card>
+				<card>36374</card>
+				<card>36384</card>
+				<card>36384</card>
+			</always_include>
+		</deck>
+	</raid>
+
 <!-- END of Raids -->
 
 
