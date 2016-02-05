@@ -283,10 +283,10 @@ void prepend_on_death(Field* fd)
                 }
             }
         }
-        if (fd->bg_effects.count(revenge))
+        if (fd->bg_effects[status->m_player].count(revenge))
         {
-            SkillSpec ss_heal{heal, fd->bg_effects.at(revenge), allfactions, 0, 0, no_skill, no_skill, true,};
-            SkillSpec ss_rally{rally, fd->bg_effects.at(revenge), allfactions, 0, 0, no_skill, no_skill, true,};
+            SkillSpec ss_heal{heal, fd->bg_effects[status->m_player].at(revenge), allfactions, 0, 0, no_skill, no_skill, true,};
+            SkillSpec ss_rally{rally, fd->bg_effects[status->m_player].at(revenge), allfactions, 0, 0, no_skill, no_skill, true,};
             CardStatus * commander = &fd->players[status->m_player]->commander;
             _DEBUG_MSG(2, "Revenge: Preparing skill %s and %s\n", skill_description(fd->cards, ss_heal).c_str(), skill_description(fd->cards, ss_rally).c_str());
             od_skills.emplace_back(commander, ss_heal);
@@ -451,229 +451,6 @@ template <>
 void PlayCard::setStorage<CardType::structure>()
 {
     storage = &fd->tap->structures;
-}
-//------------------------------------------------------------------------------
-void turn_start_phase(Field* fd);
-void turn_end_phase(Field* fd);
-// return value : (raid points) -> attacker wins, 0 -> defender wins
-Results<uint64_t> play(Field* fd)
-{
-    fd->players[0]->commander.m_player = 0;
-    fd->players[1]->commander.m_player = 1;
-    fd->tapi = fd->gamemode == surge ? 1 : 0;
-    fd->tipi = opponent(fd->tapi);
-    fd->tap = fd->players[fd->tapi];
-    fd->tip = fd->players[fd->tipi];
-    fd->end = false;
-
-    // Play fortresses
-    for (unsigned _ = 0; _ < 2; ++ _)
-    {
-        for (const Card* played_card: fd->tap->deck->shuffled_forts)
-        {
-            PlayCard(played_card, fd).op<CardType::structure>();
-        }
-        std::swap(fd->tapi, fd->tipi);
-        std::swap(fd->tap, fd->tip);
-    }
-
-    while(__builtin_expect(fd->turn <= turn_limit && !fd->end, true))
-    {
-        fd->current_phase = Field::playcard_phase;
-        // Initialize stuff, remove dead cards
-        _DEBUG_MSG(1, "------------------------------------------------------------------------\n"
-                "TURN %u begins for %s\n", fd->turn, status_description(&fd->tap->commander).c_str());
-        turn_start_phase(fd);
-
-        // Play a card
-        const Card* played_card(fd->tap->deck->next());
-        if(played_card)
-        {
-            switch(played_card->m_type)
-            {
-            case CardType::assault:
-                PlayCard(played_card, fd).op<CardType::assault>();
-                break;
-            case CardType::structure:
-                PlayCard(played_card, fd).op<CardType::structure>();
-                break;
-            case CardType::commander:
-            case CardType::num_cardtypes:
-                _DEBUG_MSG(0, "Unknown card type: #%u %s: %u\n", played_card->m_id, card_description(fd->cards, played_card).c_str(), played_card->m_type);
-                assert(false);
-                break;
-            }
-        }
-        if(__builtin_expect(fd->end, false)) { break; }
-
-        // Evaluate Heroism Battleground skills
-        if (fd->bg_effects.count(heroism))
-        {
-            for (CardStatus * dst: fd->tap->assaults.m_indirect)
-            {
-                unsigned bge_value = (dst->skill(valor) + 1) / 2;
-                if (bge_value <= 0)
-                { continue; }
-                SkillSpec ss_protect{protect, bge_value, allfactions, 0, 0, no_skill, no_skill, false,};
-                if (dst->m_inhibited > 0)
-                {
-                    _DEBUG_MSG(1, "Heroism: %s on %s but it is inhibited\n", skill_short_description(ss_protect).c_str(), status_description(dst).c_str());
-                    -- dst->m_inhibited;
-                    continue;
-                }
-                bool has_counted_quest = false;
-                check_and_perform_skill<protect>(fd, &fd->tap->commander, dst, ss_protect, false, has_counted_quest);
-            }
-        }
-
-        // Evaluate activation Battleground skills
-        for (const auto & bg_skill: fd->bg_skills)
-        {
-            _DEBUG_MSG(2, "Evaluating BG skill %s\n", skill_description(fd->cards, bg_skill).c_str());
-            fd->skill_queue.emplace_back(&fd->tap->commander, bg_skill);
-            resolve_skill(fd);
-        }
-        if (__builtin_expect(fd->end, false)) { break; }
-
-        // Evaluate commander
-        fd->current_phase = Field::commander_phase;
-        evaluate_skills<CardType::commander>(fd, &fd->tap->commander, fd->tap->commander.m_card->m_skills);
-        if(__builtin_expect(fd->end, false)) { break; }
-
-        // Evaluate structures
-        fd->current_phase = Field::structures_phase;
-        for(fd->current_ci = 0; !fd->end && fd->current_ci < fd->tap->structures.size(); ++fd->current_ci)
-        {
-            CardStatus* current_status(&fd->tap->structures[fd->current_ci]);
-            if (!is_active(current_status))
-            {
-                _DEBUG_MSG(2, "%s cannot take action.\n", status_description(current_status).c_str());
-            }
-            else
-            {
-                evaluate_skills<CardType::structure>(fd, current_status, current_status->m_card->m_skills);
-            }
-        }
-        // Evaluate assaults
-        fd->current_phase = Field::assaults_phase;
-        fd->bloodlust_value = 0;
-        for(fd->current_ci = 0; !fd->end && fd->current_ci < fd->tap->assaults.size(); ++fd->current_ci)
-        {
-            // ca: current assault
-            CardStatus* current_status(&fd->tap->assaults[fd->current_ci]);
-            bool attacked = false;
-            if (!is_active(current_status))
-            {
-                _DEBUG_MSG(2, "%s cannot take action.\n", status_description(current_status).c_str());
-            }
-            else
-            {
-                fd->assault_bloodlusted = false;
-                evaluate_skills<CardType::assault>(fd, current_status, current_status->m_card->m_skills, &attacked);
-                if (__builtin_expect(fd->end, false)) { break; }
-            }
-            if (current_status->m_corroded_rate > 0)
-            {
-                if (attacked)
-                {
-                    unsigned v = std::min(current_status->m_corroded_rate, attack_power(current_status));
-                    _DEBUG_MSG(1, "%s loses Attack by %u.\n", status_description(current_status).c_str(), v);
-                    current_status->m_corroded_weakened += v;
-                }
-                else
-                {
-                    _DEBUG_MSG(1, "%s loses Status corroded.\n", status_description(current_status).c_str());
-                    current_status->m_corroded_rate = 0;
-                    current_status->m_corroded_weakened = 0;
-                }
-            }
-            current_status->m_step = CardStep::attacked;
-        }
-        fd->current_phase = Field::end_phase;
-        turn_end_phase(fd);
-        if(__builtin_expect(fd->end, false)) { break; }
-        _DEBUG_MSG(1, "TURN %u ends for %s\n", fd->turn, status_description(&fd->tap->commander).c_str());
-        std::swap(fd->tapi, fd->tipi);
-        std::swap(fd->tap, fd->tip);
-        ++fd->turn;
-    }
-    const auto & p = fd->players;
-    unsigned raid_damage = 0;
-    unsigned quest_score = 0;
-    switch (fd->optimization_mode)
-    {
-        case OptimizationMode::raid:
-            raid_damage = 15 + (std::min<unsigned>(p[1]->deck->deck_size, (fd->turn + 1) / 2) - p[1]->assaults.size() - p[1]->structures.size()) - (10 * p[1]->commander.m_hp / p[1]->commander.m_max_hp);
-            break;
-        case OptimizationMode::quest:
-            if (fd->quest.quest_type == QuestType::card_survival)
-            {
-                for (const auto & status: p[0]->assaults.m_indirect)
-                { fd->quest_counter += (fd->quest.quest_key == status->m_card->m_id); }
-                for (const auto & status: p[0]->structures.m_indirect)
-                { fd->quest_counter += (fd->quest.quest_key == status->m_card->m_id); }
-                for (const auto & card: p[0]->deck->shuffled_cards)
-                { fd->quest_counter += (fd->quest.quest_key == card->m_id); }
-            }
-            quest_score = fd->quest.must_fulfill ? (fd->quest_counter >= fd->quest.quest_value ? fd->quest.quest_score : 0) : std::min<unsigned>(fd->quest.quest_score, fd->quest.quest_score * fd->quest_counter / fd->quest.quest_value);
-            _DEBUG_MSG(1, "Quest: %u / %u = %u%%.\n", fd->quest_counter, fd->quest.quest_value, quest_score);
-            break;
-        default:
-            break;
-    }
-    // you lose
-    if(fd->players[0]->commander.m_hp == 0)
-    {
-        _DEBUG_MSG(1, "You lose.\n");
-        switch (fd->optimization_mode)
-        {
-        case OptimizationMode::raid: return {0, 0, 1, raid_damage};
-        case OptimizationMode::brawl: return {0, 0, 1, 5};
-        case OptimizationMode::quest: return {0, 0, 1, fd->quest.must_win ? 0 : quest_score};
-        default: return {0, 0, 1, 0};
-        }
-    }
-    // you win
-    if(fd->players[1]->commander.m_hp == 0)
-    {
-        _DEBUG_MSG(1, "You win.\n");
-        switch (fd->optimization_mode)
-        {
-        case OptimizationMode::brawl:
-            {
-                unsigned brawl_score = 57
-                    - (10 * (p[0]->commander.m_max_hp - p[0]->commander.m_hp) / p[0]->commander.m_max_hp)
-                    + (p[0]->assaults.size() + p[0]->structures.size() + p[0]->deck->shuffled_cards.size())
-                    - (p[1]->assaults.size() + p[1]->structures.size() + p[1]->deck->shuffled_cards.size())
-                    - fd->turn / 4;
-                return {1, 0, 0, brawl_score};
-            }
-        case OptimizationMode::campaign:
-            {
-                unsigned campaign_score = 100 - 10 * (std::min<unsigned>(p[0]->deck->cards.size(), (fd->turn + 1) / 2) - p[0]->assaults.size() - p[0]->structures.size());
-                return {1, 0, 0, campaign_score};
-            }
-        case OptimizationMode::quest: return {1, 0, 0, fd->quest.win_score + quest_score};
-        default:
-            return {1, 0, 0, 100};
-        }
-    }
-    if (fd->turn > turn_limit)
-    {
-        _DEBUG_MSG(1, "Stall after %u turns.\n", turn_limit);
-        switch (fd->optimization_mode)
-        {
-        case OptimizationMode::defense: return {0, 1, 0, 100};
-        case OptimizationMode::raid: return {0, 1, 0, raid_damage};
-        case OptimizationMode::brawl: return {0, 1, 0, 5};
-        case OptimizationMode::quest: return {0, 1, 0, fd->quest.must_win ? 0 : quest_score};
-        default: return {0, 1, 0, 0};
-        }
-    }
-
-    // Huh? How did we get here?
-    assert(false);
-    return {0, 0, 0, 0};
 }
 
 // Check if a skill actually proc'ed.
@@ -1016,9 +793,9 @@ struct PerformAttack
             }
             _DEBUG_MSG(1, "%s takes %u counter damage from %s\n", status_description(att_status).c_str(), counter_dmg, status_description(def_status).c_str());
             remove_hp(fd, att_status, counter_dmg);
-            if (def_cardtype == CardType::assault && def_status->m_hp > 0 && fd->bg_effects.count(counterflux))
+            if (def_cardtype == CardType::assault && def_status->m_hp > 0 && fd->bg_effects[def_status->m_player].count(counterflux))
             {
-                unsigned flux_denominator = fd->bg_effects.at(counterflux) ? fd->bg_effects.at(counterflux) : 4;
+                unsigned flux_denominator = fd->bg_effects[def_status->m_player].at(counterflux) ? fd->bg_effects[def_status->m_player].at(counterflux) : 4;
                 unsigned flux_value = (def_status->skill(counter) - 1) / flux_denominator + 1;
                 _DEBUG_MSG(1, "Counterflux: %s heals itself and berserks for %u\n", status_description(def_status).c_str(), flux_value);
                 add_hp(fd, def_status, flux_value);
@@ -1042,9 +819,9 @@ struct PerformAttack
             {
                 fd->inc_counter(QuestType::skill_use, berserk);
             }
-            if (fd->bg_effects.count(enduringrage))
+            if (fd->bg_effects[att_status->m_player].count(enduringrage))
             {
-                unsigned bge_denominator = fd->bg_effects.at(enduringrage) ? fd->bg_effects.at(enduringrage) : 2;
+                unsigned bge_denominator = fd->bg_effects[att_status->m_player].at(enduringrage) ? fd->bg_effects[att_status->m_player].at(enduringrage) : 2;
                 unsigned bge_value = (berserk_value - 1) / bge_denominator + 1;
                 _DEBUG_MSG(1, "EnduringRage: %s heals and protects itself for %u\n", status_description(att_status).c_str(), bge_value);
                 add_hp(fd, att_status, bge_value);
@@ -1053,7 +830,7 @@ struct PerformAttack
         }
         do_leech<def_cardtype>();
         unsigned valor_value = att_status->skill(valor);
-        if (valor_value > 0 && ! att_status->m_sundered && fd->bg_effects.count(heroism) && def_cardtype == CardType::assault && def_status->m_hp <= 0)
+        if (valor_value > 0 && ! att_status->m_sundered && fd->bg_effects[att_status->m_player].count(heroism) && def_cardtype == CardType::assault && def_status->m_hp <= 0)
         {
             _DEBUG_MSG(1, "Heroism: %s gain %u attack\n", status_description(att_status).c_str(), valor_value);
             att_status->m_attack += valor_value;
@@ -1115,7 +892,7 @@ struct PerformAttack
         std::string reduced_desc;
         unsigned reduced_dmg(0);
         unsigned armor_value = def_status->skill(armor);
-        if (def_status->m_card->m_type == CardType::assault && fd->bg_effects.count(fortification))
+        if (def_status->m_card->m_type == CardType::assault && fd->bg_effects[def_status->m_player].count(fortification))
         {
             for (auto && adj_status: fd->adjacent_assaults(def_status))
             {
@@ -1145,7 +922,7 @@ struct PerformAttack
             if(!desc.empty()) { desc += "=" + to_string(att_dmg); }
             _DEBUG_MSG(1, "%s attacks %s for %u%s damage\n", status_description(att_status).c_str(), status_description(def_status).c_str(), pre_modifier_dmg, desc.c_str());
         }
-        if (legion_value > 0 && can_be_healed(att_status) && fd->bg_effects.count(brigade))
+        if (legion_value > 0 && can_be_healed(att_status) && fd->bg_effects[att_status->m_player].count(brigade))
         {
             _DEBUG_MSG(1, "Brigade: %s heals itself for %u\n", status_description(att_status).c_str(), legion_value);
             add_hp(fd, att_status, legion_value);
@@ -1268,9 +1045,9 @@ bool attack_phase(Field* fd)
         att_dmg = attack_commander(fd, att_status);
     }
 
-    if (att_dmg > 0 && !fd->assault_bloodlusted && fd->bg_effects.count(bloodlust))
+    if (att_dmg > 0 && !fd->assault_bloodlusted && fd->bg_effects[fd->tapi].count(bloodlust))
     {
-        fd->bloodlust_value += fd->bg_effects.at(bloodlust);
+        fd->bloodlust_value += fd->bg_effects[fd->tapi].at(bloodlust);
         fd->assault_bloodlusted = true;
     }
 
@@ -1506,7 +1283,7 @@ inline void perform_skill<weaken>(Field* fd, CardStatus* src, CardStatus* dst, c
 template<unsigned skill_id>
 inline unsigned select_fast(Field* fd, CardStatus* src, const std::vector<CardStatus*>& cards, const SkillSpec& s)
 {
-    if (s.y == allfactions || fd->bg_effects.count(metamorphosis))
+    if (s.y == allfactions || fd->bg_effects[src->m_player].count(metamorphosis))
     {
         return(fd->make_selection_array(cards.begin(), cards.end(), [fd, src, s](CardStatus* c){return(skill_predicate<skill_id>(fd, src, c, s));}));
     }
@@ -1733,7 +1510,7 @@ void perform_targetted_allied_fast(Field* fd, CardStatus* src, const SkillSpec& 
         }
         check_and_perform_skill<skill_id>(fd, src, dst, s, false, has_counted_quest);
     }
-    if (num_inhibited > 0 && fd->bg_effects.count(divert))
+    if (num_inhibited > 0 && fd->bg_effects[fd->tipi].count(divert))
     {
         SkillSpec diverted_ss = s;
         diverted_ss.y = allfactions;
@@ -1775,7 +1552,7 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src, const SkillSpec&
     select_targets<skill_id>(fd, src, s);
     bool has_counted_quest = false;
     std::vector<CardStatus *> paybackers;
-    if (fd->bg_effects.count(turningtides) && skill_id == weaken)
+    if (fd->bg_effects[src->m_player].count(turningtides) && skill_id == weaken)
     {
         unsigned turningtides_value = 0;
         for (CardStatus * dst: fd->selection_array)
@@ -1836,6 +1613,248 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src, const SkillSpec&
     prepend_on_death(fd);
 }
 
+//------------------------------------------------------------------------------
+Results<uint64_t> play(Field* fd)
+{
+    fd->players[0]->commander.m_player = 0;
+    fd->players[1]->commander.m_player = 1;
+    fd->tapi = fd->gamemode == surge ? 1 : 0;
+    fd->tipi = opponent(fd->tapi);
+    fd->tap = fd->players[fd->tapi];
+    fd->tip = fd->players[fd->tipi];
+    fd->end = false;
+
+    // Play fortresses
+    for (unsigned _ = 0; _ < 2; ++ _)
+    {
+        for (const Card* played_card: fd->tap->deck->shuffled_forts)
+        {
+            PlayCard(played_card, fd).op<CardType::structure>();
+        }
+        std::swap(fd->tapi, fd->tipi);
+        std::swap(fd->tap, fd->tip);
+    }
+
+    while(__builtin_expect(fd->turn <= turn_limit && !fd->end, true))
+    {
+        fd->current_phase = Field::playcard_phase;
+        // Initialize stuff, remove dead cards
+        _DEBUG_MSG(1, "------------------------------------------------------------------------\n"
+                "TURN %u begins for %s\n", fd->turn, status_description(&fd->tap->commander).c_str());
+        turn_start_phase(fd);
+
+        // Play a card
+        const Card* played_card(fd->tap->deck->next());
+        if(played_card)
+        {
+            switch(played_card->m_type)
+            {
+            case CardType::assault:
+                PlayCard(played_card, fd).op<CardType::assault>();
+                break;
+            case CardType::structure:
+                PlayCard(played_card, fd).op<CardType::structure>();
+                break;
+            case CardType::commander:
+            case CardType::num_cardtypes:
+                _DEBUG_MSG(0, "Unknown card type: #%u %s: %u\n", played_card->m_id, card_description(fd->cards, played_card).c_str(), played_card->m_type);
+                assert(false);
+                break;
+            }
+        }
+        if(__builtin_expect(fd->end, false)) { break; }
+
+        // Evaluate Heroism Battleground skills
+        if (fd->bg_effects[fd->tapi].count(heroism))
+        {
+            for (CardStatus * dst: fd->tap->assaults.m_indirect)
+            {
+                unsigned bge_value = (dst->skill(valor) + 1) / 2;
+                if (bge_value <= 0)
+                { continue; }
+                SkillSpec ss_protect{protect, bge_value, allfactions, 0, 0, no_skill, no_skill, false,};
+                if (dst->m_inhibited > 0)
+                {
+                    _DEBUG_MSG(1, "Heroism: %s on %s but it is inhibited\n", skill_short_description(ss_protect).c_str(), status_description(dst).c_str());
+                    -- dst->m_inhibited;
+                    if (fd->bg_effects[fd->tipi].count(divert))
+                    {
+                        SkillSpec diverted_ss = ss_protect;
+                        diverted_ss.y = allfactions;
+                        diverted_ss.n = 1;
+                        diverted_ss.all = false;
+                        // for (unsigned i = 0; i < num_inhibited; ++ i)
+                        {
+                            select_targets<protect>(fd, &fd->tip->commander, diverted_ss);
+                            for (CardStatus * dst: fd->selection_array)
+                            {
+                                if (dst->m_inhibited > 0)
+                                {
+                                    _DEBUG_MSG(1, "Heroism: %s (Diverted) on %s but it is inhibited\n", skill_short_description(diverted_ss).c_str(), status_description(dst).c_str());
+                                    -- dst->m_inhibited;
+                                    continue;
+                                }
+                                _DEBUG_MSG(1, "Heroism: %s (Diverted) on %s\n", skill_short_description(diverted_ss).c_str(), status_description(dst).c_str());
+                                perform_skill<protect>(fd, &fd->tap->commander, dst, diverted_ss);  // XXX: the caster
+                            }
+                        }
+                    }
+                    continue;
+                }
+                bool has_counted_quest = false;
+                check_and_perform_skill<protect>(fd, &fd->tap->commander, dst, ss_protect, false, has_counted_quest);
+            }
+        }
+
+        // Evaluate activation Battleground skills
+        for (const auto & bg_skill: fd->bg_skills[fd->tapi])
+        {
+            _DEBUG_MSG(2, "Evaluating BG skill %s\n", skill_description(fd->cards, bg_skill).c_str());
+            fd->skill_queue.emplace_back(&fd->tap->commander, bg_skill);
+            resolve_skill(fd);
+        }
+        if (__builtin_expect(fd->end, false)) { break; }
+
+        // Evaluate commander
+        fd->current_phase = Field::commander_phase;
+        evaluate_skills<CardType::commander>(fd, &fd->tap->commander, fd->tap->commander.m_card->m_skills);
+        if(__builtin_expect(fd->end, false)) { break; }
+
+        // Evaluate structures
+        fd->current_phase = Field::structures_phase;
+        for(fd->current_ci = 0; !fd->end && fd->current_ci < fd->tap->structures.size(); ++fd->current_ci)
+        {
+            CardStatus* current_status(&fd->tap->structures[fd->current_ci]);
+            if (!is_active(current_status))
+            {
+                _DEBUG_MSG(2, "%s cannot take action.\n", status_description(current_status).c_str());
+            }
+            else
+            {
+                evaluate_skills<CardType::structure>(fd, current_status, current_status->m_card->m_skills);
+            }
+        }
+        // Evaluate assaults
+        fd->current_phase = Field::assaults_phase;
+        fd->bloodlust_value = 0;
+        for(fd->current_ci = 0; !fd->end && fd->current_ci < fd->tap->assaults.size(); ++fd->current_ci)
+        {
+            // ca: current assault
+            CardStatus* current_status(&fd->tap->assaults[fd->current_ci]);
+            bool attacked = false;
+            if (!is_active(current_status))
+            {
+                _DEBUG_MSG(2, "%s cannot take action.\n", status_description(current_status).c_str());
+            }
+            else
+            {
+                fd->assault_bloodlusted = false;
+                evaluate_skills<CardType::assault>(fd, current_status, current_status->m_card->m_skills, &attacked);
+                if (__builtin_expect(fd->end, false)) { break; }
+            }
+            if (current_status->m_corroded_rate > 0)
+            {
+                if (attacked)
+                {
+                    unsigned v = std::min(current_status->m_corroded_rate, attack_power(current_status));
+                    _DEBUG_MSG(1, "%s loses Attack by %u.\n", status_description(current_status).c_str(), v);
+                    current_status->m_corroded_weakened += v;
+                }
+                else
+                {
+                    _DEBUG_MSG(1, "%s loses Status corroded.\n", status_description(current_status).c_str());
+                    current_status->m_corroded_rate = 0;
+                    current_status->m_corroded_weakened = 0;
+                }
+            }
+            current_status->m_step = CardStep::attacked;
+        }
+        fd->current_phase = Field::end_phase;
+        turn_end_phase(fd);
+        if(__builtin_expect(fd->end, false)) { break; }
+        _DEBUG_MSG(1, "TURN %u ends for %s\n", fd->turn, status_description(&fd->tap->commander).c_str());
+        std::swap(fd->tapi, fd->tipi);
+        std::swap(fd->tap, fd->tip);
+        ++fd->turn;
+    }
+    const auto & p = fd->players;
+    unsigned raid_damage = 0;
+    unsigned quest_score = 0;
+    switch (fd->optimization_mode)
+    {
+        case OptimizationMode::raid:
+            raid_damage = 15 + (std::min<unsigned>(p[1]->deck->deck_size, (fd->turn + 1) / 2) - p[1]->assaults.size() - p[1]->structures.size()) - (10 * p[1]->commander.m_hp / p[1]->commander.m_max_hp);
+            break;
+        case OptimizationMode::quest:
+            if (fd->quest.quest_type == QuestType::card_survival)
+            {
+                for (const auto & status: p[0]->assaults.m_indirect)
+                { fd->quest_counter += (fd->quest.quest_key == status->m_card->m_id); }
+                for (const auto & status: p[0]->structures.m_indirect)
+                { fd->quest_counter += (fd->quest.quest_key == status->m_card->m_id); }
+                for (const auto & card: p[0]->deck->shuffled_cards)
+                { fd->quest_counter += (fd->quest.quest_key == card->m_id); }
+            }
+            quest_score = fd->quest.must_fulfill ? (fd->quest_counter >= fd->quest.quest_value ? fd->quest.quest_score : 0) : std::min<unsigned>(fd->quest.quest_score, fd->quest.quest_score * fd->quest_counter / fd->quest.quest_value);
+            _DEBUG_MSG(1, "Quest: %u / %u = %u%%.\n", fd->quest_counter, fd->quest.quest_value, quest_score);
+            break;
+        default:
+            break;
+    }
+    // you lose
+    if(fd->players[0]->commander.m_hp == 0)
+    {
+        _DEBUG_MSG(1, "You lose.\n");
+        switch (fd->optimization_mode)
+        {
+        case OptimizationMode::raid: return {0, 0, 1, raid_damage};
+        case OptimizationMode::brawl: return {0, 0, 1, 5};
+        case OptimizationMode::quest: return {0, 0, 1, fd->quest.must_win ? 0 : quest_score};
+        default: return {0, 0, 1, 0};
+        }
+    }
+    // you win
+    if(fd->players[1]->commander.m_hp == 0)
+    {
+        _DEBUG_MSG(1, "You win.\n");
+        switch (fd->optimization_mode)
+        {
+        case OptimizationMode::brawl:
+            {
+                unsigned brawl_score = 57
+                    - (10 * (p[0]->commander.m_max_hp - p[0]->commander.m_hp) / p[0]->commander.m_max_hp)
+                    + (p[0]->assaults.size() + p[0]->structures.size() + p[0]->deck->shuffled_cards.size())
+                    - (p[1]->assaults.size() + p[1]->structures.size() + p[1]->deck->shuffled_cards.size())
+                    - fd->turn / 4;
+                return {1, 0, 0, brawl_score};
+            }
+        case OptimizationMode::campaign:
+            {
+                unsigned campaign_score = 100 - 10 * (std::min<unsigned>(p[0]->deck->cards.size(), (fd->turn + 1) / 2) - p[0]->assaults.size() - p[0]->structures.size());
+                return {1, 0, 0, campaign_score};
+            }
+        case OptimizationMode::quest: return {1, 0, 0, fd->quest.win_score + quest_score};
+        default:
+            return {1, 0, 0, 100};
+        }
+    }
+    if (fd->turn > turn_limit)
+    {
+        _DEBUG_MSG(1, "Stall after %u turns.\n", turn_limit);
+        switch (fd->optimization_mode)
+        {
+        case OptimizationMode::defense: return {0, 1, 0, 100};
+        case OptimizationMode::raid: return {0, 1, 0, raid_damage};
+        case OptimizationMode::brawl: return {0, 1, 0, 5};
+        case OptimizationMode::quest: return {0, 1, 0, fd->quest.must_win ? 0 : quest_score};
+        default: return {0, 1, 0, 0};
+        }
+    }
+
+    // Huh? How did we get here?
+    assert(false);
+    return {0, 0, 0, 0};
+}
 //------------------------------------------------------------------------------
 void fill_skill_table()
 {

@@ -4371,4 +4371,466 @@
 		</deck>
 	</campaign>
 
+	<campaign>
+		<id>1011</id>
+		<name>Nexu101</name>
+		<name>Nexus Arachis Normal 1</name>
+		<commander>1018</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4464</card><!-- Enclave Vestige -->
+				<card>4464</card><!-- Enclave Vestige -->
+				<card>6640</card><!-- Eclipse Rider -->
+				<card>6640</card><!-- Eclipse Rider -->
+				<card>34735</card><!-- Spearling-3 -->
+				<card>35504</card><!-- Static Xyr-1 -->
+				<card>35510</card><!-- Malaphir Drone-1 -->
+				<card>35516</card><!-- Nexus Switchblade-1 -->
+				<card>35704</card><!-- Urumi-3 -->
+				<card>36504</card><!-- Sinister Cutter-3 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1012</id>
+		<name>Nexu102</name>
+		<name>Nexus Arachis Normal 2</name>
+		<commander>1018</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4468</card><!-- Enclave Apparition -->
+				<card>4468</card><!-- Enclave Apparition -->
+				<card>6644</card><!-- Eclipse Edge -->
+				<card>6644</card><!-- Eclipse Edge -->
+				<card>33269</card><!-- Curtail-3 -->
+				<card>33683</card><!-- Toxic Crystalis-3 -->
+				<card>35332</card><!-- Bigaplexor-3 -->
+				<card>35504</card><!-- Static Xyr-1 -->
+				<card>35510</card><!-- Malaphir Drone-1 -->
+				<card>35516</card><!-- Nexus Switchblade-1 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1013</id>
+		<name>Nexu103</name>
+		<name>Nexus Arachis Normal 3</name>
+		<commander>1962</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>14612</card><!-- Gloom Master-1 -->
+				<card>33686</card><!-- Toxic Crystalis -->
+				<card>35332</card><!-- Bigaplexor-3 -->
+				<card>35506</card><!-- Static Xyr-3 -->
+				<card>35506</card><!-- Static Xyr-3 -->
+				<card>35510</card><!-- Malaphir Drone-1 -->
+				<card>35516</card><!-- Nexus Switchblade-1 -->
+				<card>35866</card><!-- Idol Imitator-3 -->
+				<card>36004</card><!-- Jetted Patroller-3 -->
+				<card>36507</card><!-- Sinister Cutter -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1014</id>
+		<name>Nexu104</name>
+		<name>Nexus Arachis Normal 4</name>
+		<commander>1018</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4464</card><!-- Enclave Vestige -->
+				<card>4464</card><!-- Enclave Vestige -->
+				<card>6640</card><!-- Eclipse Rider -->
+				<card>16530</card><!-- Rixor-3 -->
+				<card>30190</card><!-- Worldship Clasher-3 -->
+				<card>33182</card><!-- Enclave Sentry -->
+				<card>35275</card><!-- Tail Gun -->
+				<card>35504</card><!-- Static Xyr-1 -->
+				<card>35510</card><!-- Malaphir Drone-1 -->
+				<card>35516</card><!-- Nexus Switchblade-1 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1015</id>
+		<name>Nexu105</name>
+		<name>Nexus Arachis Normal 5</name>
+		<commander>1018</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>4468</card><!-- Enclave Apparition -->
+				<card>6644</card><!-- Eclipse Edge -->
+				<card>30190</card><!-- Worldship Clasher-3 -->
+				<card>32770</card><!-- Axeborn Count -->
+				<card>33182</card><!-- Enclave Sentry -->
+				<card>35275</card><!-- Tail Gun -->
+				<card>35458</card><!-- Brisk Courier-3 -->
+				<card>35504</card><!-- Static Xyr-1 -->
+				<card>35510</card><!-- Malaphir Drone-1 -->
+				<card>35516</card><!-- Nexus Switchblade-1 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1016</id>
+		<name>Nexu106</name>
+		<name>Nexus Arachis Normal 6</name>
+		<commander>1968</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>16018</card><!-- Vortex Traveler-3 -->
+				<card>32268</card><!-- Plasma -->
+				<card>32770</card><!-- Axeborn Count -->
+				<card>33940</card><!-- Overmaster -->
+				<card>35461</card><!-- Brisk Courier -->
+				<card>35504</card><!-- Static Xyr-1 -->
+				<card>35512</card><!-- Malaphir Drone-3 -->
+				<card>35512</card><!-- Malaphir Drone-3 -->
+				<card>35516</card><!-- Nexus Switchblade-1 -->
+				<card>36010</card><!-- Jetted Hunter-3 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1017</id>
+		<name>Nexu107</name>
+		<name>Nexus Arachis Normal 7</name>
+		<commander>1974</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>15761</card><!-- Disarming Sultan-4 -->
+				<card>32268</card><!-- Plasma -->
+				<card>32568</card><!-- Astaroth -->
+				<card>33943</card><!-- Overmaster Driver-3 -->
+				<card>34834</card><!-- Crevice Clinger -->
+				<card>35347</card><!-- Deflector -->
+				<card>35504</card><!-- Static Xyr-1 -->
+				<card>35510</card><!-- Malaphir Drone-1 -->
+				<card>35516</card><!-- Nexus Switchblade-1 -->
+				<card>35516</card><!-- Nexus Switchblade-1 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1021</id>
+		<name>Nexu201</name>
+		<name>Nexus Arachis Heroic 1</name>
+		<commander>1043</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>34747</card><!-- Spear Drone-3 -->
+				<card>34974</card><!-- Ostrix Leaper-1 -->
+				<card>35506</card><!-- Static Xyr-3 -->
+				<card>35512</card><!-- Malaphir Drone-3 -->
+				<card>35518</card><!-- Nexus Switchblade-3 -->
+				<card>35638</card><!-- Ditch Digger-3 -->
+				<card>35716</card><!-- Urumi Guillo-3 -->
+				<card>35716</card><!-- Urumi Guillo-3 -->
+				<card>36516</card><!-- Sinister Dissector-3 -->
+				<card>36516</card><!-- Sinister Dissector-3 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1022</id>
+		<name>Nexu202</name>
+		<name>Nexus Arachis Heroic 2</name>
+		<commander>1043</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>14620</card><!-- Grieve Master-3 -->
+				<card>33278</card><!-- Cragged Curtail -->
+				<card>33695</card><!-- Toxiferous Crystalis-3 -->
+				<card>34979</card><!-- Ostrix Leaper -->
+				<card>35338</card><!-- Bigaplexum-3 -->
+				<card>35506</card><!-- Static Xyr-3 -->
+				<card>35512</card><!-- Malaphir Drone-3 -->
+				<card>35518</card><!-- Nexus Switchblade-3 -->
+				<card>35641</card><!-- Ditch Digger -->
+				<card>36013</card><!-- Jetted Hunter -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1023</id>
+		<name>Nexu203</name>
+		<name>Nexus Arachis Heroic 3</name>
+		<commander>1964</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>14620</card><!-- Grieve Master-3 -->
+				<card>34612</card><!-- Xavis -->
+				<card>35335</card><!-- Bigaplexor -->
+				<card>35335</card><!-- Bigaplexor -->
+				<card>35509</card><!-- Static Xyr -->
+				<card>35509</card><!-- Static Xyr -->
+				<card>35512</card><!-- Malaphir Drone-3 -->
+				<card>35518</card><!-- Nexus Switchblade-3 -->
+				<card>35878</card><!-- Idol Manikin-3 -->
+				<card>36519</card><!-- Sinister Dissector -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1024</id>
+		<name>Nexu204</name>
+		<name>Nexus Arachis Heroic 4</name>
+		<commander>1102</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>16536</card><!-- Rixisen-3 -->
+				<card>30193</card><!-- Worldship Clasher -->
+				<card>30193</card><!-- Worldship Clasher -->
+				<card>33188</card><!-- Enclave Guardian -->
+				<card>33578</card><!-- Living Metal -->
+				<card>33994</card><!-- Oriax Enmity -->
+				<card>35281</card><!-- Whip Tail -->
+				<card>35506</card><!-- Static Xyr-3 -->
+				<card>35512</card><!-- Malaphir Drone-3 -->
+				<card>35518</card><!-- Nexus Switchblade-3 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1025</id>
+		<name>Nexu205</name>
+		<name>Nexus Arachis Heroic 5</name>
+		<commander>1102</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>16539</card><!-- Rixisen -->
+				<card>32773</card><!-- Axeborn Earl-3 -->
+				<card>32940</card><!-- Galaxyformer -->
+				<card>33578</card><!-- Living Metal -->
+				<card>33997</card><!-- Oriax Scorn-3 -->
+				<card>35467</card><!-- Nimble Courier -->
+				<card>35506</card><!-- Static Xyr-3 -->
+				<card>35512</card><!-- Malaphir Drone-3 -->
+				<card>35518</card><!-- Nexus Switchblade-3 -->
+				<card>36211</card><!-- Vivid Jester -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1026</id>
+		<name>Nexu206</name>
+		<name>Nexus Arachis Heroic 6</name>
+		<commander>1970</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>16024</card><!-- Vortex Visitor-3 -->
+				<card>32271</card><!-- Plasmic Morpher-3 -->
+				<card>32699</card><!-- Zakatoc -->
+				<card>32773</card><!-- Axeborn Earl-3 -->
+				<card>33946</card><!-- Overmaster Driver -->
+				<card>35506</card><!-- Static Xyr-3 -->
+				<card>35515</card><!-- Malaphir Drone -->
+				<card>35515</card><!-- Malaphir Drone -->
+				<card>35518</card><!-- Nexus Switchblade-3 -->
+				<card>36010</card><!-- Jetted Hunter-3 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1027</id>
+		<name>Nexu207</name>
+		<name>Nexus Arachis Heroic 7</name>
+		<commander>1976</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>15766</card><!-- Imparing Sultan-3 -->
+				<card>32277</card><!-- Plasmic Shell-3 -->
+				<card>32571</card><!-- Astaroth Unyielding-3 -->
+				<card>33943</card><!-- Overmaster Driver-3 -->
+				<card>34837</card><!-- Crevice Clutch-3 -->
+				<card>35353</card><!-- Ballistic Deflector -->
+				<card>35506</card><!-- Static Xyr-3 -->
+				<card>35512</card><!-- Malaphir Drone-3 -->
+				<card>35518</card><!-- Nexus Switchblade-3 -->
+				<card>35518</card><!-- Nexus Switchblade-3 -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1031</id>
+		<name>Nexu301</name>
+		<name>Nexus Arachis Mythic 1</name>
+		<commander>1045</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>30333</card><!-- Xul Worldship Vizier -->
+				<card>34985</card><!-- Ostrix Scanner -->
+				<card>35509</card><!-- Static Xyr -->
+				<card>35515</card><!-- Malaphir Drone -->
+				<card>35521</card><!-- Nexus Switchblade -->
+				<card>35647</card><!-- Abyss Digger -->
+				<card>35719</card><!-- Urumi Guillo -->
+				<card>35719</card><!-- Urumi Guillo -->
+				<card>36519</card><!-- Sinister Dissector -->
+				<card>36519</card><!-- Sinister Dissector -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1032</id>
+		<name>Nexu302</name>
+		<name>Nexus Arachis Mythic 2</name>
+		<commander>1045</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>30333</card><!-- Xul Worldship Vizier -->
+				<card>33284</card><!-- Cleft Curtail -->
+				<card>33698</card><!-- Toxiferous Crystalis -->
+				<card>34618</card><!-- Consular Xavis -->
+				<card>35341</card><!-- Bigaplexum -->
+				<card>35509</card><!-- Static Xyr -->
+				<card>35515</card><!-- Malaphir Drone -->
+				<card>35521</card><!-- Nexus Switchblade -->
+				<card>36019</card><!-- Jetted Okim -->
+				<card>36019</card><!-- Jetted Okim -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1033</id>
+		<name>Nexu303</name>
+		<name>Nexus Arachis Mythic 3</name>
+		<commander>1967</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>14623</card><!-- Grieve Master -->
+				<card>14623</card><!-- Grieve Master -->
+				<card>34624</card><!-- Grand Counsul Xavis -->
+				<card>35341</card><!-- Bigaplexum -->
+				<card>35341</card><!-- Bigaplexum -->
+				<card>35509</card><!-- Static Xyr -->
+				<card>35509</card><!-- Static Xyr -->
+				<card>35515</card><!-- Malaphir Drone -->
+				<card>35521</card><!-- Nexus Switchblade -->
+				<card>36519</card><!-- Sinister Dissector -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1034</id>
+		<name>Nexu304</name>
+		<name>Nexus Arachis Mythic 4</name>
+		<commander>1112</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>30199</card><!-- Worldship Crusher -->
+				<card>30199</card><!-- Worldship Crusher -->
+				<card>33194</card><!-- Enclave Gatekeeper -->
+				<card>33590</card><!-- Living Titanium -->
+				<card>34006</card><!-- Oriax Hatred's Birth -->
+				<card>35287</card><!-- Ram Tail -->
+				<card>35287</card><!-- Ram Tail -->
+				<card>35509</card><!-- Static Xyr -->
+				<card>35515</card><!-- Malaphir Drone -->
+				<card>35521</card><!-- Nexus Switchblade -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1035</id>
+		<name>Nexu305</name>
+		<name>Nexus Arachis Mythic 5</name>
+		<commander>1112</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>16545</card><!-- Rix Unsheathed -->
+				<card>32782</card><!-- Axeborn Duke -->
+				<card>32946</card><!-- Universeformer -->
+				<card>33008</card><!-- Surn of the Shadows -->
+				<card>34006</card><!-- Oriax Hatred's Birth -->
+				<card>34006</card><!-- Oriax Hatred's Birth -->
+				<card>35467</card><!-- Nimble Courier -->
+				<card>35509</card><!-- Static Xyr -->
+				<card>35515</card><!-- Malaphir Drone -->
+				<card>35521</card><!-- Nexus Switchblade -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1036</id>
+		<name>Nexu306</name>
+		<name>Nexus Arachis Mythic 6</name>
+		<commander>1973</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>16027</card><!-- Vortex Visitor -->
+				<card>32782</card><!-- Axeborn Duke -->
+				<card>33008</card><!-- Surn of the Shadows -->
+				<card>35509</card><!-- Static Xyr -->
+				<card>35515</card><!-- Malaphir Drone -->
+				<card>35515</card><!-- Malaphir Drone -->
+				<card>35521</card><!-- Nexus Switchblade -->
+				<card>35881</card><!-- Idol Manikin -->
+				<card>36019</card><!-- Jetted Okim -->
+				<!-- ? -->
+			</always_include>
+		</deck>
+	</campaign>
+
+	<campaign>
+		<id>1037</id>
+		<name>Nexu307</name>
+		<name>Nexus Arachis Mythic 7</name>
+		<commander>1979</commander>
+		<levels>1</levels>
+		<deck>
+			<always_include>
+				<card>15775</card><!-- Paralyzing Sultan -->
+				<card>17077</card><!-- Archthrone of Xaedan -->
+				<card>32580</card><!-- Astaroth the Wicked -->
+				<card>34606</card><!-- Death Hawker -->
+				<card>35509</card><!-- Static Xyr -->
+				<card>35515</card><!-- Malaphir Drone -->
+				<card>35521</card><!-- Nexus Switchblade -->
+				<card>35881</card><!-- Idol Manikin -->
+				<card>36591</card><!-- Arch Elder Threxor -->
+				<!-- ? -->
+			</always_include>
+		</deck>
+	</campaign>
+
 </root>

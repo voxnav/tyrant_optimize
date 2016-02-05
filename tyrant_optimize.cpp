@@ -448,11 +448,11 @@ struct SimulationData
     std::vector<long double> factors;
     gamemode_t gamemode;
     Quest quest;
-    std::unordered_map<unsigned, unsigned> bg_effects;
-    std::vector<SkillSpec> bg_skills;
+    std::unordered_map<unsigned, unsigned> your_bg_effects, enemy_bg_effects;
+    std::vector<SkillSpec> your_bg_skills, enemy_bg_skills;
 
     SimulationData(unsigned seed, const Cards& cards_, const Decks& decks_, unsigned num_enemy_decks_, std::vector<long double> factors_, gamemode_t gamemode_, Quest & quest_,
-            std::unordered_map<unsigned, unsigned>& bg_effects_, std::vector<SkillSpec>& bg_skills_) :
+            std::unordered_map<unsigned, unsigned>& your_bg_effects_, std::unordered_map<unsigned, unsigned>& enemy_bg_effects_, std::vector<SkillSpec>& your_bg_skills_, std::vector<SkillSpec>& enemy_bg_skills_) :
         re(seed),
         cards(cards_),
         decks(decks_),
@@ -462,8 +462,10 @@ struct SimulationData
         factors(factors_),
         gamemode(gamemode_),
         quest(quest_),
-        bg_effects(bg_effects_),
-        bg_skills(bg_skills_)
+        your_bg_effects(your_bg_effects_),
+        enemy_bg_effects(enemy_bg_effects_),
+        your_bg_skills(your_bg_skills_),
+        enemy_bg_skills(enemy_bg_skills_)
     {
         for (size_t i = 0; i < num_enemy_decks_; ++i)
         {
@@ -494,7 +496,7 @@ struct SimulationData
         {
             your_hand.reset(re);
             enemy_hand->reset(re);
-            Field fd(re, cards, your_hand, *enemy_hand, gamemode, optimization_mode, quest, bg_effects, bg_skills);
+            Field fd(re, cards, your_hand, *enemy_hand, gamemode, optimization_mode, quest, your_bg_effects, enemy_bg_effects, your_bg_skills, enemy_bg_skills);
             Results<uint64_t> result(play(&fd));
             res.emplace_back(result);
         }
@@ -524,11 +526,11 @@ public:
     std::vector<long double> factors;
     gamemode_t gamemode;
     Quest quest;
-    std::unordered_map<unsigned, unsigned> bg_effects;
-    std::vector<SkillSpec> bg_skills;
+    std::unordered_map<unsigned, unsigned> your_bg_effects, enemy_bg_effects;
+    std::vector<SkillSpec> your_bg_skills, enemy_bg_skills;
 
     Process(unsigned num_threads_, const Cards& cards_, const Decks& decks_, Deck* your_deck_, std::vector<Deck*> enemy_decks_, std::vector<long double> factors_, gamemode_t gamemode_, Quest & quest_,
-            std::unordered_map<unsigned, unsigned>& bg_effects_, std::vector<SkillSpec>& bg_skills_) :
+            std::unordered_map<unsigned, unsigned>& your_bg_effects_, std::unordered_map<unsigned, unsigned>& enemy_bg_effects_, std::vector<SkillSpec>& your_bg_skills_, std::vector<SkillSpec>& enemy_bg_skills_) :
         num_threads(num_threads_),
         main_barrier(num_threads+1),
         cards(cards_),
@@ -538,8 +540,10 @@ public:
         factors(factors_),
         gamemode(gamemode_),
         quest(quest_),
-        bg_effects(bg_effects_),
-        bg_skills(bg_skills_)
+        your_bg_effects(your_bg_effects_),
+        enemy_bg_effects(enemy_bg_effects_),
+        your_bg_skills(your_bg_skills_),
+        enemy_bg_skills(enemy_bg_skills_)
     {
         destroy_threads = false;
         unsigned seed(sim_seed ? sim_seed : std::chrono::system_clock::now().time_since_epoch().count() * 2654435761);  // Knuth multiplicative hash
@@ -549,7 +553,7 @@ public:
         }
         for(unsigned i(0); i < num_threads; ++i)
         {
-            threads_data.push_back(new SimulationData(seed + i, cards, decks, enemy_decks.size(), factors, gamemode, quest, bg_effects, bg_skills));
+            threads_data.push_back(new SimulationData(seed + i, cards, decks, enemy_decks.size(), factors, gamemode, quest, your_bg_effects, enemy_bg_effects, your_bg_skills, enemy_bg_skills));
             threads.push_back(new boost::thread(thread_evaluate, std::ref(main_barrier), std::ref(shared_mutex), std::ref(*threads_data.back()), std::ref(*this), i));
         }
     }
@@ -1234,9 +1238,9 @@ int main(int argc, char** argv)
     bool opt_do_optimization(false);
     bool opt_keep_commander{false};
     std::vector<std::tuple<unsigned, unsigned, Operation>> opt_todo;
-    std::vector<std::string> opt_effects;
-    std::unordered_map<unsigned, unsigned> opt_bg_effects;
-    std::vector<SkillSpec> opt_bg_skills;
+    std::vector<std::string> opt_effects[2];
+    std::unordered_map<unsigned, unsigned> opt_bg_effects[2];
+    std::vector<SkillSpec> opt_bg_skills[2];
 
     for(int argIndex = 3; argIndex < argc; ++argIndex)
     {
@@ -1321,7 +1325,18 @@ int main(int argc, char** argv)
         }
         else if (strcmp(argv[argIndex], "effect") == 0 || strcmp(argv[argIndex], "-e") == 0)
         {
-            opt_effects.push_back(argv[argIndex + 1]);
+            opt_effects[0].push_back(argv[argIndex + 1]);
+            opt_effects[1].push_back(argv[argIndex + 1]);
+            argIndex += 1;
+        }
+        else if (strcmp(argv[argIndex], "ye") == 0 || strcmp(argv[argIndex], "yeffect") == 0)
+        {
+            opt_effects[0].push_back(argv[argIndex + 1]);
+            argIndex += 1;
+        }
+        else if (strcmp(argv[argIndex], "ee") == 0 || strcmp(argv[argIndex], "eeffect") == 0)
+        {
+            opt_effects[1].push_back(argv[argIndex + 1]);
             argIndex += 1;
         }
         else if (strcmp(argv[argIndex], "freeze") == 0 || strcmp(argv[argIndex], "-F") == 0)
@@ -1546,93 +1561,96 @@ int main(int argc, char** argv)
         }
     }
 
-    for (const auto & opt_effect: opt_effects)
+    for (int player = 0; player <= 1; ++ player)
     {
-        if (opt_effect.empty())
+        for (const auto & opt_effect: opt_effects[player])
         {
-            continue;
-        }
-        try
-        {
-            std::vector<std::string> tokens;
-            boost::split(tokens, opt_effect, boost::is_any_of(" -"));
-            Skill skill_id = skill_name_to_id(tokens[0]);
-            unsigned skill_index = 1;
-            if (BEGIN_BGE_SKILL < skill_id && skill_id < END_BGE_SKILL)
+            if (opt_effect.empty())
             {
-                // passive BGE
-                if (skill_index < tokens.size())
-                {
-                    opt_bg_effects[skill_id] = boost::lexical_cast<unsigned>(tokens[skill_index]);
-                }
-                else
-                {
-                    opt_bg_effects[skill_id] = 0;
-                }
+                continue;
             }
-            else if (skill_table[skill_id] != nullptr)
+            try
             {
-                // activation BG skill
-                SkillSpec bg_skill{skill_id, 0, allfactions, 0, 0, no_skill, no_skill, false};
-                if (skill_index < tokens.size() && boost::to_lower_copy(tokens[skill_index]) == "all")
+                std::vector<std::string> tokens;
+                boost::split(tokens, opt_effect, boost::is_any_of(" -"));
+                Skill skill_id = skill_name_to_id(tokens[0]);
+                unsigned skill_index = 1;
+                if (BEGIN_BGE_SKILL < skill_id && skill_id < END_BGE_SKILL)
                 {
-                    bg_skill.all = true;
-                    skill_index += 1;
-                }
-                else if (skill_index + 1 < tokens.size() && isdigit(*tokens[skill_index].c_str()))
-                {
-                    bg_skill.n = boost::lexical_cast<unsigned>(tokens[skill_index]);
-                    skill_index += 1;
-                }
-                if (skill_index < tokens.size())
-                {
-                    bg_skill.s = skill_name_to_id(tokens[skill_index]);
-                    if (bg_skill.s != no_skill)
+                    // passive BGE
+                    if (skill_index < tokens.size())
                     {
-                        skill_index += 1;
-                        if (skill_index < tokens.size() && boost::to_lower_copy(tokens[skill_index]) == "to")
-                        {
-                            skill_index += 1;
-                        }
-                        if (skill_index < tokens.size())
-                        {
-                            bg_skill.s2 = skill_name_to_id(tokens[skill_index]);
-                            if (bg_skill.s2 != no_skill)
-                            {
-                                skill_index += 1;
-                            }
-                        }
-                    }
-                }
-                if (skill_index < tokens.size())
-                {
-                    if (bg_skill.id == jam || bg_skill.id == overload)
-                    {
-                        bg_skill.n = boost::lexical_cast<unsigned>(tokens[skill_index]);
+                        opt_bg_effects[player][skill_id] = boost::lexical_cast<unsigned>(tokens[skill_index]);
                     }
                     else
                     {
-                        bg_skill.x = boost::lexical_cast<unsigned>(tokens[skill_index]);
+                        opt_bg_effects[player][skill_id] = 0;
                     }
                 }
-                opt_bg_skills.push_back(bg_skill);
+                else if (skill_table[skill_id] != nullptr)
+                {
+                    // activation BG skill
+                    SkillSpec bg_skill{skill_id, 0, allfactions, 0, 0, no_skill, no_skill, false};
+                    if (skill_index < tokens.size() && boost::to_lower_copy(tokens[skill_index]) == "all")
+                    {
+                        bg_skill.all = true;
+                        skill_index += 1;
+                    }
+                    else if (skill_index + 1 < tokens.size() && isdigit(*tokens[skill_index].c_str()))
+                    {
+                        bg_skill.n = boost::lexical_cast<unsigned>(tokens[skill_index]);
+                        skill_index += 1;
+                    }
+                    if (skill_index < tokens.size())
+                    {
+                        bg_skill.s = skill_name_to_id(tokens[skill_index]);
+                        if (bg_skill.s != no_skill)
+                        {
+                            skill_index += 1;
+                            if (skill_index < tokens.size() && boost::to_lower_copy(tokens[skill_index]) == "to")
+                            {
+                                skill_index += 1;
+                            }
+                            if (skill_index < tokens.size())
+                            {
+                                bg_skill.s2 = skill_name_to_id(tokens[skill_index]);
+                                if (bg_skill.s2 != no_skill)
+                                {
+                                    skill_index += 1;
+                                }
+                            }
+                        }
+                    }
+                    if (skill_index < tokens.size())
+                    {
+                        if (bg_skill.id == jam || bg_skill.id == overload)
+                        {
+                            bg_skill.n = boost::lexical_cast<unsigned>(tokens[skill_index]);
+                        }
+                        else
+                        {
+                            bg_skill.x = boost::lexical_cast<unsigned>(tokens[skill_index]);
+                        }
+                    }
+                    opt_bg_skills[player].push_back(bg_skill);
+                }
+                else
+                {
+                    std::cerr << "Error: unrecognized effect \"" << opt_effect << "\".\n";
+                    print_available_effects();
+                    return 0;
+                }
             }
-            else
+            catch (const boost::bad_lexical_cast & e)
             {
-                std::cerr << "Error: unrecognized effect \"" << opt_effect << "\".\n";
-                print_available_effects();
+                std::cerr << "Error: Expect a number in effect \"" << opt_effect << "\".\n";
                 return 0;
             }
-        }
-        catch (const boost::bad_lexical_cast & e)
-        {
-            std::cerr << "Error: Expect a number in effect \"" << opt_effect << "\".\n";
-            return 0;
-        }
-        catch (std::exception & e)
-        {
-            std::cerr << "Error: effect \"" << opt_effect << ": " << e.what() << "\".\n";
-            return 0;
+            catch (std::exception & e)
+            {
+                std::cerr << "Error: effect \"" << opt_effect << ": " << e.what() << "\".\n";
+                return 0;
+            }
         }
     }
 
@@ -1938,11 +1956,7 @@ int main(int argc, char** argv)
     if (debug_print >= 0)
     {
         std::cout << "Your Deck: " << (debug_print > 0 ? your_deck->long_description() : your_deck->medium_description()) << std::endl;
-        for (unsigned i(0); i < enemy_decks.size(); ++i)
-        {
-            std::cout << "Enemy's Deck:" << enemy_decks_factors[i] << ": " << (debug_print > 0 ? enemy_decks[i]->long_description() : enemy_decks[i]->medium_description()) << std::endl;
-        }
-        for (const auto & bg_effect: opt_bg_effects)
+        for (const auto & bg_effect: opt_bg_effects[0])
         {
             if (bg_effect.second == 0)
             {
@@ -1953,13 +1967,33 @@ int main(int argc, char** argv)
                 std::cout << "BG Effect: " << skill_names[bg_effect.first] << " " << bg_effect.second << std::endl;
             }
         }
-        for (const auto & bg_skill: opt_bg_skills)
+        for (const auto & bg_skill: opt_bg_skills[0])
+        {
+            std::cout << "BG Skill: " << skill_description(all_cards, bg_skill) << std::endl;
+        }
+
+        for (unsigned i(0); i < enemy_decks.size(); ++i)
+        {
+            std::cout << "Enemy's Deck:" << enemy_decks_factors[i] << ": " << (debug_print > 0 ? enemy_decks[i]->long_description() : enemy_decks[i]->medium_description()) << std::endl;
+        }
+        for (const auto & bg_effect: opt_bg_effects[1])
+        {
+            if (bg_effect.second == 0)
+            {
+                std::cout << "BG Effect: " << skill_names[bg_effect.first] << std::endl;
+            }
+            else
+            {
+                std::cout << "BG Effect: " << skill_names[bg_effect.first] << " " << bg_effect.second << std::endl;
+            }
+        }
+        for (const auto & bg_skill: opt_bg_skills[1])
         {
             std::cout << "BG Skill: " << skill_description(all_cards, bg_skill) << std::endl;
         }
     }
 
-    Process p(opt_num_threads, all_cards, decks, your_deck, enemy_decks, enemy_decks_factors, gamemode, quest, opt_bg_effects, opt_bg_skills);
+    Process p(opt_num_threads, all_cards, decks, your_deck, enemy_decks, enemy_decks_factors, gamemode, quest, opt_bg_effects[0], opt_bg_effects[1], opt_bg_skills[0], opt_bg_skills[1]);
 
     for(auto op: opt_todo)
     {
