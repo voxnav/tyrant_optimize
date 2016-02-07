@@ -264,7 +264,15 @@ SkillSpec apply_enhance(const SkillSpec& s, unsigned enhanced_value)
 //------------------------------------------------------------------------------
 void prepend_on_death(Field* fd)
 {
+    if (fd->killed_units.empty())
+    {
+        return;
+    }
     std::vector<std::tuple<CardStatus*, SkillSpec>> od_skills;
+    auto & assaults = fd->players[fd->killed_units[0]->m_player]->assaults;
+    unsigned stacked_poison_value = 0;
+    unsigned last_index = 99;
+    CardStatus * left_virulence_victim = nullptr;
     for (auto status: fd->killed_units)
     {
         // avenge
@@ -291,6 +299,42 @@ void prepend_on_death(Field* fd)
             _DEBUG_MSG(2, "Revenge: Preparing skill %s and %s\n", skill_description(fd->cards, ss_heal).c_str(), skill_description(fd->cards, ss_rally).c_str());
             od_skills.emplace_back(commander, ss_heal);
             od_skills.emplace_back(commander, ss_rally);
+        }
+        if (fd->bg_effects[opponent(status->m_player)].count(virulence))
+        {
+            if (status->m_index != last_index + 1)
+            {
+                stacked_poison_value = 0;
+                left_virulence_victim = nullptr;
+                if (status->m_index > 0)
+                {
+                    auto left_status = &assaults[status->m_index - 1];
+                    if (left_status->m_hp > 0)
+                    {
+                        left_virulence_victim = left_status;
+                    }
+                }
+            }
+            if (status->m_poisoned > 0)
+            {
+                if (left_virulence_victim != nullptr)
+                {
+                    _DEBUG_MSG(1, "Virulence: %s spreads left poison +%u to %s\n", status_description(status).c_str(), status->m_poisoned, status_description(left_virulence_victim).c_str());
+                    left_virulence_victim->m_poisoned += status->m_poisoned;
+                }
+                stacked_poison_value += status->m_poisoned;
+                _DEBUG_MSG(1, "Virulence: %s spreads right poison +%u = %u\n", status_description(status).c_str(), status->m_poisoned, stacked_poison_value);
+            }
+            if (status->m_index + 1 < assaults.size())
+            {
+                auto right_status = &assaults[status->m_index + 1];
+                if (right_status->m_hp > 0)
+                {
+                    _DEBUG_MSG(1, "Virulence: spreads stacked poison +%u to %s\n", stacked_poison_value, status_description(right_status).c_str());
+                    right_status->m_poisoned += stacked_poison_value;
+                }
+            }
+            last_index = status->m_index;
         }
     }
     fd->skill_queue.insert(fd->skill_queue.begin(), od_skills.begin(), od_skills.end());
@@ -1510,7 +1554,7 @@ void perform_targetted_allied_fast(Field* fd, CardStatus* src, const SkillSpec& 
         }
         check_and_perform_skill<skill_id>(fd, src, dst, s, false, has_counted_quest);
     }
-    if (num_inhibited > 0 && fd->bg_effects[fd->tipi].count(divert))
+    if (num_inhibited > 0 && fd->bg_effects[opponent(src->m_player)].count(divert))
     {
         SkillSpec diverted_ss = s;
         diverted_ss.y = allfactions;
@@ -1575,6 +1619,7 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src, const SkillSpec&
             _DEBUG_MSG(1, "TurningTides %u!\n", turningtides_value);
             perform_targetted_allied_fast<rally>(fd, &fd->players[src->m_player]->commander, ss_rally);
         }
+        prepend_on_death(fd);
         for (CardStatus * pb_status: paybackers)
         {
             ++ pb_status->m_paybacked;
@@ -1604,6 +1649,7 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src, const SkillSpec&
             }
         }
     }
+    prepend_on_death(fd);
     for (CardStatus * pb_status: paybackers)
     {
         ++ pb_status->m_paybacked;

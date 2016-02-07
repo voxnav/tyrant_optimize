@@ -46,7 +46,7 @@ enum Skill
     flurry, valor,
     // Pseudo-Skill for BGE:
     BEGIN_BGE_SKILL,
-    bloodlust, brigade, counterflux, divert, enduringrage, fortification, heroism, metamorphosis, revenge, turningtides,
+    bloodlust, brigade, counterflux, divert, enduringrage, fortification, heroism, metamorphosis, revenge, turningtides, virulence,
     END_BGE_SKILL,
     num_skills
 };

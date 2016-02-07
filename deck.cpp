@@ -408,7 +408,6 @@ std::string Deck::long_description() const
             show_upgrades(ios, card, card->m_top_level_card->m_level, "  ");
         }
     }
-    ios << "\n";
     return ios.str();
 }
 
