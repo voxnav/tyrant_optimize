@@ -275,9 +275,9 @@ void prepend_on_death(Field* fd)
     CardStatus * left_virulence_victim = nullptr;
     for (auto status: fd->killed_units)
     {
-        // avenge
         if (status->m_card->m_type == CardType::assault)
         {
+            // Avenge
             for (auto && adj_status: fd->adjacent_assaults(status))
             {
                 unsigned avenge_value = adj_status->skill(avenge);
@@ -290,7 +290,45 @@ void prepend_on_death(Field* fd)
                     adj_status->m_hp += avenge_value;
                 }
             }
+            // Virulence
+            if (fd->bg_effects[opponent(status->m_player)].count(virulence))
+            {
+                if (status->m_index != last_index + 1)
+                {
+                    stacked_poison_value = 0;
+                    left_virulence_victim = nullptr;
+                    if (status->m_index > 0)
+                    {
+                        auto left_status = &assaults[status->m_index - 1];
+                        if (left_status->m_hp > 0)
+                        {
+                            left_virulence_victim = left_status;
+                        }
+                    }
+                }
+                if (status->m_poisoned > 0)
+                {
+                    if (left_virulence_victim != nullptr)
+                    {
+                        _DEBUG_MSG(1, "Virulence: %s spreads left poison +%u to %s\n", status_description(status).c_str(), status->m_poisoned, status_description(left_virulence_victim).c_str());
+                        left_virulence_victim->m_poisoned += status->m_poisoned;
+                    }
+                    stacked_poison_value += status->m_poisoned;
+                    _DEBUG_MSG(1, "Virulence: %s spreads right poison +%u = %u\n", status_description(status).c_str(), status->m_poisoned, stacked_poison_value);
+                }
+                if (status->m_index + 1 < assaults.size())
+                {
+                    auto right_status = &assaults[status->m_index + 1];
+                    if (right_status->m_hp > 0)
+                    {
+                        _DEBUG_MSG(1, "Virulence: spreads stacked poison +%u to %s\n", stacked_poison_value, status_description(right_status).c_str());
+                        right_status->m_poisoned += stacked_poison_value;
+                    }
+                }
+                last_index = status->m_index;
+            }
         }
+        // Revenge
         if (fd->bg_effects[status->m_player].count(revenge))
         {
             SkillSpec ss_heal{heal, fd->bg_effects[status->m_player].at(revenge), allfactions, 0, 0, no_skill, no_skill, true,};
@@ -299,42 +337,6 @@ void prepend_on_death(Field* fd)
             _DEBUG_MSG(2, "Revenge: Preparing skill %s and %s\n", skill_description(fd->cards, ss_heal).c_str(), skill_description(fd->cards, ss_rally).c_str());
             od_skills.emplace_back(commander, ss_heal);
             od_skills.emplace_back(commander, ss_rally);
-        }
-        if (fd->bg_effects[opponent(status->m_player)].count(virulence))
-        {
-            if (status->m_index != last_index + 1)
-            {
-                stacked_poison_value = 0;
-                left_virulence_victim = nullptr;
-                if (status->m_index > 0)
-                {
-                    auto left_status = &assaults[status->m_index - 1];
-                    if (left_status->m_hp > 0)
-                    {
-                        left_virulence_victim = left_status;
-                    }
-                }
-            }
-            if (status->m_poisoned > 0)
-            {
-                if (left_virulence_victim != nullptr)
-                {
-                    _DEBUG_MSG(1, "Virulence: %s spreads left poison +%u to %s\n", status_description(status).c_str(), status->m_poisoned, status_description(left_virulence_victim).c_str());
-                    left_virulence_victim->m_poisoned += status->m_poisoned;
-                }
-                stacked_poison_value += status->m_poisoned;
-                _DEBUG_MSG(1, "Virulence: %s spreads right poison +%u = %u\n", status_description(status).c_str(), status->m_poisoned, stacked_poison_value);
-            }
-            if (status->m_index + 1 < assaults.size())
-            {
-                auto right_status = &assaults[status->m_index + 1];
-                if (right_status->m_hp > 0)
-                {
-                    _DEBUG_MSG(1, "Virulence: spreads stacked poison +%u to %s\n", stacked_poison_value, status_description(right_status).c_str());
-                    right_status->m_poisoned += stacked_poison_value;
-                }
-            }
-            last_index = status->m_index;
         }
     }
     fd->skill_queue.insert(fd->skill_queue.begin(), od_skills.begin(), od_skills.end());
