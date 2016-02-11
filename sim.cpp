@@ -354,6 +354,7 @@ void resolve_skill(Field* fd)
         fd->skill_queue.pop_front();
         if (status->m_jammed)
         {
+            _DEBUG_MSG(2, "%s failed to %s because it is Jammed.", status_description(status).c_str(), skill_description(fd->cards, ss).c_str());
             continue;
         }
         signed evolved_offset = status->m_evolved_skill_offset[ss.id];
@@ -734,7 +735,7 @@ void turn_end_phase(Field* fd)
                         fd->inc_counter(QuestType::skill_damage, poison, 0, poison_dmg);
                     }
                     _DEBUG_MSG(1, "%s takes poison damage %u\n", status_description(&status).c_str(), poison_dmg);
-                    remove_hp(fd, &status, poison_dmg);
+                    remove_hp(fd, &status, poison_dmg);  // simultaneous
                 }
             }
             // end of the opponent's next turn for enemy units
@@ -750,7 +751,7 @@ void turn_end_phase(Field* fd)
     // Active player's structure cards:
     // nothing so far
 
-    prepend_on_death(fd);
+    prepend_on_death(fd);  // poison
     resolve_skill(fd);
     remove_dead(fd->tap->assaults);
     remove_dead(fd->tap->structures);
@@ -839,6 +840,8 @@ struct PerformAttack
             }
             _DEBUG_MSG(1, "%s takes %u counter damage from %s\n", status_description(att_status).c_str(), counter_dmg, status_description(def_status).c_str());
             remove_hp(fd, att_status, counter_dmg);
+            prepend_on_death(fd);
+            resolve_skill(fd);
             if (def_cardtype == CardType::assault && def_status->m_hp > 0 && fd->bg_effects[def_status->m_player].count(counterflux))
             {
                 unsigned flux_denominator = fd->bg_effects[def_status->m_player].at(counterflux) ? fd->bg_effects[def_status->m_player].at(counterflux) : 4;
@@ -881,8 +884,6 @@ struct PerformAttack
             _DEBUG_MSG(1, "Heroism: %s gain %u attack\n", status_description(att_status).c_str(), valor_value);
             att_status->m_attack += valor_value;
         }
-        prepend_on_death(fd);
-        resolve_skill(fd);
         return att_dmg;
     }
 
@@ -979,6 +980,8 @@ struct PerformAttack
     void attack_damage()
     {
         remove_hp(fd, def_status, att_dmg);
+        prepend_on_death(fd);
+        resolve_skill(fd);
     }
 
     template<enum CardType::CardType>
@@ -1064,6 +1067,8 @@ bool attack_phase(Field* fd)
                     _DEBUG_MSG(1, "%s swipes %s for %u damage\n", status_description(att_status).c_str(), status_description(adj_status).c_str(), swipe_dmg);
                     remove_hp(fd, adj_status, swipe_dmg);
                 }
+                prepend_on_death(fd);
+                resolve_skill(fd);
             }
         }
         return false;
@@ -1083,6 +1088,8 @@ bool attack_phase(Field* fd)
                 _DEBUG_MSG(1, "%s swipes %s for %u damage\n", status_description(att_status).c_str(), status_description(adj_status).c_str(), swipe_dmg);
                 remove_hp(fd, adj_status, swipe_dmg);
             }
+            prepend_on_death(fd);
+            resolve_skill(fd);
         }
     }
     else
@@ -1621,7 +1628,6 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src, const SkillSpec&
             _DEBUG_MSG(1, "TurningTides %u!\n", turningtides_value);
             perform_targetted_allied_fast<rally>(fd, &fd->players[src->m_player]->commander, ss_rally);
         }
-        prepend_on_death(fd);
         for (CardStatus * pb_status: paybackers)
         {
             ++ pb_status->m_paybacked;
@@ -1636,7 +1642,6 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src, const SkillSpec&
                 perform_targetted_allied_fast<rally>(fd, &fd->players[pb_status->m_player]->commander, ss_rally);
             }
         }
-        prepend_on_death(fd);
         return;
     }
     for (CardStatus * dst: fd->selection_array)
@@ -1651,14 +1656,14 @@ void perform_targetted_hostile_fast(Field* fd, CardStatus* src, const SkillSpec&
             }
         }
     }
-    prepend_on_death(fd);
+    prepend_on_death(fd);  // skills
     for (CardStatus * pb_status: paybackers)
     {
         ++ pb_status->m_paybacked;
         _DEBUG_MSG(1, "%s Payback %s on %s\n", status_description(pb_status).c_str(), skill_short_description(s).c_str(), status_description(src).c_str());
         perform_skill<skill_id>(fd, pb_status, src, s);
     }
-    prepend_on_death(fd);
+    prepend_on_death(fd);  // paybacked skills
 }
 
 //------------------------------------------------------------------------------
