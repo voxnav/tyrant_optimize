@@ -3,7 +3,6 @@
 
 #include <map>
 #include <string>
-#include <map>
 
 #include "deck.h"
 
@@ -17,5 +16,6 @@ const std::pair<std::vector<unsigned>, std::map<signed, char>> string_to_ids(con
 unsigned load_custom_decks(Decks& decks, Cards& cards, const std::string & filename);
 void read_owned_cards(Cards& cards, std::map<unsigned, unsigned>& owned_cards, const std::string & filename);
 unsigned read_card_abbrs(Cards& cards, const std::string& filename);
+unsigned read_bge_aliases(std::unordered_map<std::string, std::string> & bge_aliases, const std::string & filename);
 
 #endif

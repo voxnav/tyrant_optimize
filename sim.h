@@ -239,7 +239,7 @@ public:
     gamemode_t gamemode;
     OptimizationMode optimization_mode;
     const Quest quest;
-    std::unordered_map<unsigned, unsigned> bg_effects[2]; // passive BGE
+    std::unordered_map<unsigned, unsigned> bg_effects; // passive BGE
     std::vector<SkillSpec> bg_skills[2]; // active BGE, casted every turn
     // With the introduction of on death skills, a single skill can trigger arbitrary many skills.
     // They are stored in this, and cleared after all have been performed.
@@ -266,7 +266,7 @@ public:
     unsigned quest_counter;
 
     Field(std::mt19937& re_, const Cards& cards_, Hand& hand1, Hand& hand2, gamemode_t gamemode_, OptimizationMode optimization_mode_, const Quest & quest_,
-            std::unordered_map<unsigned, unsigned>& your_bg_effects_, std::unordered_map<unsigned, unsigned>& enemy_bg_effects_, std::vector<SkillSpec>& your_bg_skills_, std::vector<SkillSpec>& enemy_bg_skills_) :
+            std::unordered_map<unsigned, unsigned>& bg_effects_, std::vector<SkillSpec>& your_bg_skills_, std::vector<SkillSpec>& enemy_bg_skills_) :
         end{false},
         re(re_),
         cards(cards_),
@@ -275,7 +275,7 @@ public:
         gamemode(gamemode_),
         optimization_mode(optimization_mode_),
         quest(quest_),
-        bg_effects{your_bg_effects_, enemy_bg_effects_},
+        bg_effects{bg_effects_},
         bg_skills{your_bg_skills_, enemy_bg_skills_},
         assault_bloodlusted(false),
         bloodlust_value(0),

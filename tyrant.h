@@ -1,11 +1,12 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "2.17.2"
+#define TYRANT_OPTIMIZER_VERSION "2.18.0"
 
 #include <string>
 #include <sstream>
 #include <unordered_set>
+#include <unordered_map>
 #include <tuple>
 
 enum Faction

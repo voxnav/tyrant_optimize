@@ -478,3 +478,52 @@ void read_owned_cards(Cards& all_cards, std::map<unsigned, unsigned>& owned_card
     }
 }
 
+unsigned read_bge_aliases(std::unordered_map<std::string, std::string> & bge_aliases, const std::string& filename)
+{
+    if(!boost::filesystem::exists(filename))
+    {
+        return(0);
+    }
+    std::ifstream bgefile(filename);
+    if(!bgefile.is_open())
+    {
+        std::cerr << "Error: BGE file " << filename << " could not be opened\n";
+        return(2);
+    }
+    unsigned num_line(0);
+    bgefile.exceptions(std::ifstream::badbit);
+    try
+    {
+        while(bgefile && !bgefile.eof())
+        {
+            std::string bge_string;
+            getline(bgefile, bge_string);
+            ++num_line;
+            if(bge_string.size() == 0 || strncmp(bge_string.c_str(), "//", 2) == 0)
+            {
+                continue;
+            }
+            std::string bge_name;
+            auto bge_string_iter = read_token(bge_string.begin(), bge_string.end(), [](char c){return(c == ':');}, bge_name);
+            if(bge_string_iter == bge_string.end() || bge_name.empty())
+            {
+                std::cerr << "Error in BGE file " << filename << " at line " << num_line << ", could not read the name.\n";
+                continue;
+            }
+            bge_string_iter = advance_until(bge_string_iter + 1, bge_string.end(), [](const char& c){return(c != ' ');});
+            bge_aliases[simplify_name(bge_name)] = std::string{bge_string_iter, bge_string.end()};
+        }
+    }
+    catch (std::exception& e)
+    {
+        std::cerr << "Exception while parsing the BGE file " << filename;
+        if(num_line > 0)
+        {
+            std::cerr << " at line " << num_line;
+        }
+        std::cerr << ": " << e.what() << ".\n";
+        return(3);
+    }
+    return(0);
+}
+
