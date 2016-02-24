@@ -1,7 +1,7 @@
 #ifndef TYRANT_H_INCLUDED
 #define TYRANT_H_INCLUDED
 
-#define TYRANT_OPTIMIZER_VERSION "2.18.0"
+#define TYRANT_OPTIMIZER_VERSION "2.19.0"
 
 #include <string>
 #include <sstream>
@@ -44,7 +44,7 @@ enum Skill
     // Damage-Dependent:
     berserk, inhibit, leech, poison,
     // Triggered:
-    flurry, valor,
+    allegiance, flurry, valor,
     // Pseudo-Skill for BGE:
     BEGIN_BGE_SKILL,
     bloodlust, brigade, counterflux, divert, enduringrage, fortification, heroism, metamorphosis, revenge, turningtides, virulence,

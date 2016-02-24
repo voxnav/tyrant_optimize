@@ -27,7 +27,7 @@ std::string skill_names[Skill::num_skills] =
     // Damage-Dependant:
     "Berserk", "Inhibit", "Leech", "Poison",
     // Triggered:
-    "Flurry", "Valor",
+    "Allegiance", "Flurry", "Valor",
     // Pseudo-skill for passive BGEs:
     "<Error>",
     "Bloodlust", "Brigade", "Counterflux", "Divert", "EnduringRage", "Fortification", "Heroism", "Metamorphosis", "Revenge", "TurningTides", "Virulence",
