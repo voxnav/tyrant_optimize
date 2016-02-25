@@ -364,6 +364,27 @@
 		</deck>
 	</raid>
 
+	<raid>
+		<id>17</id>
+		<name>Warden Raid</name>
+		<commander>25026</commander>
+		<levels>26</levels>
+		<deck>
+			<always_include>
+				<card>17192</card>
+				<card>17192</card>
+				<card>37474</card>
+				<card>37474</card>
+				<card>37484</card>
+				<card>37484</card>
+				<card>37494</card>
+				<card>37494</card>
+				<card>37504</card>
+				<card>37504</card>
+			</always_include>
+		</deck>
+	</raid>
+
 <!-- END of Raids -->
 
 
