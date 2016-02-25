@@ -1705,20 +1705,6 @@ Results<uint64_t> play(Field* fd)
         const Card* played_card(fd->tap->deck->next());
         if(played_card)
         {
-            switch(played_card->m_type)
-            {
-            case CardType::assault:
-                PlayCard(played_card, fd).op<CardType::assault>();
-                break;
-            case CardType::structure:
-                PlayCard(played_card, fd).op<CardType::structure>();
-                break;
-            case CardType::commander:
-            case CardType::num_cardtypes:
-                _DEBUG_MSG(0, "Unknown card type: #%u %s: %u\n", played_card->m_id, card_description(fd->cards, played_card).c_str(), played_card->m_type);
-                assert(false);
-                break;
-            }
             // Evaluate skill Allegiance
             for (CardStatus * status : fd->tap->assaults.m_indirect)
             {
@@ -1732,6 +1718,21 @@ Results<uint64_t> play(Field* fd)
                     status->m_max_hp += allegiance_value;
                     status->m_hp += allegiance_value;
                 }
+            }
+            // End Evaluate skill Allegiance
+            switch(played_card->m_type)
+            {
+            case CardType::assault:
+                PlayCard(played_card, fd).op<CardType::assault>();
+                break;
+            case CardType::structure:
+                PlayCard(played_card, fd).op<CardType::structure>();
+                break;
+            case CardType::commander:
+            case CardType::num_cardtypes:
+                _DEBUG_MSG(0, "Unknown card type: #%u %s: %u\n", played_card->m_id, card_description(fd->cards, played_card).c_str(), played_card->m_type);
+                assert(false);
+                break;
             }
         }
         if(__builtin_expect(fd->end, false)) { break; }
