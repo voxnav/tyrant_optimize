@@ -1719,21 +1719,22 @@ Results<uint64_t> play(Field* fd)
                 assert(false);
                 break;
             }
-        }
-        if(__builtin_expect(fd->end, false)) { break; }
-        // Evaluate skill Allegiance
-        for (CardStatus * status : fd->tap->assaults.m_indirect)
-        {
-            unsigned allegiance_value = status->skill(allegiance);
-            if (allegiance_value > 0 && status->m_card->m_faction == played_card->m_faction)
+            // Evaluate skill Allegiance
+            for (CardStatus * status : fd->tap->assaults.m_indirect)
             {
-                _DEBUG_MSG(1, "%s activates Allegiance %u\n", status_description(status).c_str(), allegiance_value);
-                if (! status->m_sundered)
-                { status->m_attack += allegiance_value; }
-                status->m_max_hp += allegiance_value;
-                status->m_hp += allegiance_value;
+                unsigned allegiance_value = status->skill(allegiance);
+                assert(status->m_card);
+                if (allegiance_value > 0 && status->m_hp > 0 && status->m_card->m_faction == played_card->m_faction)
+                {
+                    _DEBUG_MSG(1, "%s activates Allegiance %u\n", status_description(status).c_str(), allegiance_value);
+                    if (! status->m_sundered)
+                    { status->m_attack += allegiance_value; }
+                    status->m_max_hp += allegiance_value;
+                    status->m_hp += allegiance_value;
+                }
             }
         }
+        if(__builtin_expect(fd->end, false)) { break; }
 
         // Evaluate Heroism BGE skills
         if (fd->bg_effects.count(heroism))
